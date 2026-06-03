@@ -1,0 +1,5 @@
+[33mThe v8_viteEnvironmentApi is enabled.
+This is experimental and may break your build.[0m
+
+serveStatic: root path 'build/client' is not found, are you sure it's correct?
+serveStatic: root path './public' is not found, are you sure it's correct?

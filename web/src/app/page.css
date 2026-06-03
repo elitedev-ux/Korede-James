@@ -1,0 +1,238 @@
+.home-page {
+  --home-white: #ffffff;
+  --home-ink: #111111;
+  --home-muted: #6b7280;
+  --home-soft: #fafafa;
+  --home-line: #f3f4f6;
+  --home-accent: #b45309;
+  --home-gap-hairline: 3px;
+  --home-section-space: clamp(4.5rem, 9vw, 8rem);
+  overflow-x: hidden;
+  background: var(--home-white);
+}
+
+.home-hero {
+  min-height: 42rem;
+  height: 100svh;
+}
+
+.home-hero__content {
+  padding-inline: clamp(1.25rem, 5vw, 3rem);
+}
+
+.home-hero__title {
+  max-width: 14ch;
+  font-size: clamp(2.25rem, 8vw, 6rem);
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.home-hero__actions {
+  align-items: stretch;
+}
+
+.home-hero__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  text-align: center;
+}
+
+.home-editorial__row--feature {
+  height: clamp(34rem, 80vh, 52rem);
+}
+
+.home-editorial__row--split {
+  height: clamp(28rem, 60vh, 40rem);
+}
+
+.home-editorial__tile--narrow {
+  width: 28%;
+}
+
+.home-editorial__tile--center {
+  width: 44%;
+}
+
+.home-editorial__tile--wide {
+  width: 55%;
+}
+
+.home-editorial__stack {
+  width: 45%;
+}
+
+.home-editorial__strip {
+  height: clamp(20rem, 45vh, 32rem);
+}
+
+.home-editorial__tile,
+.home-editorial__strip {
+  background: var(--home-line);
+}
+
+.home-story,
+.home-portfolio,
+.home-testimonials,
+.home-newsletter {
+  padding-block: var(--home-section-space);
+}
+
+.home-story__image {
+  height: clamp(30rem, 56vw, 37.5rem);
+}
+
+.home-story__quote {
+  max-width: min(24rem, 45vw);
+}
+
+.home-portfolio__card {
+  height: clamp(26rem, 45vw, 31.25rem);
+}
+
+@media (max-width: 1023px) {
+  .home-editorial__bar {
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+
+  .home-editorial__row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto !important;
+    gap: var(--home-gap-hairline);
+  }
+
+  .home-editorial__tile,
+  .home-editorial__stack,
+  .home-editorial__strip {
+    width: 100% !important;
+  }
+
+  .home-editorial__tile {
+    height: clamp(21rem, 48vw, 34rem) !important;
+    flex: none !important;
+  }
+
+  .home-editorial__tile--center,
+  .home-editorial__tile--wide {
+    grid-column: span 2;
+    height: clamp(24rem, 54vw, 38rem) !important;
+  }
+
+  .home-editorial__stack {
+    display: grid !important;
+    grid-column: span 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--home-gap-hairline);
+  }
+
+  .home-editorial__tile--stacked {
+    min-height: clamp(20rem, 46vw, 32rem);
+  }
+
+  .home-editorial__strip {
+    height: clamp(22rem, 46vw, 34rem) !important;
+  }
+
+  .home-story__image {
+    height: clamp(25rem, 70vw, 34rem);
+  }
+}
+
+@media (max-width: 767px) {
+  .home-hero {
+    min-height: 38rem;
+  }
+
+  .home-hero__eyebrow {
+    margin-bottom: 1rem;
+    letter-spacing: 0.34em;
+  }
+
+  .home-hero__title {
+    margin-bottom: 2rem;
+    font-size: clamp(2rem, 12vw, 3.45rem);
+    letter-spacing: 0.12em;
+  }
+
+  .home-hero__actions {
+    width: min(100%, 21rem);
+    gap: 0.85rem;
+  }
+
+  .home-hero__actions > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+    margin-left: 0;
+  }
+
+  .home-hero__button {
+    width: 100%;
+    padding-inline: 1.25rem;
+    letter-spacing: 0.22em;
+  }
+
+  .home-editorial__bar {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .home-editorial__rule {
+    display: none;
+  }
+
+  .home-editorial__row {
+    grid-template-columns: 1fr;
+  }
+
+  .home-editorial__tile {
+    height: clamp(18rem, 78vw, 30rem);
+  }
+
+  .home-editorial__tile--center,
+  .home-editorial__tile--wide,
+  .home-editorial__stack {
+    grid-column: auto;
+  }
+
+  .home-editorial__tile--center {
+    height: clamp(23rem, 100vw, 38rem);
+  }
+
+  .home-editorial__stack {
+    grid-template-columns: 1fr;
+  }
+
+  .home-editorial__tile--stacked {
+    min-height: clamp(18rem, 78vw, 30rem);
+  }
+
+  .home-editorial__strip {
+    height: clamp(18rem, 76vw, 28rem);
+  }
+
+  .home-story,
+  .home-portfolio,
+  .home-testimonials,
+  .home-newsletter {
+    padding-block: clamp(3.5rem, 14vw, 5rem);
+  }
+
+  .home-story__image {
+    height: clamp(24rem, 105vw, 34rem);
+  }
+
+  .home-portfolio__card {
+    height: clamp(22rem, 92vw, 31rem);
+  }
+
+  .home-newsletter__form {
+    gap: 1rem;
+  }
+
+  .home-newsletter__form > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+    margin-left: 0;
+  }
+}

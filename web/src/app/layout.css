@@ -1,0 +1,13 @@
+.app-shell {
+  width: 100%;
+  min-width: 0;
+  min-height: 100svh;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+}
+
+.app-shell::selection {
+  color: #78350f;
+  background: #fef3c7;
+}
