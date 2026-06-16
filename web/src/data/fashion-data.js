@@ -1,120 +1,90 @@
+const freedomBase = "/assets/freedom";
+
 export const products = [
   {
-    id: "1",
-    name: "Silk Evening Gown",
-    category: "Evening Wear",
-    price: 2450,
-    image:
-      "https://images.unsplash.com/photo-1539109132314-3477524c8952?auto=format&fit=crop&q=80&w=800",
-    description:
-      "A breathtaking silk evening gown featuring a draped neckline and an elegant floor-length silhouette. Perfect for galas and high-end events.",
-    sizes: ["XS", "S", "M", "L"],
-    colors: ["Champagne", "Midnight Black", "Emerald"],
-    fabric: "100% Mulberry Silk",
-    care: "Dry clean only. Handle with care.",
-    collection: "2025 Spring",
-  },
-  {
-    id: "2",
-    name: "Tailored Wool Blazer",
+    id: "freedom-01",
+    name: "Independence Jacket",
+    archetype: "Archetype 01",
+    silhouette: "The Independence Jacket",
     category: "Outerwear",
     price: 1850,
-    image:
-      "https://images.unsplash.com/photo-1548126032-079a0fb0099d?auto=format&fit=crop&q=80&w=800",
+    image: `${freedomBase}/freedom-product-01.jpg`,
     description:
-      "Structured wool blazer with a modern fit. Hand-stitched lapels and premium Italian wool make this a wardrobe staple.",
-    sizes: ["38", "40", "42", "44"],
-    colors: ["Beige", "Charcoal", "Ivory"],
-    fabric: "90% Wool, 10% Cashmere",
-    care: "Professional dry clean.",
-    collection: "2024 Winter",
+      "A structured white jacket from Freedom, shaped through Yoruba sartorial language and finished with exposed linear stitching.",
+    sizes: ["XS", "S", "M", "L"],
+    colors: ["White"],
+    fabric: "Structured cotton blend",
+    care: "Professional dry clean only.",
+    collection: "2025 Freedom",
   },
   {
-    id: "3",
-    name: "Cashmere Knit Set",
-    category: "Lounge",
-    price: 1200,
-    image:
-      "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=800",
+    id: "freedom-02",
+    name: "Inheritance Wrap",
+    archetype: "Archetype 02",
+    silhouette: "The Inheritance Wrap",
+    category: "Tailoring",
+    price: 2200,
+    image: `${freedomBase}/freedom-product-02.jpg`,
     description:
-      "Ultra-soft cashmere knit set designed for comfort without compromising on elegance. Includes a relaxed sweater and matching trousers.",
+      "A layered wrap silhouette that carries the weight of tradition while opening into a modern Nigerian form.",
     sizes: ["S", "M", "L"],
-    colors: ["Oatmeal", "Soft Grey", "Rose Quartz"],
-    fabric: "100% Organic Cashmere",
-    care: "Hand wash cold or dry clean.",
-    collection: "2025 Spring",
+    colors: ["White", "Red"],
+    fabric: "Cotton canvas with linen finishing",
+    care: "Professional dry clean only.",
+    collection: "2025 Freedom",
   },
   {
-    id: "4",
-    name: "Velvet Gala Suit",
+    id: "freedom-03",
+    name: "Liberation Robe",
+    archetype: "Archetype 03",
+    silhouette: "The Liberation Robe",
+    category: "Robes",
+    price: 2600,
+    image: `${freedomBase}/freedom-product-03.jpg`,
+    description:
+      "A fluid white robe made as a meditation on liberation as an event and freedom as a lived experience.",
+    sizes: ["S", "M", "L"],
+    colors: ["White"],
+    fabric: "Lightweight cotton voile",
+    care: "Hand wash cold or dry clean.",
+    collection: "2025 Freedom",
+  },
+  {
+    id: "freedom-04",
+    name: "Memory Suit",
+    archetype: "Archetype 04",
+    silhouette: "The Memory Suit",
     category: "Suits",
     price: 3200,
-    image:
-      "https://images.unsplash.com/photo-1594932224010-7494f61f7e02?auto=format&fit=crop&q=80&w=800",
+    image: `${freedomBase}/freedom-product-04.jpg`,
     description:
-      "A statement velvet suit that defines modern luxury. Slim-fit jacket with silk satin peak lapels.",
-    sizes: ["46", "48", "50", "52", "54"],
-    colors: ["Deep Burgundy", "Black"],
-    fabric: "Silk Velvet blend",
+      "A ceremonial suit with sculptural volume, built around the tension between inherited history and imagined futures.",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["White"],
+    fabric: "Cotton twill with hand-finished seams",
     care: "Specialist dry clean only.",
-    collection: "2024 Winter",
-  },
-  {
-    id: "5",
-    name: "Linen Resort Shirt",
-    category: "Casual",
-    price: 450,
-    image:
-      "https://images.unsplash.com/photo-1596755094514-f87034a2612d?auto=format&fit=crop&q=80&w=800",
-    description:
-      "Breathable linen shirt for the modern traveler. Relaxed fit with mother-of-pearl buttons.",
-    sizes: ["S", "M", "L", "XL"],
-    colors: ["White", "Sky Blue", "Sand"],
-    fabric: "100% Belgian Linen",
-    care: "Machine wash delicate or hand wash.",
-    collection: "2024 Summer",
+    collection: "2025 Freedom",
   },
 ];
 
 export const collections = [
   {
-    id: "2025-spring",
+    id: "freedom",
     year: "2025",
-    title: "Ethereal Spring",
+    title: "Freedom",
     description:
-      "A collection inspired by the delicate transitions of dawn. Flowing silhouettes and soft pastel tones.",
-    coverImage:
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200",
+      "Freedom is a meditation on Nigeria's independence in 1960. A return to a moment that promised the birth of a nation. Through the lens of a modern Nigerian, the work reflects on the distance between liberation as an event and freedom as a lived experience. Employing traditional Yoruba silhouettes and sartorial language, it engages history not as something distant, but as a living inheritance, asking what it means to carry the weight of the past while imagining the future.",
+    coverImage: `${freedomBase}/freedom-cover.jpg`,
     gallery: [
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=800",
-    ],
-  },
-  {
-    id: "2024-winter",
-    year: "2024",
-    title: "Nocturnal Elegance",
-    description:
-      "Structured outerwear and heavy velvets exploring the depths of midnight textures.",
-    coverImage:
-      "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&q=80&w=1200",
-    gallery: [
-      "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=800",
-    ],
-  },
-  {
-    id: "2023-archive",
-    year: "2023",
-    title: "Heritage Roots",
-    description:
-      "Celebrating the core philosophy of our brand with timeless pieces and sustainable materials.",
-    coverImage:
-      "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1200",
-    gallery: [
-      "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800",
-      "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=800",
+      `${freedomBase}/freedom-gallery-01.jpg`,
+      `${freedomBase}/freedom-gallery-02.jpg`,
+      `${freedomBase}/freedom-gallery-03.jpg`,
+      `${freedomBase}/freedom-gallery-04.jpg`,
+      `${freedomBase}/freedom-gallery-05.jpg`,
+      `${freedomBase}/freedom-gallery-06.jpg`,
+      `${freedomBase}/freedom-gallery-07.jpg`,
+      `${freedomBase}/freedom-detail-01.jpg`,
+      `${freedomBase}/freedom-detail-02.jpg`,
     ],
   },
 ];
@@ -136,6 +106,6 @@ export const testimonials = [
     id: "3",
     name: "Sophia Laurent",
     role: "Private Client",
-    text: "The commission process was seamless, and the final piece surpassed all my expectations.",
+    text: "The bespoke service was seamless, and the final piece surpassed all my expectations.",
   },
 ];

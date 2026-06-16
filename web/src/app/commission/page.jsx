@@ -31,13 +31,12 @@ export default function CommissionPage() {
           <div>
             <SectionTitle
               title="The Bespoke Service"
-              subtitle="Custom Commission"
+              subtitle="Custom Design"
               align="left"
             />
             <p className="text-gray-500 font-light leading-relaxed tracking-wide mb-12">
-              Transform your vision into a unique artifact of elegance. Our
-              commission process is a deeply collaborative journey between you
-              and our master couturiers.
+              Bespoke service is an intimate creative alliance with Korede
+              James. A path to a completely custom artifact.
             </p>
 
             <div className="space-y-12">
@@ -89,7 +88,7 @@ export default function CommissionPage() {
               <h4 className="text-xs uppercase tracking-[0.2em] mb-4">
                 Estimated Timeline
               </h4>
-              <p className="text-2xl font-serif mb-6 italic">12 - 16 Weeks</p>
+              <p className="text-2xl font-serif mb-6 italic">1 - 4 Weeks</p>
               <p className="text-[10px] text-gray-400 tracking-widest uppercase">
                 From initial concept to final delivery.
               </p>
@@ -158,7 +157,7 @@ export default function CommissionPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
-                      Outfit Type
+                      Artifact
                     </label>
                     <select
                       className="w-full bg-white border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"

@@ -20,11 +20,11 @@ export default function CartPage() {
       <Navbar />
 
       <section className="pt-40 pb-32 px-6 max-w-7xl mx-auto">
-        <SectionTitle title="Shopping Bag" subtitle="Your Selection" />
+        <SectionTitle title="Commission Brief" subtitle="Your Selection" />
 
         {cart.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-            {/* Cart Items */}
+            {/* Commission Items */}
             <div className="lg:col-span-2 space-y-12">
               {cart.map((item, i) => (
                 <motion.div
@@ -114,11 +114,11 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* Order Summary */}
+            {/* Commission Summary */}
             <div className="lg:col-span-1">
               <div className="bg-[#fafafa] p-10 border border-gray-100 sticky top-40">
                 <h3 className="text-xs uppercase tracking-[0.2em] font-bold mb-8 pb-4 border-b border-gray-200">
-                  Order Summary
+                  Commission Summary
                 </h3>
                 <div className="space-y-6 mb-10">
                   <div className="flex justify-between text-xs tracking-widest">
@@ -149,17 +149,20 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <button className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4 group">
-                  <span>Proceed to Checkout</span>
+                <a
+                  href="/checkout"
+                  className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4 group"
+                >
+                  <span>Review Commission</span>
                   <ArrowRight
                     size={16}
                     className="group-hover:translate-x-2 transition-transform"
                   />
-                </button>
+                </a>
 
                 <p className="mt-8 text-center text-[8px] uppercase tracking-widest text-gray-400 leading-loose">
-                  Complimentary worldwide shipping on orders over $2,000. Duties
-                  and taxes calculated at checkout.
+                  Final pricing, delivery, and atelier details are confirmed
+                  after your commission request is reviewed.
                 </p>
               </div>
             </div>
@@ -172,16 +175,16 @@ export default function CartPage() {
               strokeWidth={1}
             />
             <h3 className="text-xl font-serif tracking-widest uppercase mb-4">
-              Your bag is empty
+              No commission started
             </h3>
             <p className="text-gray-400 text-xs tracking-widest mb-12 uppercase">
-              Discover our latest artifacts and add them to your collection.
+              Discover our latest artifacts and begin a private commission.
             </p>
             <a
               href="/products"
               className="bg-black text-white px-12 py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all"
             >
-              Continue Shopping
+              Explore Designs
             </a>
           </div>
         )}

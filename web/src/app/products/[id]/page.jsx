@@ -1,237 +1,213 @@
 import React, { useState } from "react";
-import { motion } from "motion/react";
-import {
-  Heart,
-  ShoppingBag,
-  ArrowLeft,
-  Ruler,
-  ShieldCheck,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
-import ProductCard from "../../../components/ProductCard";
-import SectionTitle from "../../../components/SectionTitle";
 import { products } from "../../../data/fashion-data";
 import useStore from "../../../store/useStore";
+
+const paletteSwatches = {
+  White: "#f8f6f0",
+  Red: "#9f1239",
+  Black: "#111111",
+  Ivory: "#f4ead8",
+};
 
 export default function ProductDetailsPage({ params }) {
   const { id } = params;
   const product = products.find((p) => p.id === id);
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
-  const [activeImage, setActiveImage] = useState(product?.image);
-
   const addToCart = useStore((state) => state.addToCart);
-  const toggleWishlist = useStore((state) => state.toggleWishlist);
-  const wishlist = useStore((state) => state.wishlist);
-  const isWishlisted = wishlist.find((item) => item.id === product?.id);
+  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
+  const [selectedSize, setSelectedSize] = useState("M");
+  const [tailoringNotes, setTailoringNotes] = useState("");
+  const [archivalNotes, setArchivalNotes] = useState("");
 
   if (!product) {
     return (
-      <div className="pt-40 text-center uppercase tracking-widest">
-        Piece not found
-      </div>
+      <main className="min-h-screen bg-white">
+        <Navbar />
+        <div className="pt-40 text-center uppercase tracking-widest">
+          Artifact not found
+        </div>
+      </main>
     );
   }
 
-  const relatedProducts = products
-    .filter((p) => p.id !== product.id)
-    .slice(0, 4);
+  const handleSubmit = () => {
+    addToCart(
+      {
+        ...product,
+        tailoringNotes,
+        archivalNotes,
+      },
+      selectedSize,
+      selectedColor,
+    );
+    window.location.href = "/checkout";
+  };
 
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
 
-      <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+      <section className="pt-32 pb-28 px-6 max-w-7xl mx-auto">
         <a
           href="/products"
-          className="inline-flex items-center space-x-2 text-[10px] uppercase tracking-widest mb-12 hover:text-amber-600 transition-colors"
+          className="inline-flex items-center space-x-2 text-[10px] uppercase tracking-widest mb-16 hover:text-amber-600 transition-colors"
         >
           <ArrowLeft size={14} />
-          <span>Back to Collection</span>
+          <span>Back to Gallery</span>
         </a>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="aspect-[3/4] overflow-hidden bg-gray-50">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] gap-20 items-start">
+          <aside className="lg:sticky lg:top-28">
+            <div className="bg-[#f8f8f6] overflow-hidden">
               <img
-                src={activeImage}
+                src={product.image}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full aspect-[4/5] object-cover"
               />
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              {[product.image, ...Array(3).fill(product.image)].map(
-                (img, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveImage(img)}
-                    className={`aspect-square overflow-hidden bg-gray-50 border-2 transition-all ${activeImage === img ? "border-black" : "border-transparent"}`}
-                  >
-                    <img
-                      src={img}
-                      className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
-                    />
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
+          </aside>
 
-          {/* Product Info */}
-          <div>
-            <div className="mb-10">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-amber-700 mb-2 font-semibold">
-                {product.category}
+          <section>
+            <div className="mb-14">
+              <p className="text-[10px] uppercase tracking-[0.45em] text-amber-700 font-semibold mb-5">
+                {product.archetype}
               </p>
-              <h1 className="text-4xl font-serif tracking-widest uppercase font-light mb-4">
-                {product.name}
+              <h1 className="text-3xl md:text-5xl font-serif uppercase tracking-[0.22em] font-light mb-7">
+                {product.silhouette}
               </h1>
-              <p className="text-2xl font-light font-serif">
-                ${product.price.toLocaleString()}
+              <p className="text-sm text-gray-500 font-light leading-loose tracking-wide max-w-2xl">
+                {product.description}
               </p>
             </div>
 
-            <p className="text-gray-500 font-light leading-relaxed mb-10 tracking-wide">
-              {product.description}
-            </p>
-
-            {/* Selection */}
-            <div className="space-y-8 mb-12">
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-[10px] uppercase tracking-widest font-semibold">
-                    Select Size
+            <div className="space-y-14">
+              <PortalStep number="01" title="Selected Artifact">
+                <div className="flex items-center justify-between gap-8 border-y border-gray-100 py-6">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-gray-400">
+                    Foundational form
                   </span>
-                  <button className="text-[8px] uppercase tracking-widest flex items-center space-x-1 underline opacity-60">
-                    <Ruler size={12} />
-                    <span>Size Guide</span>
-                  </button>
+                  <span className="text-xs uppercase tracking-[0.2em] font-semibold text-right">
+                    {product.name}
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  {product.sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-6 py-3 text-[10px] tracking-widest border transition-all ${selectedSize === size ? "bg-black text-white border-black" : "border-gray-200 hover:border-black"}`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              </PortalStep>
 
-              <div>
-                <span className="text-[10px] uppercase tracking-widest font-semibold block mb-4">
-                  Color: {selectedColor || "Choose a color"}
-                </span>
+              <PortalStep number="02" title="The Palette">
                 <div className="flex flex-wrap gap-4">
-                  {product.colors.map((color) => (
+                  {[...new Set([...product.colors, "Black", "Ivory"])].map((color) => (
                     <button
                       key={color}
+                      type="button"
                       onClick={() => setSelectedColor(color)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all p-0.5 ${selectedColor === color ? "border-black" : "border-transparent"}`}
+                      className={`flex items-center gap-3 border px-4 py-3 transition-colors ${
+                        selectedColor === color
+                          ? "border-black"
+                          : "border-gray-100 hover:border-gray-300"
+                      }`}
                     >
-                      <div
-                        className="w-full h-full rounded-full bg-gray-200"
-                        title={color}
+                      <span
+                        className="h-5 w-5 rounded-full border border-gray-200"
+                        style={{
+                          backgroundColor: paletteSwatches[color] || "#e5e5e5",
+                        }}
                       />
+                      <span className="text-[10px] uppercase tracking-[0.2em]">
+                        {color}
+                      </span>
                     </button>
                   ))}
                 </div>
-              </div>
+              </PortalStep>
+
+              <PortalStep number="03" title="Proportions">
+                <div className="space-y-8">
+                  <div className="flex flex-wrap gap-4">
+                    {["S", "M", "L"].map((size) => (
+                      <label
+                        key={size}
+                        className={`flex items-center gap-3 border px-5 py-3 cursor-pointer transition-colors ${
+                          selectedSize === size
+                            ? "border-black"
+                            : "border-gray-100 hover:border-gray-300"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSize === size}
+                          onChange={() => setSelectedSize(size)}
+                          className="sr-only"
+                        />
+                        <span className="text-[10px] uppercase tracking-[0.3em]">
+                          {size}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-[0.3em] font-semibold mb-4">
+                      Tailoring Proportions
+                    </label>
+                    <textarea
+                      rows="5"
+                      value={tailoringNotes}
+                      onChange={(event) => setTailoringNotes(event.target.value)}
+                      className="w-full border border-gray-100 bg-[#fafafa] px-5 py-4 text-sm font-light focus:outline-none focus:border-black transition-colors resize-none"
+                      placeholder="Add measurements, fit preferences, sleeve length, hem notes, or other proportional details."
+                    />
+                  </div>
+                </div>
+              </PortalStep>
+
+              <PortalStep number="04" title="Archival Notes">
+                <textarea
+                  rows="6"
+                  value={archivalNotes}
+                  onChange={(event) => setArchivalNotes(event.target.value)}
+                  className="w-full border border-gray-100 bg-[#fafafa] px-5 py-4 text-sm font-light focus:outline-none focus:border-black transition-colors resize-none"
+                  placeholder="Share any symbolic, cultural, personal, or occasion-specific information our workshop should preserve."
+                />
+              </PortalStep>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-col space-y-4 mb-12">
+            <div className="mt-16">
               <button
-                onClick={() => {
-                  if (!selectedSize) {
-                    alert("Please select a size");
-                    return;
-                  }
-                  addToCart(product, selectedSize, selectedColor);
-                }}
-                className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.3em] font-semibold hover:bg-amber-800 transition-colors flex items-center justify-center space-x-3"
+                type="button"
+                onClick={handleSubmit}
+                className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-colors flex items-center justify-center gap-4"
               >
-                <ShoppingBag size={16} />
-                <span>Add to Bag</span>
+                <span>Submit Commission</span>
+                <ArrowRight size={15} />
               </button>
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => toggleWishlist(product)}
-                  className="flex-1 border border-gray-200 py-4 text-[10px] uppercase tracking-[0.3em] font-semibold hover:border-black transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Heart
-                    size={16}
-                    className={isWishlisted ? "fill-red-500 text-red-500" : ""}
-                  />
-                  <span>{isWishlisted ? "Wishlisted" : "Wishlist"}</span>
-                </button>
-                <a
-                  href="/commission"
-                  className="flex-1 bg-[#fafafa] border border-gray-100 py-4 text-[10px] uppercase tracking-[0.3em] font-semibold text-center hover:bg-white hover:border-amber-600 transition-all"
-                >
-                  Commission Similar
-                </a>
-              </div>
+              <p className="mt-6 text-[10px] uppercase tracking-[0.24em] text-gray-400 leading-loose">
+                Upon submitting, our workshop requires 1-4 weeks to select
+                materials, hand-cut, and construct your artifact. You can track
+                the progress of your commission.
+              </p>
             </div>
-
-            {/* Collapsible Info (Mock) */}
-            <div className="border-t border-gray-100 space-y-6 pt-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h4 className="text-[10px] uppercase tracking-widest font-bold mb-3">
-                    Fabric & Origin
-                  </h4>
-                  <p className="text-xs text-gray-500 font-light leading-loose">
-                    {product.fabric}. Sourced from certified heritage mills.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="text-[10px] uppercase tracking-widest font-bold mb-3">
-                    Care Instructions
-                  </h4>
-                  <p className="text-xs text-gray-500 font-light leading-loose">
-                    {product.care}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-8 pt-6">
-                <div className="flex items-center space-x-2 text-[8px] uppercase tracking-widest text-gray-400">
-                  <ShieldCheck size={14} strokeWidth={1.5} />
-                  <span>Authenticity Guaranteed</span>
-                </div>
-                <div className="flex items-center space-x-2 text-[8px] uppercase tracking-widest text-gray-400">
-                  <RefreshCw size={14} strokeWidth={1.5} />
-                  <span>Ethically Produced</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Related Products */}
-      <section className="py-32 px-6 bg-[#fafafa]">
-        <div className="max-w-7xl mx-auto">
-          <SectionTitle
-            title="Complete the Look"
-            subtitle="Recommended"
-            align="left"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {relatedProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          </section>
         </div>
       </section>
 
       <Footer />
     </main>
+  );
+}
+
+function PortalStep({ number, title, children }) {
+  return (
+    <section>
+      <div className="flex items-baseline gap-5 mb-7">
+        <span className="text-[10px] uppercase tracking-[0.3em] text-gray-300">
+          {number}
+        </span>
+        <h2 className="text-sm font-serif uppercase tracking-[0.3em] font-light">
+          {title}
+        </h2>
+      </div>
+      {children}
+    </section>
   );
 }

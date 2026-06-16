@@ -4,19 +4,40 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 
+const founderImage = "/assets/about/korede-james-founder.png";
+const visionImage = "/assets/freedom/freedom-gallery-04.jpg";
+
 export default function AboutPage() {
   const values = [
     {
-      title: "Conscious Craft",
-      text: "We prioritize natural, biodegradable fibers and ethical labor practices across our entire supply chain.",
+      title: "Living Inheritance",
+      text: "History is treated as something carried in the body, not kept behind glass. Each piece returns to memory while asking what can still be imagined.",
     },
     {
-      title: "Timelessness",
-      text: "Our designs transcend trends, focusing on silhouettes that remain relevant across decades.",
+      title: "Yoruba Silhouette",
+      text: "The garments draw from traditional Yoruba sartorial language, translating familiar forms into a restrained modern wardrobe.",
     },
     {
-      title: "Artisanal Soul",
-      text: "Every detail is hand-finished by master tailors who have dedicated their lives to the craft.",
+      title: "Quiet Construction",
+      text: "The work favors exact lines, considered volume, and a sense of dignity that does not need to announce itself loudly.",
+    },
+  ];
+
+  const milestones = [
+    {
+      year: "1960",
+      title: "The Promise",
+      text: "Freedom begins with Nigeria's independence, returning to a national moment that promised the birth of a new future.",
+    },
+    {
+      year: "Now",
+      title: "The Distance",
+      text: "Through a modern Nigerian lens, the work reflects on the gap between liberation as an event and freedom as a lived experience.",
+    },
+    {
+      year: "2025",
+      title: "The Collection",
+      text: "Freedom is presented as one focused body of work, shaped by white garments, red accents, and living inheritance.",
     },
   ];
 
@@ -24,180 +45,133 @@ export default function AboutPage() {
     <main className="min-h-screen bg-white">
       <Navbar />
 
-      {/* Hero */}
-      <section className="pt-40 pb-20 px-6 max-w-7xl mx-auto">
+      <section className="pt-24 pb-28 px-6 lg:px-16 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1 }}
+            className="max-w-2xl"
           >
             <SectionTitle
-              title="The Essence of Korede-james"
-              subtitle="Our Story"
+              title="Korede James"
+              subtitle="Founder & Creative Director"
               align="left"
             />
-            <p className="text-xl font-serif italic text-gray-700 leading-relaxed mb-8">
-              "We believe that true beauty is found in the quiet confidence of a
-              perfectly tailored seam."
-            </p>
             <p className="text-gray-500 font-light leading-relaxed tracking-wide mb-6">
-              Founded in 2012 by creative director Korede James, Korede-james
-              emerged from a desire to return to the roots of high-fashion:
-              exceptional materials, unhurried craftsmanship, and a deep respect
-              for the wearer's individuality.
+              Korede James approaches clothing as a canvas for holding memory.
+              His work begins with Nigeria, exploring the intersection of
+              heritage and its interpretation through modern silhouettes for the
+              contemporary man and woman.
             </p>
             <p className="text-gray-500 font-light leading-relaxed tracking-wide">
-              What started as a small atelier in the heart of Lagos has grown
-              into an international beacon of minimalist luxury, yet our core
-              philosophy remains unchanged. We don't just make clothes; we
-              create armor for the modern soul.
+              Through traditional Yoruba silhouettes and a modern Nigerian
+              perspective, the work interrogates what it means to carry our
+              heritage and culture with elegance in modern society.
             </p>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 1.05 }}
+
+          <motion.figure
+            initial={{ opacity: 0, scale: 1.03 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.5 }}
-            className="aspect-[4/5] bg-gray-100 overflow-hidden"
+            transition={{ duration: 1.2 }}
+            className="bg-[#f4f2ed] overflow-hidden"
           >
             <img
-              src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&q=80&w=1200"
-              className="w-full h-full object-cover"
-              alt="The Atelier"
+              src={founderImage}
+              className="w-full aspect-[4/5] object-cover object-[center_35%]"
+              alt="Korede James"
             />
-          </motion.div>
+            <figcaption className="flex items-center justify-between px-6 py-5 text-[9px] uppercase tracking-[0.35em] text-gray-400">
+              <span>Korede James</span>
+              <span>Lagos, Nigeria</span>
+            </figcaption>
+          </motion.figure>
         </div>
       </section>
 
-      {/* Timeline */}
-      <section className="py-32 bg-[#fafafa] px-6">
+      <section className="py-28 bg-[#fafafa] px-6">
         <div className="max-w-7xl mx-auto">
-          <SectionTitle title="A Decade of Vision" subtitle="The Journey" />
-          <div className="relative mt-20">
-            <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gray-200 hidden md:block" />
-            <div className="space-y-24">
-              {[
-                {
-                  year: "2012",
-                  event: "First atelier opened in Paris, Marais district.",
-                },
-                {
-                  year: "2015",
-                  event:
-                    'Inaugural collection "The Silent Dawn" debuted at PFW.',
-                },
-                {
-                  year: "2019",
-                  event: "Global expansion with first flagship in New York.",
-                },
-                {
-                  year: "2024",
-                  event: "Commitment to 100% sustainable materials achieved.",
-                },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className={`flex flex-col md:flex-row items-center ${i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"} gap-10`}
-                >
-                  <div className="flex-1 text-center md:text-right">
-                    {i % 2 === 0 && (
-                      <p className="text-[10px] uppercase tracking-[0.4em] font-bold mb-2">
-                        {item.year}
-                      </p>
-                    )}
-                    {i % 2 === 0 && (
-                      <p className="text-sm text-gray-500 font-light max-w-xs ml-auto">
-                        {item.event}
-                      </p>
-                    )}
-                  </div>
-                  <div className="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center z-10 font-serif text-xs font-bold">
-                    {item.year.slice(2)}
-                  </div>
-                  <div className="flex-1 text-center md:text-left">
-                    {i % 2 !== 0 && (
-                      <p className="text-[10px] uppercase tracking-[0.4em] font-bold mb-2">
-                        {item.year}
-                      </p>
-                    )}
-                    {i % 2 !== 0 && (
-                      <p className="text-sm text-gray-500 font-light max-w-xs mr-auto">
-                        {item.event}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-white overflow-hidden"
+            >
+              <img
+                src={visionImage}
+                alt="Freedom collection vision"
+                className="w-full aspect-[4/5] object-cover object-[center_42%]"
+              />
+            </motion.div>
+            <div>
+              <SectionTitle
+                title="Our Vision"
+                subtitle="The Vision"
+                align="left"
+              />
+              <p className="text-gray-600 font-light leading-loose tracking-wide mb-6">
+                To redefine modern luxury by transforming ancestral heritage
+                into living history, clothing the contemporary individual in
+                their own history and sovereignty.
+              </p>
+              <p className="text-gray-600 font-light leading-loose tracking-wide">
+                We envision a future where fashion is an act of reclamation and
+                artifacts serve as a continuous dialogue between craft, culture,
+                and modern society.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Values */}
       <section className="py-32 px-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-20">
-          {values.map((v, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+          {milestones.map((item, index) => (
             <motion.div
-              key={i}
+              key={item.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.2 }}
-              className="text-center"
+              transition={{ delay: index * 0.15 }}
+              className="border-t border-gray-200 pt-8"
             >
-              <h3 className="text-xs uppercase tracking-[0.4em] font-bold mb-6">
-                {v.title}
+              <p className="text-[10px] uppercase tracking-[0.4em] text-amber-700 font-bold mb-5">
+                {item.year}
+              </p>
+              <h3 className="text-xl font-serif uppercase tracking-[0.18em] mb-5">
+                {item.title}
               </h3>
-              <p className="text-gray-500 font-light text-sm leading-relaxed">
-                {v.text}
+              <p className="text-sm text-gray-500 font-light leading-relaxed">
+                {item.text}
               </p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Team/Designer */}
       <section className="py-32 bg-white px-6 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-20 items-center">
-          <div className="w-full md:w-1/3 aspect-[3/4] bg-gray-100 overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?auto=format&fit=crop&q=80&w=800"
-              className="w-full h-full object-cover grayscale"
-              alt="Elena Vance"
-            />
-          </div>
-          <div className="flex-1">
-            <span className="text-[10px] uppercase tracking-[0.6em] text-amber-700 font-bold mb-4 block">
-              THE VISIONARY
-            </span>
-            <h2 className="text-4xl font-serif tracking-widest uppercase font-light mb-8">
-              Elena Vance
-            </h2>
-            <p className="text-gray-600 font-light leading-relaxed mb-8 tracking-wide">
-              "My goal was never to change the fashion world, but to provide a
-              sanctuary from it. Clothes should be a reflection of your inner
-              peace, not a performance of your outer status."
-            </p>
-            <div className="flex space-x-8">
-              <div className="text-center">
-                <p className="text-2xl font-serif">14</p>
-                <p className="text-[8px] uppercase tracking-widest text-gray-400">
-                  Collections
+        <div className="max-w-7xl mx-auto">
+          <SectionTitle title="The Language" subtitle="Principles" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-20">
+            {values.map((value, index) => (
+              <motion.div
+                key={value.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.2 }}
+                className="text-center"
+              >
+                <h3 className="text-xs uppercase tracking-[0.4em] font-bold mb-6">
+                  {value.title}
+                </h3>
+                <p className="text-gray-500 font-light text-sm leading-relaxed">
+                  {value.text}
                 </p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-serif">32</p>
-                <p className="text-[8px] uppercase tracking-widest text-gray-400">
-                  Awards
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-serif">100%</p>
-                <p className="text-[8px] uppercase tracking-widest text-gray-400">
-                  Handmade
-                </p>
-              </div>
-            </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>

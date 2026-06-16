@@ -16,6 +16,10 @@
   height: 100svh;
 }
 
+.home-hero__video {
+  object-position: center 18%;
+}
+
 .home-hero__content {
   padding-inline: clamp(1.25rem, 5vw, 3rem);
 }
@@ -67,9 +71,93 @@
   height: clamp(20rem, 45vh, 32rem);
 }
 
+.home-editorial-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--home-gap-hairline);
+}
+
+.home-editorial-pair__panel {
+  position: relative;
+  min-height: clamp(30rem, 76vh, 54rem);
+  overflow: hidden;
+  background: var(--home-line);
+}
+
+.home-editorial-pair__panel--video {
+  background: #000;
+}
+
+.home-editorial-pair__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+}
+
+.home-editorial-pair__image {
+  object-position: center 64%;
+}
+
+.home-editorial-pair__quote {
+  right: clamp(1.5rem, 4vw, 4rem);
+  bottom: clamp(1.5rem, 4vw, 4rem);
+}
+
 .home-editorial__tile,
 .home-editorial__strip {
   background: var(--home-line);
+}
+
+.home-editorial__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.home-editorial__image--archive,
+.home-editorial__image--preview {
+  object-fit: contain;
+  background: #eef0e9;
+}
+
+.home-editorial__image--archive {
+  object-position: center;
+}
+
+.home-editorial__image--jacket {
+  object-position: center 46%;
+}
+
+.home-editorial__image--portrait {
+  object-position: center 42%;
+}
+
+.home-editorial__image--preview {
+  object-position: center;
+}
+
+.home-editorial__image--red-horizontal {
+  object-position: center 54%;
+}
+
+.home-editorial__image--jacket-close {
+  object-position: center 36%;
+}
+
+.home-editorial__image--door {
+  object-position: center 70%;
+}
+
+.home-editorial__tile,
+.home-editorial__strip,
+.home-story__media,
+.home-portfolio__card {
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 .home-story,
@@ -81,6 +169,7 @@
 
 .home-story__image {
   height: clamp(30rem, 56vw, 37.5rem);
+  object-position: center 70%;
 }
 
 .home-story__quote {
@@ -135,6 +224,14 @@
     height: clamp(22rem, 46vw, 34rem) !important;
   }
 
+  .home-editorial__image--door {
+    object-position: center 74%;
+  }
+
+  .home-editorial-pair__panel {
+    min-height: clamp(24rem, 62vw, 42rem);
+  }
+
   .home-story__image {
     height: clamp(25rem, 70vw, 34rem);
   }
@@ -143,6 +240,10 @@
 @media (max-width: 767px) {
   .home-hero {
     min-height: 38rem;
+  }
+
+  .home-hero__video {
+    object-position: center top;
   }
 
   .home-hero__eyebrow {
@@ -210,6 +311,26 @@
 
   .home-editorial__strip {
     height: clamp(18rem, 76vw, 28rem);
+  }
+
+  .home-editorial__image--jacket-close {
+    object-position: center 30%;
+  }
+
+  .home-editorial__image--door {
+    object-position: center 78%;
+  }
+
+  .home-editorial-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .home-editorial-pair__panel {
+    min-height: clamp(22rem, 95vw, 34rem);
+  }
+
+  .home-editorial-pair__image {
+    object-position: center 72%;
   }
 
   .home-story,
