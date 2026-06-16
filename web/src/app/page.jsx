@@ -7,6 +7,9 @@ import SectionTitle from "../components/SectionTitle";
 import { collections, testimonials } from "../data/fashion-data";
 import "./page.css";
 
+const heroVideo = "/assets/Hero%201.mp4?v=2";
+const editorialVideo = "/assets/hero2.mp4?v=2";
+
 export default function HomePage() {
   const [email, setEmail] = useState("");
   const [showHeroContent, setShowHeroContent] = useState(false);
@@ -22,13 +25,13 @@ export default function HomePage() {
   }, [showHeroContent]);
 
   const galleryImages = [
-    "https://images.unsplash.com/photo-1539109132314-3477524c8952?auto=format&fit=crop&q=80&w=1200",
-    "https://images.unsplash.com/photo-1594932224010-7494f61f7e02?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1548126032-079a0fb0099d?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=1200",
-    "https://images.unsplash.com/photo-1596755094514-f87034a2612d?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1200",
+    "/assets/freedom/freedom-gallery-01.jpg",
+    "/assets/freedom/freedom-gallery-02.jpg",
+    "/assets/freedom/freedom-gallery-03.jpg",
+    "/assets/freedom/freedom-gallery-04.jpg",
+    "/assets/freedom/freedom-gallery-05.jpg",
+    "/assets/freedom/freedom-gallery-06.jpg",
+    "/assets/freedom/freedom-gallery-07.jpg",
   ];
 
   return (
@@ -45,12 +48,9 @@ export default function HomePage() {
           onEnded={() => setShowHeroContent(true)}
           onError={() => setShowHeroContent(true)}
           onStalled={() => setShowHeroContent(true)}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="home-hero__video absolute inset-0 w-full h-full object-cover"
         >
-          <source
-            src="https://raw.createusercontent.com/9eb4acf4-b754-4755-b977-7faaac7380b6/"
-            type="video/mp4"
-          />
+          <source src={heroVideo} type="video/mp4" />
         </video>
 
         {/* Always-on cinematic dark overlay */}
@@ -72,7 +72,7 @@ export default function HomePage() {
                 transition={{ delay: 0.3, duration: 0.9 }}
                 className="home-hero__eyebrow text-white text-xs uppercase tracking-[0.6em] mb-6 font-medium"
               >
-                Spring Summer 2026
+                Nigeria, 1960
               </motion.p>
 
               <motion.h1
@@ -81,7 +81,7 @@ export default function HomePage() {
                 transition={{ delay: 0.55, duration: 0.9 }}
                 className="home-hero__title text-white text-5xl md:text-8xl font-serif tracking-[0.2em] font-light uppercase mb-12"
               >
-                The Ethereal <br /> Dialogue
+                Freedom
               </motion.h1>
 
               <motion.div
@@ -94,13 +94,13 @@ export default function HomePage() {
                   href="/products"
                   className="home-hero__button home-hero__button--primary bg-white text-black px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-semibold hover:bg-black hover:text-white transition-all duration-300"
                 >
-                  Explore Collection
+                  Explore Freedom
                 </a>
                 <a
                   href="/commission"
                   className="home-hero__button home-hero__button--secondary bg-transparent border border-white text-white px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-semibold hover:bg-white hover:text-black transition-all duration-300"
                 >
-                  Commission Design
+                  Custom Design
                 </a>
               </motion.div>
 
@@ -132,7 +132,7 @@ export default function HomePage() {
         {/* Slim header bar */}
         <div className="home-editorial__bar flex items-center justify-between px-8 lg:px-16 py-10">
           <span className="text-[9px] uppercase tracking-[0.5em] text-gray-400 font-medium">
-            The Edit — SS 2026
+            The Edit - Freedom
           </span>
           <div className="home-editorial__rule flex-1 h-px bg-gray-100 mx-10" />
           <a
@@ -157,9 +157,9 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0 }}
           >
             <img
-              src={galleryImages[0]}
+              src="/assets/freedom/freedom-archive-rectangular.jpg"
               alt=""
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="home-editorial__image home-editorial__image--archive"
             />
           </motion.div>
           <motion.div
@@ -172,7 +172,7 @@ export default function HomePage() {
             <img
               src={galleryImages[3]}
               alt=""
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="home-editorial__image home-editorial__image--jacket transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
           <motion.div
@@ -185,7 +185,7 @@ export default function HomePage() {
             <img
               src={galleryImages[1]}
               alt=""
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="home-editorial__image home-editorial__image--portrait transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
         </div>
@@ -200,9 +200,9 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0.1 }}
           >
             <img
-              src={galleryImages[6]}
+              src="/assets/freedom/freedom-preview-rectangular.jpg"
               alt=""
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="home-editorial__image home-editorial__image--preview"
             />
           </motion.div>
           <div className="home-editorial__stack flex flex-col gap-[3px]">
@@ -216,7 +216,7 @@ export default function HomePage() {
               <img
                 src={galleryImages[2]}
                 alt=""
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="home-editorial__image home-editorial__image--red-horizontal transition-transform duration-700 group-hover:scale-105"
               />
             </motion.div>
             <motion.div
@@ -229,72 +229,74 @@ export default function HomePage() {
               <img
                 src={galleryImages[4]}
                 alt=""
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="home-editorial__image home-editorial__image--jacket-close transition-transform duration-700 group-hover:scale-105"
               />
             </motion.div>
           </div>
         </div>
 
         {/* Row 3 — single full-width cinematic strip */}
+      </section>
+
+      {/* Editorial Video + Look */}
+      <section className="home-editorial-pair w-full bg-white">
+        <div className="home-editorial-pair__panel home-editorial-pair__panel--video">
+          <video
+            className="home-editorial-pair__media"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          >
+            <source src={editorialVideo} type="video/mp4" />
+          </video>
+        </div>
         <motion.div
-          className="home-editorial__strip w-full overflow-hidden group cursor-pointer mt-[3px]"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
+          initial={{ opacity: 0, x: 24 }}
+          whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 1.1, delay: 0.1 }}
+          transition={{ duration: 0.9 }}
+          className="home-editorial-pair__panel home-editorial-pair__panel--image"
         >
           <img
-            src={galleryImages[5]}
-            alt=""
-            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+            src="/assets/freedom/freedom-cover.jpg"
+            alt="Freedom collection"
+            className="home-editorial-pair__media home-editorial-pair__image"
           />
+          <div className="home-story__quote home-editorial-pair__quote absolute bg-white p-12 hidden md:block shadow-sm">
+            <h4 className="text-xl font-serif mb-4 italic">
+              "Freedom is carried, not inherited untouched."
+            </h4>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400">
+              - Korede James
+            </p>
+          </div>
         </motion.div>
       </section>
 
       {/* Brand Story / Preview */}
       <section className="home-story py-32 bg-[#fafafa]">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <img
-              src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&q=80&w=1200"
-              alt="Brand Heritage"
-              className="home-story__image w-full object-cover"
-            />
-            <div className="home-story__quote absolute -bottom-10 -right-10 bg-white p-12 hidden md:block shadow-sm">
-              <h4 className="text-xl font-serif mb-4 italic">
-                "True luxury is silence."
-              </h4>
-              <p className="text-[10px] uppercase tracking-widest text-gray-400">
-                — Korede-james Founder
-              </p>
-            </div>
-          </motion.div>
+        <div className="home-story__content max-w-3xl mx-auto px-6 text-center">
           <div>
             <SectionTitle
-              title="Our Philosophy"
-              subtitle="Heritage & Innovation"
-              align="left"
+              title="Freedom"
+              subtitle="The 2025 Collection"
             />
             <p className="text-gray-600 font-light leading-relaxed mb-8">
-              Founded in the heart of Lagos, Korede-james embodies the delicate
-              balance between timeless tradition and contemporary vision. Each
-              piece is crafted with meticulous attention to detail, using only
-              the finest organic materials sourced from family-run mills.
+              Freedom is a meditation on Nigeria's independence in 1960, a
+              return to a moment that promised the birth of a nation.
             </p>
             <p className="text-gray-600 font-light leading-relaxed mb-12">
-              We believe in conscious luxury—creating garments that are not just
-              worn, but cherished for generations.
+              Through traditional Yoruba silhouettes and sartorial language, the
+              collection asks what it means to carry the past while imagining the
+              future.
             </p>
             <a
-              href="/about"
+              href="/collections/freedom"
               className="inline-flex items-center space-x-4 text-[10px] uppercase tracking-[0.4em] font-semibold border-b border-black pb-2 hover:text-amber-600 hover:border-amber-600 transition-all group"
             >
-              <span>Learn Our Story</span>
+              <span>View Collection</span>
               <ArrowRight
                 size={14}
                 className="group-hover:translate-x-1 transition-transform"
@@ -306,8 +308,8 @@ export default function HomePage() {
 
       {/* Collections Portfolio */}
       <section className="home-portfolio py-32 px-6">
-        <SectionTitle title="The Portfolio" subtitle="Through the years" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <SectionTitle title="The Collection" subtitle="Freedom" />
+        <div className="grid grid-cols-1 max-w-4xl mx-auto">
           {collections.map((collection, index) => (
             <motion.a
               href={`/collections/${collection.id}`}

@@ -65,8 +65,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Portfolio", href: "/collections" },
-    { name: "Shop", href: "/products" },
-    { name: "Commission", href: "/commission" },
+    { name: "Commission", href: "/products" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
   ];
@@ -183,7 +182,7 @@ export default function Navbar() {
               <div className="flex items-center justify-between px-8 py-7 border-b border-gray-100">
                 <div>
                   <h2 className="text-sm uppercase tracking-[0.3em] font-semibold">
-                    Shopping Bag
+                    Commission Brief
                   </h2>
                   <p className="text-[10px] text-gray-400 tracking-widest mt-1 uppercase">
                     {cartCount} item{cartCount !== 1 ? "s" : ""}
@@ -207,7 +206,7 @@ export default function Navbar() {
                       className="text-gray-200 mb-6"
                     />
                     <p className="text-sm uppercase tracking-widest text-gray-400 mb-2">
-                      Your bag is empty
+                      No commission started
                     </p>
                     <p className="text-[11px] text-gray-300 tracking-wide mb-8">
                       Discover our curated collection
@@ -217,7 +216,7 @@ export default function Navbar() {
                       onClick={() => setIsCartOpen(false)}
                       className="bg-black text-white px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-semibold hover:bg-amber-800 transition-colors"
                     >
-                      Shop Now
+                      Explore Designs
                     </a>
                   </div>
                 ) : (
@@ -311,16 +310,20 @@ export default function Navbar() {
                     </span>
                   </div>
                   <p className="text-[9px] text-gray-400 uppercase tracking-widest">
-                    Shipping & duties calculated at checkout
+                    Final pricing confirmed by the atelier
                   </p>
-                  <button className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-colors">
-                    Proceed to Checkout
-                  </button>
+                  <a
+                    href="/checkout"
+                    onClick={() => setIsCartOpen(false)}
+                    className="block w-full bg-black text-white py-5 text-center text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-colors"
+                  >
+                    Review Commission
+                  </a>
                   <button
                     onClick={() => setIsCartOpen(false)}
                     className="w-full border border-gray-200 py-4 text-[10px] uppercase tracking-[0.3em] font-medium hover:bg-gray-50 transition-colors"
                   >
-                    Continue Shopping
+                    Continue Browsing
                   </button>
                 </div>
               )}
@@ -429,7 +432,7 @@ export default function Navbar() {
                             }}
                             className="flex-1 bg-black text-white py-2.5 text-[9px] uppercase tracking-[0.3em] font-semibold hover:bg-amber-800 transition-colors"
                           >
-                            Move to Bag
+                            Initiate Commission
                           </button>
                           <button
                             onClick={() => toggleWishlist(item)}

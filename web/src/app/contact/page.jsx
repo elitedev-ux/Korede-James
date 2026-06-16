@@ -20,8 +20,8 @@ export default function ContactPage() {
             />
             <p className="text-gray-500 font-light leading-relaxed tracking-wide mb-12 max-w-md">
               Whether you have a question about our collections, require
-              assistance with an order, or wish to schedule a private fitting,
-              our dedicated concierge team is here to assist you.
+              assistance with a commission, or wish to schedule a private
+              fitting, our dedicated concierge team is here to assist you.
             </p>
 
             <div className="space-y-10">
@@ -68,7 +68,7 @@ export default function ContactPage() {
                     Our Atelier
                   </h4>
                   <p className="text-xs text-gray-500 font-light">
-                    12 Avenue Montaigne, 75008 Paris, France
+                    Lagos, Nigeria
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">
                     By Appointment Only
@@ -130,7 +130,7 @@ export default function ContactPage() {
                   Subject
                 </label>
                 <select className="w-full bg-white border border-gray-200 px-6 py-4 text-sm focus:outline-none focus:border-black">
-                  <option>Order Assistance</option>
+                  <option>Commission Assistance</option>
                   <option>Fitting Appointment</option>
                   <option>Press & Media</option>
                   <option>Other</option>
@@ -159,7 +159,8 @@ export default function ContactPage() {
       <section className="h-[400px] bg-gray-100 overflow-hidden relative group">
         <div className="absolute inset-0 grayscale opacity-50 group-hover:opacity-80 transition-opacity">
           <img
-            src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=2000"
+            src="/assets/contact/korede-james-contact-atelier.jpg"
+            alt="Korede James atelier portrait"
             className="w-full h-full object-cover"
           />
         </div>

@@ -1,160 +1,101 @@
-import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Search, Filter, ChevronDown, SlidersHorizontal } from "lucide-react";
+import React from "react";
+import { motion } from "motion/react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
-import SectionTitle from "../../components/SectionTitle";
 import { products } from "../../data/fashion-data";
 
 export default function ProductsPage() {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
-  const [sort, setSort] = useState("Newest");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  const categories = [
-    "All",
-    "Evening Wear",
-    "Outerwear",
-    "Lounge",
-    "Suits",
-    "Casual",
-  ];
-
-  const filteredProducts = useMemo(() => {
-    let result = products.filter(
-      (p) =>
-        (category === "All" || p.category === category) &&
-        (p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.category.toLowerCase().includes(search.toLowerCase())),
-    );
-
-    if (sort === "Price: Low to High") result.sort((a, b) => a.price - b.price);
-    if (sort === "Price: High to Low") result.sort((a, b) => b.price - a.price);
-
-    return result;
-  }, [category, search, sort]);
-
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-[#fbfaf7]">
       <Navbar />
 
-      {/* Hero Header */}
-      <section className="pt-40 pb-20 px-6 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <SectionTitle
-            title="The Collection"
-            subtitle="Shop All"
-            align="left"
-          />
+      <section className="relative min-h-screen px-6 pt-32 pb-20 flex items-center overflow-hidden">
+        <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
+        <div className="absolute left-1/2 top-0 h-full w-px bg-black/[0.035] hidden lg:block" />
 
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-6 md:space-y-0 mt-12">
-            {/* Search Bar */}
-            <div className="relative w-full md:w-96 group">
-              <Search
-                className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors"
-                size={18}
-              />
-              <input
-                type="text"
-                placeholder="SEARCH PIECES..."
-                className="w-full pl-8 pr-4 py-2 border-b border-gray-200 focus:outline-none focus:border-black text-[10px] uppercase tracking-widest"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="relative z-10 max-w-7xl mx-auto w-full"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-[0.78fr_1.22fr] gap-16 lg:gap-24 items-center">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.55em] text-amber-700 font-semibold mb-8">
+                Commission
+              </p>
+              <h1 className="text-4xl md:text-6xl font-serif uppercase tracking-[0.24em] font-light leading-tight mb-10">
+                Artifacts Made to Order
+              </h1>
+              <p className="text-sm md:text-base text-gray-500 font-light leading-loose tracking-wide max-w-xl">
+                Every piece we create is made to order, handcrafted specifically
+                for its future custodian. Select a foundational form below to
+                begin tailoring your artifact.
+              </p>
             </div>
 
-            {/* Controls */}
-            <div className="flex items-center space-x-8 w-full md:w-auto">
-              <div className="relative group flex items-center space-x-2 cursor-pointer">
-                <span className="text-[10px] uppercase tracking-widest font-semibold">
-                  Sort By: {sort}
-                </span>
-                <ChevronDown size={14} />
-                <div className="absolute top-full right-0 mt-2 bg-white border border-gray-100 shadow-xl p-4 w-48 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-20">
-                  {["Newest", "Price: Low to High", "Price: High to Low"].map(
-                    (s) => (
-                      <button
-                        key={s}
-                        onClick={() => setSort(s)}
-                        className="block w-full text-left text-[10px] uppercase tracking-widest py-2 hover:text-amber-600"
-                      >
-                        {s}
-                      </button>
-                    ),
-                  )}
-                </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.1, delay: 0.18 }}
+              className="relative"
+            >
+              <div className="absolute -inset-5 border border-black/5" />
+              <div className="absolute -left-8 top-8 bottom-8 w-px bg-black/10 hidden md:block" />
+              <div className="relative overflow-hidden bg-[#f8f8f6] shadow-[0_40px_120px_rgba(0,0,0,0.08)]">
+                <video
+                  className="w-full aspect-[16/10] object-cover grayscale-[20%]"
+                  src="/assets/hero2.mp4"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/15" />
               </div>
-
-              <button
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="flex items-center space-x-2 text-[10px] uppercase tracking-widest font-semibold"
-              >
-                <SlidersHorizontal size={14} />
-                <span>Filters</span>
-              </button>
-            </div>
+              <div className="mt-5 flex items-center justify-between text-[9px] uppercase tracking-[0.35em] text-gray-400">
+                <span>Looping Study</span>
+                <span>Lagos Archive</span>
+              </div>
+            </motion.div>
           </div>
+        </motion.div>
+      </section>
+
+      <section className="bg-white px-6 py-24 border-y border-black/5">
+        <div className="max-w-5xl mx-auto text-center">
+          <p className="text-[10px] uppercase tracking-[0.5em] text-gray-400 mb-7">
+            The Commission Room
+          </p>
+          <h2 className="text-3xl md:text-5xl font-serif uppercase tracking-[0.28em] font-light">
+            Enter The Archive
+          </h2>
         </div>
       </section>
 
-      {/* Category Filter Bar */}
-      <div className="sticky top-[72px] bg-white/80 backdrop-blur-md z-30 border-b border-gray-50 py-4 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-6 flex space-x-8 whitespace-nowrap">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`text-[10px] uppercase tracking-[0.2em] font-medium transition-all ${category === cat ? "text-black border-b border-black pb-1" : "text-gray-400 hover:text-black"}`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Product Grid */}
-      <section className="py-20 px-6 max-w-7xl mx-auto min-h-[600px]">
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
-            <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-40">
-            <Search size={40} className="text-gray-200 mb-6" />
-            <p className="text-gray-400 text-xs uppercase tracking-widest">
-              No pieces found matching your criteria.
+      <section className="px-6 py-32">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-28">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.45em] text-amber-700 mb-6">
+                Gallery
+              </p>
+              <h2 className="text-3xl md:text-5xl font-serif uppercase tracking-[0.22em] font-light">
+                Foundational Forms
+              </h2>
+            </div>
+            <p className="max-w-sm text-xs uppercase tracking-[0.24em] leading-loose text-gray-400">
+              Names and construction notes remain archived until you enter a
+              form.
             </p>
-            <button
-              onClick={() => {
-                setSearch("");
-                setCategory("All");
-              }}
-              className="mt-6 text-[10px] uppercase tracking-widest underline"
-            >
-              Clear all filters
-            </button>
           </div>
-        )}
 
-        {/* Pagination Mock */}
-        <div className="mt-32 flex justify-center items-center space-x-4">
-          <span className="w-10 h-px bg-black" />
-          <div className="flex space-x-4 text-[10px] font-bold tracking-widest">
-            <span className="text-black cursor-pointer">01</span>
-            <span className="text-gray-300 cursor-pointer hover:text-black">
-              02
-            </span>
-            <span className="text-gray-300 cursor-pointer hover:text-black">
-              03
-            </span>
+          <div className="space-y-32 md:space-y-44">
+            {products.map((product, index) => (
+              <ProductCard key={product.id} product={product} index={index} />
+            ))}
           </div>
-          <span className="w-10 h-px bg-gray-200" />
         </div>
       </section>
 

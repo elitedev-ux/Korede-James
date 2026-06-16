@@ -11,8 +11,8 @@ export default function Footer() {
           </h3>
           <p className="text-sm text-gray-500 leading-relaxed font-light">
             Crafting timeless elegance through sustainable luxury and artisanal
-            craftsmanship. Our designs are a dialogue between heritage and the
-            avant-garde.
+            craftsmanship. Each design is a dialogue between heritage, culture,
+            and art.
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export default function Footer() {
                 href="/products"
                 className="text-sm text-gray-600 hover:text-amber-600 transition-colors"
               >
-                Shop All
+                Commission
               </a>
             </li>
             <li>
@@ -42,7 +42,7 @@ export default function Footer() {
                 href="/commission"
                 className="text-sm text-gray-600 hover:text-amber-600 transition-colors"
               >
-                Custom Designs
+                Custom Design
               </a>
             </li>
             <li>
@@ -50,7 +50,7 @@ export default function Footer() {
                 href="/track"
                 className="text-sm text-gray-600 hover:text-amber-600 transition-colors"
               >
-                Track Order
+                Track Commission
               </a>
             </li>
           </ul>
@@ -123,11 +123,11 @@ export default function Footer() {
           <div className="space-y-3">
             <div className="flex items-center space-x-3 text-sm text-gray-500">
               <MapPin size={16} strokeWidth={1.5} />
-              <span>Avenue Montaigne, Paris</span>
+              <span>Lagos, Nigeria</span>
             </div>
             <div className="flex items-center space-x-3 text-sm text-gray-500">
               <Phone size={16} strokeWidth={1.5} />
-              <span>+33 1 23 45 67 89</span>
+              <span>By appointment only</span>
             </div>
           </div>
         </div>

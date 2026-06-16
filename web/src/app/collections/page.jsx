@@ -13,7 +13,7 @@ export default function CollectionsPage() {
 
       <section className="pt-40 pb-32 px-6">
         <div className="max-w-7xl mx-auto">
-          <SectionTitle title="The Archives" subtitle="Annual Portfolio" />
+          <SectionTitle title="Freedom" subtitle="2025 Collection" />
 
           <div className="space-y-32">
             {collections.map((collection, index) => (
@@ -36,23 +36,20 @@ export default function CollectionsPage() {
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
                   </div>
 
-                  {/* Mini Gallery Preview */}
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    {collection.gallery.slice(0, 3).map((img, i) => (
-                      <div
-                        key={i}
-                        className="aspect-square bg-gray-100 overflow-hidden"
-                      >
-                        <img src={img} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
+                  {/* Collection Preview */}
+                  <div className="mt-4 aspect-[16/7] bg-gray-100 overflow-hidden">
+                    <img
+                      src="/assets/freedom/freedom-preview-rectangular.jpg"
+                      alt="Freedom collection preview"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
 
                 {/* Collection Details */}
                 <div className="w-full lg:w-1/2">
                   <span className="text-[10px] uppercase tracking-[0.6em] text-amber-700 font-bold mb-4 block">
-                    {collection.year} PORTFOLIO
+                    {collection.year} Collection
                   </span>
                   <h2 className="text-4xl md:text-5xl font-serif tracking-widest uppercase font-light mb-8">
                     {collection.title}
@@ -64,7 +61,7 @@ export default function CollectionsPage() {
                     href={`/collections/${collection.id}`}
                     className="inline-flex items-center space-x-6 bg-black text-white px-12 py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all group"
                   >
-                    <span>View Anthology</span>
+                    <span>View Collection</span>
                     <ArrowRight
                       size={16}
                       className="group-hover:translate-x-2 transition-transform"
@@ -80,9 +77,9 @@ export default function CollectionsPage() {
       {/* Philosophy Callout */}
       <section className="py-40 bg-[#fafafa] px-6 text-center">
         <div className="max-w-2xl mx-auto">
-          <SectionTitle title="Timeless Vision" subtitle="Our Ethos" />
+          <SectionTitle title="Living Inheritance" subtitle="Our Ethos" />
           <p className="text-gray-400 font-serif italic text-xl mb-12">
-            "We do not create trends; we create artifacts of identity."
+            "History is not distant; it is a living inheritance."
           </p>
           <div className="w-px h-24 bg-gray-200 mx-auto" />
         </div>

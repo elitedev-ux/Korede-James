@@ -30,42 +30,35 @@ export default function OrderTrackingPage() {
 
   const steps = [
     {
-      status: "Order Received",
-      date: "May 12, 2026",
-      time: "10:30 AM",
+      phase: "Phase 01",
+      status: "Commission Logged",
+      text: "Your directives, measurements, and palette selections have been archived. The atelier is preparing the foundational design forms.",
       completed: true,
     },
     {
-      status: "Under Review",
-      date: "May 12, 2026",
-      time: "02:15 PM",
+      phase: "Phase 02",
+      status: "Material Selection & Curation",
+      text: "Our artisans are sourcing and inspecting the exact textiles or premium leathers for you.",
       completed: true,
     },
     {
-      status: "In Production",
-      date: "May 13, 2026",
-      time: "09:00 AM",
+      phase: "Phase 03",
+      status: "The Cutting & Hand-Assembly",
+      text: "The raw canvas and leather are being individually hand-cut and pieced together. The artifact is taking physical form in the workshop.",
       completed: true,
     },
     {
-      status: "Quality Check",
-      date: "May 20, 2026",
-      time: "11:45 AM",
-      completed: true,
-    },
-    {
-      status: "Ready for Delivery",
-      date: "May 24, 2026",
-      time: "04:00 PM",
-      completed: true,
-    },
-    {
-      status: "Shipped",
-      date: "May 25, 2026",
-      time: "08:30 AM",
+      phase: "Phase 04",
+      status: "Archival Inspection & Numbering",
+      text: "Korede James and the head couturiers review the final construction against your custom measurements. The piece is assigned its official archive serial number.",
       completed: false,
     },
-    { status: "Delivered", date: "TBD", time: "TBD", completed: false },
+    {
+      phase: "Phase 05",
+      status: "Transit to Custodian",
+      text: "The finished artifact has left the atelier in its protective casing. It is currently en route to its permanent home.",
+      completed: false,
+    },
   ];
 
   return (
@@ -73,13 +66,13 @@ export default function OrderTrackingPage() {
       <Navbar />
 
       <section className="pt-40 pb-32 px-6 max-w-3xl mx-auto">
-        <SectionTitle title="Track Your Order" subtitle="Delivery Status" />
+        <SectionTitle title="Track Commission" subtitle="Atelier Status" />
 
         <div className="bg-[#fafafa] p-10 md:p-16 border border-gray-100 shadow-sm mb-16">
           <form onSubmit={handleTrack} className="space-y-8">
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
-                Order Number
+                Commission Number
               </label>
               <input
                 required
@@ -118,7 +111,7 @@ export default function OrderTrackingPage() {
                 <Search size={16} />
               )}
               <span>
-                {isSearching ? "Accessing Archives..." : "Track Artifact"}
+                {isSearching ? "Accessing Archives..." : "Track Commission"}
               </span>
             </button>
           </form>
@@ -134,14 +127,14 @@ export default function OrderTrackingPage() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-8 border-b border-gray-100 gap-4">
                 <div>
                   <h3 className="text-xl font-serif tracking-widest uppercase mb-2">
-                    Order #LA-2026-4812
+                    Commission #KJ-2026-4812
                   </h3>
                   <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-                    Expected Delivery: May 28, 2026
+                    Estimated atelier timeline: 1 - 4 weeks
                   </p>
                 </div>
                 <div className="bg-amber-50 text-amber-800 px-4 py-2 rounded-full text-[10px] uppercase tracking-widest font-bold">
-                  In Transit
+                  In Workshop
                 </div>
               </div>
 
@@ -157,28 +150,25 @@ export default function OrderTrackingPage() {
                     </div>
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                       <div>
+                        <p
+                          className={`text-[10px] uppercase tracking-[0.35em] mb-3 ${step.completed ? "text-amber-700" : "text-gray-300"}`}
+                        >
+                          {step.phase}
+                        </p>
                         <h4
-                          className={`text-xs uppercase tracking-widest font-bold ${step.completed ? "text-black" : "text-gray-300"}`}
+                          className={`text-xs uppercase tracking-widest font-bold mb-3 ${step.completed ? "text-black" : "text-gray-300"}`}
                         >
                           {step.status}
                         </h4>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                          Location: Paris Distribution Hub
+                        <p className="text-xs text-gray-500 font-light leading-loose max-w-xl">
+                          {step.text}
                         </p>
                       </div>
-                      <div className="text-right flex items-center space-x-3 text-gray-400">
-                        <div className="flex items-center space-x-1">
-                          <Calendar size={12} />
-                          <span className="text-[8px] uppercase tracking-widest">
-                            {step.date}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock size={12} />
-                          <span className="text-[8px] uppercase tracking-widest">
-                            {step.time}
-                          </span>
-                        </div>
+                      <div className="text-right flex items-center space-x-2 text-gray-400">
+                        <Calendar size={12} />
+                        <span className="text-[8px] uppercase tracking-widest">
+                          Atelier Record
+                        </span>
                       </div>
                     </div>
                   </div>
