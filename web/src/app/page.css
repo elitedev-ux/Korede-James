@@ -512,6 +512,6 @@
 
   .home-editorial__row--feature .home-editorial__tile--narrow:last-child {
     grid-column: span 2;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 4 / 5;
   }
 }
