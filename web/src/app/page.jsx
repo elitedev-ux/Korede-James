@@ -157,9 +157,9 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0 }}
           >
             <img
-              src="/assets/freedom/freedom-archive-rectangular.jpg"
+              src={galleryImages[5]}
               alt=""
-              className="home-editorial__image home-editorial__image--archive"
+              className="home-editorial__image home-editorial__image--archive transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
           <motion.div
