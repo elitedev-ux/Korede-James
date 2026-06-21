@@ -81,7 +81,7 @@ export default function HomePage() {
                 transition={{ delay: 0.55, duration: 0.9 }}
                 className="home-hero__title text-white text-5xl md:text-8xl font-serif tracking-[0.2em] font-light uppercase mb-12"
               >
-                Freedom
+                Korede James
               </motion.h1>
 
               <motion.div
@@ -157,7 +157,7 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0 }}
           >
             <img
-              src={galleryImages[5]}
+              src="/assets/freedom/freedom-detail-01.jpg"
               alt=""
               className="home-editorial__image home-editorial__image--archive transition-transform duration-700 group-hover:scale-105"
             />

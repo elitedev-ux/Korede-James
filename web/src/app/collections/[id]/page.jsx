@@ -1,9 +1,8 @@
 import React from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
-import ProductCard from "../../../components/ProductCard";
 import SectionTitle from "../../../components/SectionTitle";
 import { collections, products } from "../../../data/fashion-data";
 
@@ -110,17 +109,17 @@ export default function CollectionDetailsPage({ params }) {
       </section>
 
       {/* Featured Products from Collection */}
-      <section className="py-32 px-6 bg-[#fafafa]">
+      <section className="py-32 px-6 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
           <SectionTitle
             title="Pieces of the Vision"
             subtitle="Selected Wearables"
             align="left"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
             {collectionProducts.length > 0 ? (
               collectionProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <WearableCard key={p.id} product={p} />
               ))
             ) : (
               <p className="text-gray-400 uppercase tracking-widest text-[10px]">
@@ -176,5 +175,30 @@ function MetaItem({ label, value }) {
         {value}
       </p>
     </div>
+  );
+}
+
+function WearableCard({ product }) {
+  return (
+    <a href={`/products/${product.id}`} className="group block">
+      <div className="aspect-[4/5] overflow-hidden bg-white border border-gray-100">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+        />
+      </div>
+      <div className="pt-4">
+        <p className="mb-2 text-[8px] uppercase tracking-[0.28em] text-gray-400">
+          {product.category}
+        </p>
+        <h3 className="text-[10px] md:text-xs uppercase tracking-[0.2em] font-semibold leading-relaxed">
+          {product.name}
+        </h3>
+        <p className="mt-3 text-xs md:text-sm font-serif">
+          £{product.price.toLocaleString()}
+        </p>
+      </div>
+    </a>
   );
 }

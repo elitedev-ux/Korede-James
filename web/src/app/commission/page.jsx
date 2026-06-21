@@ -170,6 +170,7 @@ export default function CommissionPage() {
                       <option>Bridal</option>
                       <option>Outerwear</option>
                       <option>Bespoke Suit</option>
+                      <option>Others</option>
                     </select>
                   </div>
                   <div className="space-y-2">

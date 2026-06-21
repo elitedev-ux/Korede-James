@@ -37,11 +37,11 @@ export default function CollectionsPage() {
                   </div>
 
                   {/* Collection Preview */}
-                  <div className="mt-4 aspect-[16/7] bg-gray-100 overflow-hidden">
+                  <div className="mt-4 aspect-video bg-[#eef0e9] overflow-hidden">
                     <img
                       src="/assets/freedom/freedom-preview-rectangular.jpg"
                       alt="Freedom collection preview"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-[72%_top]"
                     />
                   </div>
                 </div>
