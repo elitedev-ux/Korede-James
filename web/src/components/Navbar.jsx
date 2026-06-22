@@ -88,6 +88,7 @@ export default function Navbar() {
           {/* Mobile Menu Toggle */}
           <button
             className="lg:hidden text-black"
+            aria-label="Open menu"
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <Menu size={24} />
@@ -467,42 +468,84 @@ export default function Navbar() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 bg-white z-[60] flex flex-col p-10"
+            initial={{ opacity: 0, y: -18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -18 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 bg-white z-[90] flex flex-col text-black"
           >
-            <div className="flex justify-between items-center mb-12">
-              <span className="text-xl font-serif tracking-[0.2em] font-light uppercase">
-                Korede James
+            <div className="grid grid-cols-[4rem_minmax(0,1fr)_4rem] items-center px-5 py-6 border-b border-black/10">
+              <span className="text-[10px] uppercase tracking-[0.28em] text-gray-400">
+                Menu
               </span>
-              <button onClick={() => setIsMobileMenuOpen(false)}>
-                <X size={24} />
+              <a
+                href="/"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="justify-self-center text-sm font-serif tracking-[0.32em] font-light uppercase"
+              >
+                Korede James
+              </a>
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="justify-self-end h-10 w-10 flex items-center justify-center"
+              >
+                <X size={21} strokeWidth={1.5} />
               </button>
             </div>
-            <div className="flex flex-col space-y-8">
-              {navLinks.map((link) => (
-                <a
+
+            <div className="flex-1 flex flex-col justify-center px-6 py-10">
+              {navLinks.map((link, index) => (
+                <motion.a
                   key={link.name}
                   href={link.href}
-                  className="text-2xl font-light uppercase tracking-[0.1em] border-b border-gray-100 pb-4"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.08 * index }}
+                  className="block border-b border-black/10 py-5 font-serif text-[clamp(2rem,12vw,4.5rem)] leading-none tracking-[0.06em] uppercase"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.name}
-                </a>
+                </motion.a>
               ))}
             </div>
-            <div className="mt-auto pt-10 border-t border-gray-100 flex space-x-6 text-gray-500">
-              <a href="#" className="text-sm">
-                Instagram
-              </a>
-              <a href="#" className="text-sm">
-                Pinterest
-              </a>
-              <a href="#" className="text-sm">
-                Vogue
-              </a>
+
+            <div className="border-t border-black/10 px-6 py-6">
+              <div className="grid grid-cols-2 gap-px bg-black/10 mb-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    openWishlist();
+                  }}
+                  className="bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.24em] font-semibold"
+                >
+                  Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ""}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    openCart();
+                  }}
+                  className="bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.24em] font-semibold"
+                >
+                  Bag {cartCount > 0 ? `(${cartCount})` : ""}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 text-[10px] uppercase tracking-[0.24em] text-gray-500">
+                <a href="#" onClick={() => setIsMobileMenuOpen(false)}>
+                  Instagram
+                </a>
+                <a href="#" onClick={() => setIsMobileMenuOpen(false)}>
+                  Pinterest
+                </a>
+                <a href="/contact" onClick={() => setIsMobileMenuOpen(false)}>
+                  Contact
+                </a>
+              </div>
             </div>
           </motion.div>
         )}

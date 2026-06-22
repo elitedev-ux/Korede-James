@@ -72,7 +72,7 @@ export default function HomePage() {
                 transition={{ delay: 0.3, duration: 0.9 }}
                 className="home-hero__eyebrow text-white text-xs uppercase tracking-[0.6em] mb-6 font-medium"
               >
-                Nigeria, 1960
+                Modern Heritage
               </motion.p>
 
               <motion.h1
