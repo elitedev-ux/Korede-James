@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingBag, Heart, Menu, X, Plus, Minus, Trash2 } from "lucide-react";
+import {
+  ShoppingBag,
+  Heart,
+  Menu,
+  X,
+  Plus,
+  Minus,
+  Trash2,
+  Instagram,
+  Headphones,
+  MapPin,
+  Globe,
+} from "lucide-react";
 import useStore from "../store/useStore";
 import "./Navbar.css";
 
@@ -77,6 +89,43 @@ export default function Navbar() {
   const openWishlist = () => {
     setIsCartOpen(false);
     setIsWishlistOpen(true);
+  };
+
+  const mobileMenuVariants = {
+    closed: { opacity: 0 },
+    open: {
+      opacity: 1,
+      transition: {
+        duration: 0.22,
+        ease: "easeOut",
+        staggerChildren: 0.055,
+        delayChildren: 0.1,
+      },
+    },
+    exit: {
+      opacity: 0,
+      transition: { duration: 0.18, ease: "easeIn" },
+    },
+  };
+
+  const mobileMenuItemVariants = {
+    closed: { opacity: 0, y: 12, filter: "blur(4px)" },
+    open: {
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+      transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
+    },
+  };
+
+  const mobileMenuListVariants = {
+    closed: {},
+    open: {
+      transition: {
+        staggerChildren: 0.065,
+        delayChildren: 0.04,
+      },
+    },
   };
 
   return (
@@ -468,13 +517,16 @@ export default function Navbar() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -18 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -18 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            variants={mobileMenuVariants}
+            initial="closed"
+            animate="open"
+            exit="exit"
             className="fixed inset-0 bg-white z-[90] flex flex-col text-black"
           >
-            <div className="grid grid-cols-[4rem_minmax(0,1fr)_4rem] items-center px-5 py-6 border-b border-black/10">
+            <motion.div
+              variants={mobileMenuItemVariants}
+              className="grid grid-cols-[4rem_minmax(0,1fr)_4rem] items-center px-5 py-5 border-b border-black/10"
+            >
               <span className="text-[10px] uppercase tracking-[0.28em] text-gray-400">
                 Menu
               </span>
@@ -493,35 +545,55 @@ export default function Navbar() {
               >
                 <X size={21} strokeWidth={1.5} />
               </button>
-            </div>
+            </motion.div>
 
-            <div className="flex-1 flex flex-col justify-center px-6 py-10">
-              {navLinks.map((link, index) => (
-                <motion.a
-                  key={link.name}
-                  href={link.href}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.08 * index }}
-                  className="block border-b border-black/10 py-5 font-serif text-[clamp(2rem,12vw,4.5rem)] leading-none tracking-[0.06em] uppercase"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </motion.a>
-              ))}
-            </div>
+            <motion.nav
+              variants={mobileMenuItemVariants}
+              className="flex-1 px-5 py-8"
+              aria-label="Mobile menu"
+            >
+              <motion.div
+                variants={mobileMenuListVariants}
+                className="border-y border-black/10"
+              >
+                {navLinks.map((link, index) => (
+                  <motion.a
+                    key={link.name}
+                    variants={mobileMenuItemVariants}
+                    href={link.href}
+                    whileTap={{ x: 6 }}
+                    className="group flex min-h-16 items-center justify-between border-b border-black/10 py-4 last:border-b-0"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <span className="text-[10px] uppercase tracking-[0.28em] text-gray-400">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-right text-[17px] font-medium uppercase tracking-[0.22em] transition-transform duration-300 group-hover:translate-x-1">
+                      {link.name}
+                    </span>
+                  </motion.a>
+                ))}
+              </motion.div>
+            </motion.nav>
 
-            <div className="border-t border-black/10 px-6 py-6">
-              <div className="grid grid-cols-2 gap-px bg-black/10 mb-6">
+            <motion.div
+              variants={mobileMenuItemVariants}
+              className="border-t border-black/10 px-5 py-5"
+            >
+              <div className="mb-5 grid grid-cols-2 gap-px bg-black/10">
                 <button
                   type="button"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     openWishlist();
                   }}
-                  className="bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.24em] font-semibold"
+                  className="flex items-center gap-2 bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.2em] font-semibold transition-colors hover:bg-gray-50"
                 >
-                  Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ""}
+                  <Heart size={13} strokeWidth={1.6} />
+                  <span>
+                    Wishlist{" "}
+                    {wishlist.length > 0 ? `(${wishlist.length})` : ""}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -529,24 +601,40 @@ export default function Navbar() {
                     setIsMobileMenuOpen(false);
                     openCart();
                   }}
-                  className="bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.24em] font-semibold"
+                  className="flex items-center gap-2 bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.2em] font-semibold transition-colors hover:bg-gray-50"
                 >
-                  Bag {cartCount > 0 ? `(${cartCount})` : ""}
+                  <ShoppingBag size={13} strokeWidth={1.6} />
+                  <span>Bag {cartCount > 0 ? `(${cartCount})` : ""}</span>
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-4 text-[10px] uppercase tracking-[0.24em] text-gray-500">
-                <a href="#" onClick={() => setIsMobileMenuOpen(false)}>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-[10px] uppercase tracking-[0.18em] text-gray-500">
+                <a
+                  href="#"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2"
+                >
+                  <Instagram size={13} strokeWidth={1.5} />
                   Instagram
                 </a>
-                <a href="#" onClick={() => setIsMobileMenuOpen(false)}>
-                  Pinterest
+                <a
+                  href="/contact"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2"
+                >
+                  <Headphones size={13} strokeWidth={1.5} />
+                  Support Care
                 </a>
-                <a href="/contact" onClick={() => setIsMobileMenuOpen(false)}>
-                  Contact
-                </a>
+                <span className="flex items-center gap-2">
+                  <MapPin size={13} strokeWidth={1.5} />
+                  Nigeria
+                </span>
+                <span className="flex items-center gap-2">
+                  <Globe size={13} strokeWidth={1.5} />
+                  English
+                </span>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
