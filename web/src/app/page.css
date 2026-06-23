@@ -63,6 +63,12 @@
   width: 55%;
 }
 
+.home-editorial__tile--freedom-frame {
+  aspect-ratio: 3344 / 4682;
+  height: auto !important;
+  background: #eef0e9;
+}
+
 .home-editorial__stack {
   width: 45%;
 }
@@ -134,6 +140,10 @@
 
 .home-editorial__image--portrait {
   object-position: center 42%;
+}
+
+.home-editorial__image--negative {
+  object-position: center 52%;
 }
 
 .home-editorial__image--preview {
@@ -367,6 +377,18 @@
   order: 1;
 }
 
+.home-editorial__grid {
+  order: 2;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--home-gap-hairline);
+  width: 100%;
+}
+
+.home-editorial > .home-editorial__row {
+  display: none !important;
+}
+
 .home-editorial__row {
   display: grid !important;
   width: 100%;
@@ -396,6 +418,24 @@
 
 .home-editorial__tile--wide {
   height: clamp(28rem, 68vh, 46rem);
+}
+
+.home-editorial__tile--hero {
+  grid-column: span 4;
+  aspect-ratio: 4682 / 3344;
+  background: #eef0e9;
+}
+
+.home-editorial__tile--portrait {
+  grid-column: span 2;
+  aspect-ratio: 4 / 5;
+  background: var(--home-line);
+}
+
+.home-editorial__tile--full {
+  grid-column: span 4;
+  aspect-ratio: 4 / 5;
+  background: var(--home-line);
 }
 
 .home-editorial__stack {
@@ -446,6 +486,10 @@
     height: auto !important;
     aspect-ratio: 16 / 10;
   }
+
+  .home-editorial__tile--freedom-frame {
+    aspect-ratio: 3344 / 4682;
+  }
 }
 
 @media (max-width: 767px) {
@@ -455,6 +499,20 @@
 
   .home-editorial__row {
     gap: 0 !important;
+  }
+
+  .home-editorial__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 !important;
+  }
+
+  .home-editorial__tile--hero,
+  .home-editorial__tile--full {
+    grid-column: span 2;
+  }
+
+  .home-editorial__tile--portrait {
+    grid-column: span 1;
   }
 
   .home-editorial__row--feature,
@@ -481,6 +539,10 @@
 
   .home-editorial__tile--wide {
     aspect-ratio: 4 / 5;
+  }
+
+  .home-editorial__tile--freedom-frame {
+    aspect-ratio: 3344 / 4682;
   }
 
   .home-editorial__row--split .home-editorial__image--preview {
@@ -516,7 +578,7 @@
   }
 }
 
-.home-editorial__tile--wide {
+.home-editorial__tile--wide:not(.home-editorial__tile--freedom-frame) {
   aspect-ratio: 16 / 9;
   height: auto !important;
   background: #eef0e9;
@@ -526,4 +588,9 @@
   object-fit: cover !important;
   object-position: 72% top !important;
   background: #eef0e9;
+}
+
+.home-editorial__tile--freedom-frame .home-editorial__image--preview {
+  object-fit: cover !important;
+  object-position: 72% top !important;
 }

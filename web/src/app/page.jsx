@@ -27,11 +27,44 @@ export default function HomePage() {
   const galleryImages = [
     "/assets/freedom/freedom-gallery-01.jpg",
     "/assets/freedom/freedom-gallery-02.jpg",
-    "/assets/freedom/freedom-gallery-03.jpg",
+    "/assets/freedom/freedom-gallery-replace1.jpeg",
     "/assets/freedom/freedom-gallery-04.jpg",
     "/assets/freedom/freedom-gallery-05.jpg",
     "/assets/freedom/freedom-gallery-06.jpg",
     "/assets/freedom/freedom-gallery-07.jpg",
+  ];
+
+  const editorialTiles = [
+    {
+      src: "/assets/freedom/freedom-preview-rectangular.jpg",
+      tileClass: "home-editorial__tile--hero",
+      imageClass: "home-editorial__image--preview",
+    },
+    {
+      src: galleryImages[2],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--red-horizontal",
+    },
+    {
+      src: galleryImages[4],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--jacket-close",
+    },
+    {
+      src: "/assets/freedom/freedom-detail-01.jpg",
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--archive",
+    },
+    {
+      src: galleryImages[3],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--negative",
+    },
+    {
+      src: galleryImages[1],
+      tileClass: "home-editorial__tile--full",
+      imageClass: "home-editorial__image--portrait",
+    },
   ];
 
   return (
@@ -148,6 +181,25 @@ export default function HomePage() {
         </div>
 
         {/* Row 1 — three portrait images, middle one taller */}
+        <div className="home-editorial__grid">
+          {editorialTiles.map((tile, index) => (
+            <motion.div
+              key={`${tile.src}-${index}`}
+              className={`home-editorial__tile ${tile.tileClass} overflow-hidden group cursor-pointer`}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, delay: Math.min(index * 0.08, 0.3) }}
+            >
+              <img
+                src={tile.src}
+                alt=""
+                className={`home-editorial__image ${tile.imageClass} transition-transform duration-700 group-hover:scale-105`}
+              />
+            </motion.div>
+          ))}
+        </div>
+
         <div className="home-editorial__row home-editorial__row--feature flex gap-[3px] w-full">
           <motion.div
             className="home-editorial__tile home-editorial__tile--narrow overflow-hidden group cursor-pointer"
@@ -193,7 +245,7 @@ export default function HomePage() {
         {/* Row 2 — landscape wide + two stacked portraits */}
         <div className="home-editorial__row home-editorial__row--split flex gap-[3px] w-full mt-[3px]">
           <motion.div
-            className="home-editorial__tile home-editorial__tile--wide overflow-hidden group cursor-pointer"
+            className="home-editorial__tile home-editorial__tile--wide home-editorial__tile--freedom-frame overflow-hidden group cursor-pointer"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

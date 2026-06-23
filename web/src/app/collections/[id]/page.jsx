@@ -22,6 +22,53 @@ export default function CollectionDetailsPage({ params }) {
     .filter((p) => p.collection.includes(collection.year))
     .slice(0, 4);
   const otherCollections = collections.filter((c) => c.id !== collection.id);
+  const galleryLayout = [
+    {
+      src: "/assets/freedom/freedom-preview-rectangular.jpg",
+      className: "col-span-2 aspect-[4682/3344]",
+      imageClassName: "object-[72%_top]",
+    },
+    {
+      src: collection.gallery[5],
+      className: "aspect-[4/5]",
+      imageClassName: "object-[center_50%]",
+    },
+    {
+      src: collection.gallery[4],
+      className: "aspect-[4/5]",
+      imageClassName: "object-[center_36%]",
+    },
+    {
+      src: collection.gallery[7],
+      className: "col-span-2 aspect-[16/9]",
+      imageClassName: "object-center",
+    },
+    {
+      src: collection.gallery[3],
+      className: "aspect-[4/5]",
+      imageClassName: "object-[center_52%]",
+    },
+    {
+      src: collection.gallery[1],
+      className: "aspect-[4/5]",
+      imageClassName: "object-[center_42%]",
+    },
+    {
+      src: collection.gallery[0],
+      className: "col-span-2 aspect-[4/5]",
+      imageClassName: "object-[center_48%]",
+    },
+    {
+      src: collection.gallery[6],
+      className: "aspect-[4/5]",
+      imageClassName: "object-center",
+    },
+    {
+      src: collection.gallery[8],
+      className: "aspect-[4/5]",
+      imageClassName: "object-center",
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-white">
@@ -74,34 +121,25 @@ export default function CollectionDetailsPage({ params }) {
         </div>
 
         <div>
-          {/* Gallery Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-            {collection.gallery.map((img, i) => (
+          <div className="collection-collage grid grid-cols-2 gap-0 md:gap-[3px]">
+            {galleryLayout.map((item, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 28, scale: 0.98 }}
+                initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -6 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.7, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className={`group relative overflow-hidden bg-[#f8f8f6] shadow-[0_18px_60px_rgba(0,0,0,0.04)] ${i % 3 === 0 ? "md:col-span-2 aspect-[16/8]" : "aspect-[4/5]"}`}
+                className={`collection-collage__frame ${item.className} overflow-hidden bg-[#f8f8f6]`}
               >
-                <div className="absolute inset-0 border border-black/5 z-20 pointer-events-none" />
                 <motion.img
-                  src={img}
-                  className="w-full h-full object-cover transition-[filter] duration-700 group-hover:grayscale-0"
+                  src={item.src}
+                  alt=""
+                  className={`w-full h-full object-cover ${item.imageClassName}`}
                   initial={{ scale: 1.04 }}
                   whileInView={{ scale: 1 }}
-                  whileHover={{ scale: 1.045 }}
                   viewport={{ once: true }}
                   transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="absolute left-5 bottom-5 z-30 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
-                  <span className="bg-white/90 px-4 py-2 text-[9px] uppercase tracking-[0.3em] font-semibold">
-                    Frame {String(i + 1).padStart(2, "0")}
-                  </span>
-                </div>
               </motion.div>
             ))}
           </div>
@@ -112,8 +150,7 @@ export default function CollectionDetailsPage({ params }) {
       <section className="py-32 px-6 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
           <SectionTitle
-            title="Pieces of the Vision"
-            subtitle="Selected Wearables"
+            title="Pieces from the Collection"
             align="left"
           />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
@@ -180,24 +217,17 @@ function MetaItem({ label, value }) {
 
 function WearableCard({ product }) {
   return (
-    <a href={`/products/${product.id}`} className="group block">
-      <div className="aspect-[4/5] overflow-hidden bg-white border border-gray-100">
+    <a
+      href={`/products/${product.id}`}
+      aria-label={`Open portal for ${product.name}`}
+      className="group block"
+    >
+      <div className="aspect-[4/5] overflow-hidden bg-white">
         <img
           src={product.image}
           alt={product.name}
           className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
         />
-      </div>
-      <div className="pt-4">
-        <p className="mb-2 text-[8px] uppercase tracking-[0.28em] text-gray-400">
-          {product.category}
-        </p>
-        <h3 className="text-[10px] md:text-xs uppercase tracking-[0.2em] font-semibold leading-relaxed">
-          {product.name}
-        </h3>
-        <p className="mt-3 text-xs md:text-sm font-serif">
-          £{product.price.toLocaleString()}
-        </p>
       </div>
     </a>
   );
