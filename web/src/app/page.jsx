@@ -4,7 +4,7 @@ import { ArrowRight, ChevronRight } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SectionTitle from "../components/SectionTitle";
-import { collections, testimonials } from "../data/fashion-data";
+import { collections } from "../data/fashion-data";
 import "./page.css";
 
 const heroVideo = "/assets/Hero%201.mp4?v=2";
@@ -392,28 +392,6 @@ export default function HomePage() {
               </div>
             </motion.a>
           ))}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="home-testimonials py-32 bg-white px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <SectionTitle title="Voices of Elegance" subtitle="Testimonials" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {testimonials.map((t) => (
-              <div key={t.id} className="flex flex-col items-center">
-                <p className="text-gray-600 font-light italic mb-8 leading-relaxed">
-                  "{t.text}"
-                </p>
-                <h5 className="text-[10px] uppercase tracking-[0.2em] font-bold">
-                  {t.name}
-                </h5>
-                <span className="text-[9px] uppercase tracking-widest text-amber-600 mt-1">
-                  {t.role}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
