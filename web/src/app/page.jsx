@@ -25,45 +25,45 @@ export default function HomePage() {
   }, [showHeroContent]);
 
   const galleryImages = [
-    "/assets/freedom/freedom-gallery-01.jpg",
-    "/assets/freedom/freedom-gallery-02.jpg",
-    "/assets/freedom/freedom-gallery-replace1.jpeg",
-    "/assets/freedom/freedom-gallery-04.jpg",
-    "/assets/freedom/freedom-gallery-05.jpg",
-    "/assets/freedom/freedom-gallery-06.jpg",
-    "/assets/freedom/freedom-gallery-07.jpg",
+    "/assets/freedom/edit-window-red-legs-upright.jpg",
+    "/assets/freedom/edit-red-door.jpg",
+    "/assets/freedom/edit-green-portrait.jpg",
+    "/assets/freedom/edit-room-bw.jpg",
+    "/assets/freedom/edit-negative-window.jpg",
+    "/assets/freedom/edit-foliage-bw.jpg",
+    "/assets/freedom/edit-pink-shutter.jpg",
   ];
 
   const editorialTiles = [
     {
-      src: "/assets/freedom/freedom-preview-rectangular.jpg",
+      src: galleryImages[0],
       tileClass: "home-editorial__tile--hero",
-      imageClass: "home-editorial__image--preview",
+      imageClass: "home-editorial__image--window",
+    },
+    {
+      src: galleryImages[1],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--red-door",
     },
     {
       src: galleryImages[2],
       tileClass: "home-editorial__tile--portrait",
-      imageClass: "home-editorial__image--red-horizontal",
+      imageClass: "home-editorial__image--green-portrait",
+    },
+    {
+      src: galleryImages[3],
+      tileClass: "home-editorial__tile--wide-strip",
+      imageClass: "home-editorial__image--room-bw",
     },
     {
       src: galleryImages[4],
       tileClass: "home-editorial__tile--portrait",
-      imageClass: "home-editorial__image--jacket-close",
+      imageClass: "home-editorial__image--negative-window",
     },
     {
-      src: "/assets/freedom/freedom-detail-01.jpg",
+      src: galleryImages[5],
       tileClass: "home-editorial__tile--portrait",
-      imageClass: "home-editorial__image--archive",
-    },
-    {
-      src: galleryImages[3],
-      tileClass: "home-editorial__tile--portrait",
-      imageClass: "home-editorial__image--negative",
-    },
-    {
-      src: galleryImages[1],
-      tileClass: "home-editorial__tile--full",
-      imageClass: "home-editorial__image--portrait",
+      imageClass: "home-editorial__image--foliage-bw",
     },
   ];
 
@@ -312,9 +312,9 @@ export default function HomePage() {
           className="home-editorial-pair__panel home-editorial-pair__panel--image"
         >
           <img
-            src="/assets/freedom/freedom-cover.jpg"
+            src="/assets/freedom/edit-pink-shutter.jpg"
             alt="Freedom collection"
-            className="home-editorial-pair__media home-editorial-pair__image"
+            className="home-editorial-pair__media home-editorial-pair__image home-editorial-pair__image--pink-shutter"
           />
           <div className="home-story__quote home-editorial-pair__quote absolute bg-white p-12 hidden md:block shadow-sm">
             <h4 className="text-xl font-serif mb-4 italic">

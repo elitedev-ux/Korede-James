@@ -24,49 +24,59 @@ export default function CollectionDetailsPage({ params }) {
   const otherCollections = collections.filter((c) => c.id !== collection.id);
   const galleryLayout = [
     {
-      src: "/assets/freedom/freedom-preview-rectangular.jpg",
+      src: "/assets/freedom/edit-window-red-legs-upright.jpg",
       className: "col-span-2 aspect-[4682/3344]",
-      imageClassName: "object-[72%_top]",
+      imageClassName: "object-[center_center]",
     },
     {
-      src: collection.gallery[5],
+      src: "/assets/freedom/edit-red-door.jpg",
       className: "aspect-[4/5]",
-      imageClassName: "object-[center_50%]",
+      imageClassName: "object-[center_48%]",
     },
     {
-      src: collection.gallery[4],
+      src: "/assets/freedom/edit-green-portrait.jpg",
       className: "aspect-[4/5]",
       imageClassName: "object-[center_36%]",
     },
     {
-      src: collection.gallery[7],
+      src: "/assets/freedom/edit-room-bw.jpg",
       className: "col-span-2 aspect-[16/9]",
       imageClassName: "object-center",
     },
     {
-      src: collection.gallery[3],
+      src: "/assets/freedom/edit-negative-window.jpg",
       className: "aspect-[4/5]",
       imageClassName: "object-[center_52%]",
     },
     {
-      src: collection.gallery[1],
+      src: "/assets/freedom/edit-foliage-bw.jpg",
       className: "aspect-[4/5]",
       imageClassName: "object-[center_42%]",
     },
     {
-      src: collection.gallery[0],
-      className: "col-span-2 aspect-[4/5]",
-      imageClassName: "object-[center_48%]",
+      src: "/assets/freedom/edit-red-seated-upright.jpg",
+      className: "col-span-2 aspect-[4572/3039]",
+      imageClassName: "object-[center_center]",
     },
     {
-      src: collection.gallery[6],
+      src: "/assets/freedom/collection-bottom-01.jpg",
       className: "aspect-[4/5]",
-      imageClassName: "object-center",
+      imageClassName: "object-[center_50%]",
     },
     {
-      src: collection.gallery[8],
+      src: "/assets/freedom/collection-bottom-02.jpg",
       className: "aspect-[4/5]",
-      imageClassName: "object-center",
+      imageClassName: "object-[center_46%]",
+    },
+    {
+      src: "/assets/freedom/collection-bottom-03.jpg",
+      className: "aspect-[4/5]",
+      imageClassName: "object-[center_52%]",
+    },
+    {
+      src: "/assets/freedom/collection-bottom-04.jpg",
+      className: "aspect-[4/5]",
+      imageClassName: "object-[center_50%]",
     },
   ];
 
