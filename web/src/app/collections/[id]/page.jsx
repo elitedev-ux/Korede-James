@@ -59,7 +59,7 @@ export default function CollectionDetailsPage({ params }) {
       imageClassName: "object-[center_center]",
     },
     {
-      src: "/assets/freedom/collection-bottom-01.jpg",
+      src: "/assets/freedom/collection-bottom-01-upright-v2.jpg",
       className: "aspect-[4/5]",
       imageClassName: "object-[center_50%]",
     },
@@ -69,7 +69,7 @@ export default function CollectionDetailsPage({ params }) {
       imageClassName: "object-[center_46%]",
     },
     {
-      src: "/assets/freedom/collection-bottom-03.jpg",
+      src: "/assets/freedom/collection-bottom-03-upright-v2.jpg",
       className: "aspect-[4/5]",
       imageClassName: "object-[center_52%]",
     },
