@@ -209,16 +209,19 @@ export default function AdminPage() {
       {
         label: "New Requests",
         value: newRequests,
+        detail: "Awaiting review",
         icon: Clock,
       },
       {
         label: "Active Commissions",
         value: activeRequests,
+        detail: "Currently moving",
         icon: Workflow,
       },
       {
         label: "Visible Pieces",
         value: visiblePieces,
+        detail: "Shown to client",
         icon: Package,
       },
     ];
@@ -332,7 +335,7 @@ export default function AdminPage() {
             <LockKeyhole size={18} />
           </div>
           <p className="admin-kicker">Korede James Admin</p>
-          <h1>Client workspace</h1>
+          <h1>Atelier desk</h1>
           <form onSubmit={handleUnlock} className="admin-access__form">
             <label htmlFor="admin-code">Access code</label>
             <input
@@ -359,9 +362,10 @@ export default function AdminPage() {
   return (
     <main className="admin-page">
       <aside className="admin-sidebar">
-        <div>
+        <div className="admin-sidebar__brand">
           <p className="admin-kicker">Korede James</p>
-          <h1>Admin</h1>
+          <h1>Atelier Desk</h1>
+          <span>Commission operations</span>
         </div>
 
         <nav className="admin-nav" aria-label="Admin sections">
@@ -393,7 +397,7 @@ export default function AdminPage() {
 
         <button className="admin-logout" onClick={handleLogout} type="button">
           <LogOut size={15} />
-          <span>Exit</span>
+          <span>Sign Out</span>
         </button>
       </aside>
 
@@ -403,9 +407,12 @@ export default function AdminPage() {
             <p className="admin-kicker">Client Workspace</p>
             <h2>{viewTitle(activeView)}</h2>
           </div>
-          <div className="admin-save-state">
-            <CheckCircle2 size={15} />
-            <span>{saveState}</span>
+          <div className="admin-topbar__actions">
+            <span className="admin-private-pill">Private</span>
+            <div className="admin-save-state">
+              <CheckCircle2 size={15} />
+              <span>{saveState}</span>
+            </div>
           </div>
         </header>
 
@@ -418,6 +425,7 @@ export default function AdminPage() {
                   <div>
                     <p>{stat.label}</p>
                     <strong>{stat.value}</strong>
+                    <span>{stat.detail}</span>
                   </div>
                   <Icon size={18} />
                 </article>
@@ -462,7 +470,9 @@ export default function AdminPage() {
                     <img src={piece.image} alt="" />
                     <div>
                       <strong>{piece.title}</strong>
-                      <span>{piece.availability}</span>
+                      <span className={availabilityClassName(piece.availability)}>
+                        {piece.availability}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -503,7 +513,12 @@ export default function AdminPage() {
                     <p className="admin-kicker">{selectedRequest.id}</p>
                     <h3>{selectedRequest.client}</h3>
                   </div>
-                  <span className="admin-pill">{selectedRequest.updated}</span>
+                  <div className="admin-heading-badges">
+                    <span className={statusClassName(selectedRequest.status)}>
+                      {selectedRequest.status}
+                    </span>
+                    <span className="admin-pill">{selectedRequest.updated}</span>
+                  </div>
                 </div>
 
                 <div className="admin-detail__meta">
@@ -611,6 +626,12 @@ export default function AdminPage() {
                       </label>
                     </div>
                     <div className="admin-piece-fields">
+                      <div className="admin-piece-row__title">
+                        <strong>{piece.title}</strong>
+                        <span className={availabilityClassName(piece.availability)}>
+                          {piece.availability}
+                        </span>
+                      </div>
                       <label>
                         Title
                         <input
@@ -798,9 +819,21 @@ function RequestRows({ requests, selectedRequestId, onSelect }) {
             <strong>{request.client}</strong>
             <small>{request.artifact}</small>
           </span>
-          <em>{request.status}</em>
+          <em className={statusClassName(request.status)}>{request.status}</em>
         </button>
       ))}
     </div>
   );
+}
+
+function statusClassName(status) {
+  return `admin-status admin-status--${status
+    .toLowerCase()
+    .replace(/\s+/g, "-")}`;
+}
+
+function availabilityClassName(availability) {
+  return `admin-availability admin-availability--${availability
+    .toLowerCase()
+    .replace(/\s+/g, "-")}`;
 }
