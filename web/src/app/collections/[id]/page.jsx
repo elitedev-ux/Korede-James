@@ -60,23 +60,23 @@ export default function CollectionDetailsPage({ params }) {
     },
     {
       src: "/assets/freedom/collection-bottom-01-upright-v2.jpg",
-      className: "aspect-[4/5]",
-      imageClassName: "object-[center_50%]",
+      className: "aspect-[2/3]",
+      imageClassName: "object-center",
     },
     {
       src: "/assets/freedom/collection-bottom-02.jpg",
-      className: "aspect-[4/5]",
-      imageClassName: "object-[center_46%]",
+      className: "aspect-[2/3]",
+      imageClassName: "object-center",
     },
     {
       src: "/assets/freedom/collection-bottom-03-upright-v2.jpg",
-      className: "aspect-[4/5]",
-      imageClassName: "object-[center_52%]",
+      className: "aspect-[2/3]",
+      imageClassName: "object-center",
     },
     {
       src: "/assets/freedom/collection-bottom-04.jpg",
-      className: "aspect-[4/5]",
-      imageClassName: "object-[center_50%]",
+      className: "aspect-[2/3]",
+      imageClassName: "object-center",
     },
   ];
 
