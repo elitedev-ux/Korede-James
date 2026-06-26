@@ -3,15 +3,24 @@ import {
   BarChart3,
   CheckCircle2,
   Clock,
+  FileText,
   Eye,
   EyeOff,
+  History,
+  LineChart,
   LockKeyhole,
   LogOut,
+  Megaphone,
   Package,
   Plus,
   Search,
+  Settings,
+  ShieldCheck,
+  ShoppingBag,
+  Trash2,
   Upload,
   User,
+  Users,
   Workflow,
 } from "lucide-react";
 import "./page.css";
@@ -37,6 +46,174 @@ const commissionStages = [
   "Fitting",
   "Delivery",
 ];
+
+const adminModules = [
+  {
+    id: "products",
+    label: "Products",
+    icon: Package,
+    owner: "Add, edit, delete, pricing, inventory, categories, images",
+    editor: "Add and edit products. Delete is locked.",
+    support: "No access",
+  },
+  {
+    id: "orders",
+    label: "Orders",
+    icon: ShoppingBag,
+    owner: "View, status updates, fulfillment, refunds, cancellations",
+    editor: "No access",
+    support: "View, status updates, refunds up to $50",
+  },
+  {
+    id: "customers",
+    label: "Customers",
+    icon: Users,
+    owner: "Full profiles, order history, support notes",
+    editor: "No access",
+    support: "Profiles, order history, support notes",
+  },
+  {
+    id: "content",
+    label: "Content",
+    icon: FileText,
+    owner: "Pages, portfolio entries, blog posts, media library",
+    editor: "Full content and media access",
+    support: "No access",
+  },
+  {
+    id: "marketing",
+    label: "Marketing",
+    icon: Megaphone,
+    owner: "Discount codes, promotions, featured items",
+    editor: "Draft promotions for Owner approval",
+    support: "No access",
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: LineChart,
+    owner: "Sales, traffic, conversion data",
+    editor: "No access",
+    support: "No access",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    owner: "Shipping, tax, payments, integrations, API keys",
+    editor: "No access",
+    support: "No access",
+  },
+  {
+    id: "team",
+    label: "Team",
+    icon: ShieldCheck,
+    owner: "Create, edit, remove admin accounts and roles",
+    editor: "No access",
+    support: "No access",
+  },
+  {
+    id: "audit",
+    label: "Audit",
+    icon: History,
+    owner: "Full activity history",
+    editor: "No access",
+    support: "No access",
+  },
+];
+
+const roleProfiles = {
+  owner: {
+    label: "Owner / Admin",
+    summary: "Full access across store, operations, content, settings, and team.",
+    tone: "Full Access",
+  },
+  editor: {
+    label: "Editor",
+    summary: "Product and content creation without sensitive business data.",
+    tone: "Content Access",
+  },
+  support: {
+    label: "Support",
+    summary: "Order and customer support with capped refund authority.",
+    tone: "Support Access",
+  },
+};
+
+const moduleSummaries = {
+  products: {
+    title: "Product Catalogue",
+    metric: "14 active items",
+    actions: ["Add Product", "Edit Product", "Manage Images", "Pricing"],
+    lockedFor: {
+      editor: ["Delete Product"],
+      support: ["Product Editing", "Pricing", "Inventory"],
+    },
+  },
+  orders: {
+    title: "Order Operations",
+    metric: "8 open orders",
+    actions: ["View Order", "Update Status", "Fulfillment", "Refund"],
+    lockedFor: {
+      editor: ["Orders", "Refunds", "Customer Data"],
+      support: ["Refunds Above $50", "Cancellations"],
+    },
+  },
+  customers: {
+    title: "Customer Desk",
+    metric: "126 profiles",
+    actions: ["View Profile", "Order History", "Support Notes"],
+    lockedFor: {
+      editor: ["Customer Profiles", "Order History"],
+      support: [],
+    },
+  },
+  content: {
+    title: "Portfolio & Content",
+    metric: "9 entries",
+    actions: ["Pages", "Projects", "Blog Posts", "Media Library"],
+    lockedFor: {
+      editor: [],
+      support: ["Content Editing", "Media Library"],
+    },
+  },
+  marketing: {
+    title: "Marketing Studio",
+    metric: "3 drafts",
+    actions: ["Discount Codes", "Promotions", "Featured Items"],
+    lockedFor: {
+      editor: ["Publish Promotion"],
+      support: ["Marketing"],
+    },
+  },
+  analytics: {
+    title: "Analytics",
+    metric: "Full reporting",
+    actions: ["Sales", "Traffic", "Conversion"],
+    lockedFor: {
+      editor: ["Analytics"],
+      support: ["Analytics"],
+    },
+  },
+  settings: {
+    title: "Store Settings",
+    metric: "Owner only",
+    actions: ["Shipping Rules", "Tax Config", "Payment Gateway", "API Keys"],
+    lockedFor: {
+      editor: ["Settings"],
+      support: ["Settings"],
+    },
+  },
+  audit: {
+    title: "Audit Log",
+    metric: "Full history",
+    actions: ["View Activity", "Filter by User", "Export Log"],
+    lockedFor: {
+      editor: ["Audit Log"],
+      support: ["Audit Log"],
+    },
+  },
+};
 
 const defaultWorkspace = {
   requests: [
@@ -112,6 +289,73 @@ const defaultWorkspace = {
         "Ceremonial white suit with sculptural volume and quiet formal presence.",
     },
   ],
+  team: [
+    {
+      id: "team-01",
+      name: "Korede James",
+      email: "owner@koredejames.com",
+      role: "owner",
+      status: "Active",
+    },
+    {
+      id: "team-02",
+      name: "Studio Editor",
+      email: "editor@koredejames.com",
+      role: "editor",
+      status: "Invited",
+    },
+    {
+      id: "team-03",
+      name: "Client Support",
+      email: "support@koredejames.com",
+      role: "support",
+      status: "Active",
+    },
+  ],
+  orders: [
+    {
+      id: "KJ-1024",
+      customer: "Amara Okoye",
+      total: "$2,850",
+      status: "Fulfillment",
+      refundLimit: "$50",
+    },
+    {
+      id: "KJ-1025",
+      customer: "Tomi Adeyemi",
+      total: "$5,200",
+      status: "Review",
+      refundLimit: "$50",
+    },
+  ],
+  customers: [
+    {
+      name: "Amara Okoye",
+      email: "amara@example.com",
+      orders: 3,
+      note: "Prefers WhatsApp updates.",
+    },
+    {
+      name: "Tomi Adeyemi",
+      email: "tomi@example.com",
+      orders: 1,
+      note: "Waiting for fabric confirmation.",
+    },
+  ],
+  content: [
+    { title: "Freedom Collection", type: "Portfolio", status: "Published" },
+    { title: "Atelier Notes", type: "Blog", status: "Draft" },
+    { title: "Commission Guide", type: "Page", status: "Published" },
+  ],
+  promotions: [
+    { title: "Private Client Preview", status: "Draft", ownerApproval: "Required" },
+    { title: "Featured Freedom Pieces", status: "Published", ownerApproval: "Approved" },
+  ],
+  audit: [
+    { actor: "Korede James", action: "Updated product availability", time: "Today" },
+    { actor: "Studio Editor", action: "Drafted promotion", time: "Yesterday" },
+    { actor: "Client Support", action: "Added support note", time: "2 days ago" },
+  ],
 };
 
 function createId(prefix) {
@@ -128,10 +372,25 @@ function readWorkspace() {
 
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : defaultWorkspace;
+    return stored ? normalizeWorkspace(JSON.parse(stored)) : defaultWorkspace;
   } catch {
     return defaultWorkspace;
   }
+}
+
+function normalizeWorkspace(workspace) {
+  return {
+    ...defaultWorkspace,
+    ...workspace,
+    requests: workspace.requests || defaultWorkspace.requests,
+    pieces: workspace.pieces || defaultWorkspace.pieces,
+    team: workspace.team || defaultWorkspace.team,
+    orders: workspace.orders || defaultWorkspace.orders,
+    customers: workspace.customers || defaultWorkspace.customers,
+    content: workspace.content || defaultWorkspace.content,
+    promotions: workspace.promotions || defaultWorkspace.promotions,
+    audit: workspace.audit || defaultWorkspace.audit,
+  };
 }
 
 function persistWorkspace(workspace) {
@@ -157,6 +416,7 @@ export default function AdminPage() {
   const [accessError, setAccessError] = useState("");
   const [workspace, setWorkspace] = useState(defaultWorkspace);
   const [activeView, setActiveView] = useState("overview");
+  const [currentRole, setCurrentRole] = useState("owner");
   const [selectedRequestId, setSelectedRequestId] = useState(
     defaultWorkspace.requests[0].id
   );
@@ -170,6 +430,11 @@ export default function AdminPage() {
     budget: "$5,000 - $10,000",
     description: "",
   });
+  const [newTeamMember, setNewTeamMember] = useState({
+    name: "",
+    email: "",
+    role: "editor",
+  });
 
   useEffect(() => {
     setWorkspace(readWorkspace());
@@ -179,6 +444,7 @@ export default function AdminPage() {
   const selectedRequest =
     workspace.requests.find((request) => request.id === selectedRequestId) ||
     workspace.requests[0];
+  const activeRoleProfile = roleProfiles[currentRole];
 
   const filteredRequests = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -253,6 +519,49 @@ export default function AdminPage() {
       ),
     };
     commitWorkspace(nextWorkspace);
+  };
+
+  const updateTeamMember = (memberId, patch) => {
+    const nextWorkspace = {
+      ...workspace,
+      team: workspace.team.map((member) =>
+        member.id === memberId ? { ...member, ...patch } : member
+      ),
+    };
+    commitWorkspace(nextWorkspace);
+  };
+
+  const removeTeamMember = (memberId) => {
+    const nextWorkspace = {
+      ...workspace,
+      team: workspace.team.filter((member) => member.id !== memberId),
+    };
+    commitWorkspace(nextWorkspace);
+  };
+
+  const handleAddTeamMember = (event) => {
+    event.preventDefault();
+    if (!newTeamMember.name.trim() || !newTeamMember.email.trim()) {
+      return;
+    }
+
+    const nextMember = {
+      id: createId("team"),
+      name: newTeamMember.name.trim(),
+      email: newTeamMember.email.trim(),
+      role: newTeamMember.role,
+      status: "Invited",
+    };
+
+    commitWorkspace({
+      ...workspace,
+      team: [nextMember, ...workspace.team],
+    });
+    setNewTeamMember({
+      name: "",
+      email: "",
+      role: "editor",
+    });
   };
 
   const handleAddPiece = (event) => {
@@ -391,8 +700,24 @@ export default function AdminPage() {
             type="button"
           >
             <Package size={16} />
-            <span>Pieces</span>
+            <span>Products</span>
           </button>
+          {adminModules
+            .filter((module) => module.id !== "products")
+            .map((module) => {
+              const Icon = module.icon;
+              return (
+                <button
+                  className={activeView === module.id ? "is-active" : ""}
+                  onClick={() => setActiveView(module.id)}
+                  type="button"
+                  key={module.id}
+                >
+                  <Icon size={16} />
+                  <span>{module.label}</span>
+                </button>
+              );
+            })}
         </nav>
 
         <button className="admin-logout" onClick={handleLogout} type="button">
@@ -408,6 +733,19 @@ export default function AdminPage() {
             <h2>{viewTitle(activeView)}</h2>
           </div>
           <div className="admin-topbar__actions">
+            <label className="admin-role-switcher">
+              <span>Viewing as</span>
+              <select
+                value={currentRole}
+                onChange={(event) => setCurrentRole(event.target.value)}
+              >
+                {Object.entries(roleProfiles).map(([role, profile]) => (
+                  <option value={role} key={role}>
+                    {profile.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <span className="admin-private-pill">Private</span>
             <div className="admin-save-state">
               <CheckCircle2 size={15} />
@@ -460,7 +798,7 @@ export default function AdminPage() {
             <article className="admin-panel">
               <div className="admin-panel__heading">
                 <div>
-                  <p className="admin-kicker">Pieces</p>
+                  <p className="admin-kicker">Products</p>
                   <h3>Availability</h3>
                 </div>
               </div>
@@ -475,6 +813,25 @@ export default function AdminPage() {
                       </span>
                     </div>
                   </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="admin-panel admin-panel--wide">
+              <div className="admin-panel__heading">
+                <div>
+                  <p className="admin-kicker">Access</p>
+                  <h3>Role coverage</h3>
+                </div>
+                <span className="admin-role-badge">{activeRoleProfile.tone}</span>
+              </div>
+              <div className="admin-module-grid">
+                {adminModules.map((module) => (
+                  <ModuleAccessCard
+                    module={module}
+                    role={currentRole}
+                    key={module.id}
+                  />
                 ))}
               </div>
             </article>
@@ -787,6 +1144,132 @@ export default function AdminPage() {
           </section>
         ) : null}
 
+        {["orders", "customers", "content", "marketing", "analytics", "settings", "audit"].includes(activeView) ? (
+          <ModulePanel
+            view={activeView}
+            role={currentRole}
+            workspace={workspace}
+          />
+        ) : null}
+
+        {activeView === "team" ? (
+          <section className="admin-team">
+            <article className="admin-panel admin-panel--wide">
+              <div className="admin-panel__heading">
+                <div>
+                  <p className="admin-kicker">Roles</p>
+                  <h3>Access control</h3>
+                </div>
+                <span className="admin-role-badge">Owner Managed</span>
+              </div>
+              <div className="admin-role-grid">
+                {Object.entries(roleProfiles).map(([role, profile]) => (
+                  <button
+                    type="button"
+                    className={`admin-role-card ${currentRole === role ? "is-active" : ""}`}
+                    key={role}
+                    onClick={() => setCurrentRole(role)}
+                  >
+                    <span>{profile.tone}</span>
+                    <strong>{profile.label}</strong>
+                    <small>{profile.summary}</small>
+                  </button>
+                ))}
+              </div>
+              <PermissionMatrix role={currentRole} />
+            </article>
+
+            <article className="admin-panel">
+              <div className="admin-panel__heading">
+                <div>
+                  <p className="admin-kicker">Team</p>
+                  <h3>Admin accounts</h3>
+                </div>
+              </div>
+              <div className="admin-team-list">
+                {workspace.team.map((member) => (
+                  <div className="admin-team-member" key={member.id}>
+                    <div>
+                      <strong>{member.name}</strong>
+                      <span>{member.email}</span>
+                    </div>
+                    <select
+                      value={member.role}
+                      onChange={(event) =>
+                        updateTeamMember(member.id, { role: event.target.value })
+                      }
+                    >
+                      {Object.entries(roleProfiles).map(([role, profile]) => (
+                        <option value={role} key={role}>
+                          {profile.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="admin-delete-button"
+                      onClick={() => removeTeamMember(member.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <form className="admin-add-form" onSubmit={handleAddTeamMember}>
+                <label>
+                  Name
+                  <input
+                    value={newTeamMember.name}
+                    onChange={(event) =>
+                      setNewTeamMember({
+                        ...newTeamMember,
+                        name: event.target.value,
+                      })
+                    }
+                    placeholder="Team member name"
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={newTeamMember.email}
+                    onChange={(event) =>
+                      setNewTeamMember({
+                        ...newTeamMember,
+                        email: event.target.value,
+                      })
+                    }
+                    placeholder="email@example.com"
+                  />
+                </label>
+                <label>
+                  Role
+                  <select
+                    value={newTeamMember.role}
+                    onChange={(event) =>
+                      setNewTeamMember({
+                        ...newTeamMember,
+                        role: event.target.value,
+                      })
+                    }
+                  >
+                    {Object.entries(roleProfiles).map(([role, profile]) => (
+                      <option value={role} key={role}>
+                        {profile.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="submit">
+                  <Plus size={15} />
+                  <span>Add User</span>
+                </button>
+              </form>
+            </article>
+          </section>
+        ) : null}
+
       </section>
     </main>
   );
@@ -796,7 +1279,15 @@ function viewTitle(view) {
   const titles = {
     overview: "Workspace overview",
     requests: "Commission requests",
-    pieces: "Available pieces",
+    pieces: "Products",
+    orders: "Orders",
+    customers: "Customers",
+    content: "Portfolio & content",
+    marketing: "Marketing",
+    analytics: "Analytics",
+    settings: "Settings",
+    team: "User management",
+    audit: "Audit log",
   };
   return titles[view] || "Workspace overview";
 }
@@ -824,6 +1315,156 @@ function RequestRows({ requests, selectedRequestId, onSelect }) {
       ))}
     </div>
   );
+}
+
+function ModulePanel({ view, role, workspace }) {
+  const module = adminModules.find((item) => item.id === view);
+  const summary = moduleSummaries[view];
+  const access = module?.[role] || "No access";
+  const isLocked = access === "No access";
+  const lockedItems = summary?.lockedFor?.[role] || [];
+  const rows = getModuleRows(view, workspace);
+
+  if (!module || !summary) {
+    return null;
+  }
+
+  return (
+    <section className="admin-module-view">
+      <article className="admin-panel admin-panel--wide">
+        <div className="admin-panel__heading">
+          <div>
+            <p className="admin-kicker">{module.label}</p>
+            <h3>{summary.title}</h3>
+          </div>
+          <span className={isLocked ? "admin-access-badge is-locked" : "admin-access-badge"}>
+            {isLocked ? "No Access" : roleProfiles[role].label}
+          </span>
+        </div>
+
+        <div className="admin-module-hero">
+          <div>
+            <span>{summary.metric}</span>
+            <strong>{access}</strong>
+          </div>
+          <div className="admin-action-grid">
+            {summary.actions.map((action) => (
+              <button type="button" disabled={isLocked} key={action}>
+                {action}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {lockedItems.length ? (
+          <div className="admin-locked-strip">
+            {lockedItems.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="admin-data-list">
+          {rows.map((row) => (
+            <div className="admin-data-row" key={row.title}>
+              <div>
+                <strong>{row.title}</strong>
+                <span>{row.subtitle}</span>
+              </div>
+              <em>{row.meta}</em>
+            </div>
+          ))}
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function ModuleAccessCard({ module, role }) {
+  const access = module[role];
+  const isLocked = access === "No access";
+  const Icon = module.icon;
+
+  return (
+    <div className={`admin-module-card ${isLocked ? "is-locked" : ""}`}>
+      <Icon size={17} />
+      <strong>{module.label}</strong>
+      <span>{access}</span>
+    </div>
+  );
+}
+
+function PermissionMatrix({ role }) {
+  return (
+    <div className="admin-permission-table">
+      {adminModules.map((module) => {
+        const access = module[role];
+        return (
+          <div className="admin-permission-row" key={module.id}>
+            <strong>{module.label}</strong>
+            <span>{access}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function getModuleRows(view, workspace) {
+  if (view === "orders") {
+    return workspace.orders.map((order) => ({
+      title: order.id,
+      subtitle: order.customer,
+      meta: `${order.status} / Refund cap ${order.refundLimit}`,
+    }));
+  }
+
+  if (view === "customers") {
+    return workspace.customers.map((customer) => ({
+      title: customer.name,
+      subtitle: customer.email,
+      meta: `${customer.orders} orders`,
+    }));
+  }
+
+  if (view === "content") {
+    return workspace.content.map((entry) => ({
+      title: entry.title,
+      subtitle: entry.type,
+      meta: entry.status,
+    }));
+  }
+
+  if (view === "marketing") {
+    return workspace.promotions.map((promotion) => ({
+      title: promotion.title,
+      subtitle: promotion.ownerApproval,
+      meta: promotion.status,
+    }));
+  }
+
+  if (view === "analytics") {
+    return [
+      { title: "Sales", subtitle: "Monthly overview", meta: "$18,400" },
+      { title: "Traffic", subtitle: "Site visits", meta: "12,904" },
+      { title: "Conversion", subtitle: "Portal requests", meta: "4.8%" },
+    ];
+  }
+
+  if (view === "settings") {
+    return [
+      { title: "Shipping Rules", subtitle: "Regional fulfillment", meta: "Configured" },
+      { title: "Tax Config", subtitle: "Checkout taxation", meta: "Owner only" },
+      { title: "Payment Gateway", subtitle: "Cards and bank transfer", meta: "Owner only" },
+      { title: "API Keys", subtitle: "Private integrations", meta: "Owner only" },
+    ];
+  }
+
+  return workspace.audit.map((entry) => ({
+    title: entry.actor,
+    subtitle: entry.action,
+    meta: entry.time,
+  }));
 }
 
 function statusClassName(status) {
