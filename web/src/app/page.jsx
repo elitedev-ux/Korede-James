@@ -26,7 +26,7 @@ export default function HomePage() {
 
   const galleryImages = [
     "/assets/freedom/edit-window-red-legs-upright.jpg",
-    "/assets/freedom/edit-red-door.jpg",
+    "/assets/freedom/IMG_4143.jpeg",
     "/assets/freedom/edit-green-portrait.jpg",
     "/assets/freedom/edit-room-bw.jpg",
     "/assets/freedom/edit-negative-window.jpg",

@@ -29,9 +29,9 @@ export default function CollectionDetailsPage({ params }) {
       imageClassName: "object-[center_center]",
     },
     {
-      src: "/assets/freedom/edit-red-door.jpg",
+      src: "/assets/freedom/IMG_4143.jpeg",
       className: "aspect-[4/5]",
-      imageClassName: "object-[center_48%]",
+      imageClassName: "object-top",
     },
     {
       src: "/assets/freedom/edit-green-portrait.jpg",
@@ -59,22 +59,22 @@ export default function CollectionDetailsPage({ params }) {
       imageClassName: "object-[center_center]",
     },
     {
-      src: "/assets/freedom/collection-bottom-01-upright-v2.jpg",
+      src: "/assets/freedom/IMG_3694.jpeg",
       className: "aspect-[2/3]",
       imageClassName: "object-center",
     },
     {
-      src: "/assets/freedom/collection-bottom-02.jpg",
+      src: "/assets/freedom/IMG_4139.jpeg",
       className: "aspect-[2/3]",
       imageClassName: "object-center",
     },
     {
-      src: "/assets/freedom/collection-bottom-03-upright-v2.jpg",
+      src: "/assets/freedom/IMG_3688.jpeg",
       className: "aspect-[2/3]",
       imageClassName: "object-center",
     },
     {
-      src: "/assets/freedom/collection-bottom-04.jpg",
+      src: "/assets/freedom/IMG_3384.jpeg",
       className: "aspect-[2/3]",
       imageClassName: "object-center",
     },
