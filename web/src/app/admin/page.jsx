@@ -27,97 +27,196 @@ import "./page.css";
 
 const STORAGE_KEY = "korede-james-admin-workspace-v1";
 const ACCESS_KEY = "korede-james-admin-unlocked";
-const PREVIEW_CODE = import.meta.env.VITE_ADMIN_PREVIEW_CODE || "De_core";
+const ACCESS_ROLE_KEY = "korede-james-admin-role";
+const rolePasswords = {
+  Iamtheadmin: "owner",
+  Iamtheeditor: "editor",
+  Iamthestudio: "studio",
+  Iamthesupport: "support",
+};
 
 const requestStatuses = [
-  "New Inquiry",
-  "Reviewed",
-  "In Progress",
-  "Fitting",
-  "Completed",
+  "Inquiry received",
+  "Quoted",
+  "Accepted / deposit paid",
+  "In progress - Consultation",
+  "In progress - Toile & Fittings",
+  "Revisions requested",
+  "Completed / delivered",
   "Archived",
 ];
 
 const commissionStages = [
-  "Inquiry",
+  "Inquiry received",
+  "Quoted",
+  "Accepted / deposit paid",
   "Consultation",
-  "Sketch",
-  "Fabric",
-  "Fitting",
-  "Delivery",
+  "Toile & Fittings",
+  "Revisions requested",
+  "Completed / delivered",
+  "Archived",
 ];
+
+const roleAccessCodes = [
+  { role: "owner", label: "Owner / Admin", code: "Iamtheadmin" },
+  { role: "editor", label: "Editor", code: "Iamtheeditor" },
+  { role: "studio", label: "Studio", code: "Iamthestudio" },
+  { role: "support", label: "Support", code: "Iamthesupport" },
+];
+
+const requestStatusByRole = {
+  owner: requestStatuses,
+  editor: [],
+  studio: [
+    "In progress - Consultation",
+    "In progress - Toile & Fittings",
+    "Revisions requested",
+    "Completed / delivered",
+  ],
+  support: [
+    "Inquiry received",
+    "In progress - Consultation",
+    "In progress - Toile & Fittings",
+    "Revisions requested",
+    "Completed / delivered",
+    "Archived",
+  ],
+};
+
+const commissionStagesByRole = {
+  owner: commissionStages,
+  editor: [],
+  studio: [
+    "Consultation",
+    "Toile & Fittings",
+    "Revisions requested",
+    "Completed / delivered",
+  ],
+  support: [
+    "Inquiry received",
+    "Consultation",
+    "Toile & Fittings",
+    "Revisions requested",
+    "Completed / delivered",
+  ],
+};
 
 const adminModules = [
   {
-    id: "products",
-    label: "Products",
-    icon: Package,
-    owner: "Add, edit, delete, pricing, inventory, categories, images",
-    editor: "Add and edit products. Delete is locked.",
+    id: "requests",
+    label: "Pipeline",
+    icon: Workflow,
+    owner: "View and edit all requests, create and approve quotes, pricing, scope, and timelines",
+    editor: "No access",
+    studio: "View assigned commissions and update production status",
+    support: "View status and update non-financial fields",
+  },
+  {
+    id: "contracts",
+    label: "Contracts",
+    icon: FileText,
+    owner: "Create, attach, manage usage rights and terms",
+    editor: "No access",
+    studio: "No access",
     support: "No access",
   },
   {
-    id: "orders",
-    label: "Orders",
+    id: "payments",
+    label: "Payments",
     icon: ShoppingBag,
-    owner: "View, status updates, fulfillment, refunds, cancellations",
+    owner: "Deposits, installments, full payment history, refunds and cancellations with no limit",
     editor: "No access",
-    support: "View, status updates, refunds up to $50",
+    studio: "No access",
+    support: "Refunds up to 5% of commission value; above that requires Owner sign-off",
   },
   {
-    id: "customers",
-    label: "Customers",
+    id: "communication",
+    label: "Messages",
     icon: Users,
-    owner: "Full profiles, order history, support notes",
+    owner: "Full access to all message threads and revision history",
     editor: "No access",
-    support: "Profiles, order history, support notes",
+    studio: "No access",
+    support: "Respond to inquiries, manage revision requests, and log notes",
+  },
+  {
+    id: "measurements",
+    label: "Measurements",
+    icon: User,
+    owner: "Full access across all commissions",
+    editor: "No access",
+    studio: "Assigned client measurements and fitting feedback only",
+    support: "No access",
+  },
+  {
+    id: "materials",
+    label: "Materials",
+    icon: Package,
+    owner: "Fabric inventory, supplier info, and cost-of-materials tracking",
+    editor: "No access",
+    studio: "Log fabric and materials used; supplier pricing hidden unless granted",
+    support: "No access",
+  },
+  {
+    id: "pieces",
+    label: "Portfolio",
+    icon: Package,
+    owner: "Approve, feature completed work, and manage display order",
+    editor: "Full portfolio/media access; can mark completed commissions as ready to feature",
+    studio: "No access",
+    support: "No access",
   },
   {
     id: "content",
-    label: "Content",
+    label: "Atelier Content",
     icon: FileText,
-    owner: "Pages, portfolio entries, blog posts, media library",
-    editor: "Full content and media access",
+    owner: "Full edit access to pages, media library, and blog if applicable",
+    editor: "Full access to pages, media library, process photos, and featured work drafts",
+    studio: "No access",
     support: "No access",
   },
   {
     id: "marketing",
     label: "Marketing",
     icon: Megaphone,
-    owner: "Discount codes, promotions, featured items",
-    editor: "Draft promotions for Owner approval",
+    owner: "Discount and promo codes, featured commissions",
+    editor: "Draft promotions only; Owner approval required to publish",
+    studio: "No access",
     support: "No access",
   },
   {
     id: "analytics",
     label: "Analytics",
     icon: LineChart,
-    owner: "Sales, traffic, conversion data",
+    owner: "Inquiries, conversion rate, revenue, and repeat clients",
     editor: "No access",
+    studio: "No access",
     support: "No access",
   },
   {
     id: "settings",
     label: "Settings",
     icon: Settings,
-    owner: "Shipping, tax, payments, integrations, API keys",
+    owner: "Payment gateway, tax config, integrations, and API keys",
     editor: "No access",
+    studio: "No access",
     support: "No access",
   },
   {
     id: "team",
-    label: "Team",
+    label: "Users",
     icon: ShieldCheck,
     owner: "Create, edit, remove admin accounts and roles",
     editor: "No access",
+    studio: "No access",
     support: "No access",
   },
   {
     id: "audit",
     label: "Audit",
     icon: History,
-    owner: "Full activity history",
+    owner: "Full activity history with user name and timestamp",
     editor: "No access",
+    studio: "No access",
     support: "No access",
   },
 ];
@@ -125,95 +224,159 @@ const adminModules = [
 const roleProfiles = {
   owner: {
     label: "Owner / Admin",
-    summary: "Full access across store, operations, content, settings, and team.",
+    summary: "Full access across commissions, finance, client data, content, settings, users, and audit.",
     tone: "Full Access",
   },
   editor: {
     label: "Editor",
-    summary: "Product and content creation without sensitive business data.",
+    summary: "Atelier, portfolio, content, media library, process photos, and featured work drafts.",
     tone: "Content Access",
+  },
+  studio: {
+    label: "Studio",
+    summary: "Production and tailoring access for assigned commissions, fittings, materials, and measurements.",
+    tone: "Production Access",
   },
   support: {
     label: "Support",
-    summary: "Order and customer support with capped refund authority.",
+    summary: "Commission status, client inquiries, revision requests, notes, and refund requests up to 5%.",
     tone: "Support Access",
   },
 };
 
 const moduleSummaries = {
-  products: {
-    title: "Product Catalogue",
-    metric: "14 active items",
-    actions: ["Add Product", "Edit Product", "Manage Images", "Pricing"],
+  requests: {
+    title: "Commission Pipeline",
+    metric: "8 active commissions",
+    actions: ["Update Status", "Assign Owner", "Create Quote", "Set Timeline"],
     lockedFor: {
-      editor: ["Delete Product"],
-      support: ["Product Editing", "Pricing", "Inventory"],
+      editor: ["Pipeline", "Quotes", "Client Data"],
+      studio: ["Pricing", "Quote Approval", "Client Threads"],
+      support: ["Quote Creation", "Pricing", "Financial Terms"],
     },
   },
-  orders: {
-    title: "Order Operations",
-    metric: "8 open orders",
-    actions: ["View Order", "Update Status", "Fulfillment", "Refund"],
+  contracts: {
+    title: "Contracts & Agreements",
+    metric: "Owner only",
+    actions: ["Create Contract", "Attach Agreement", "Usage Rights", "Terms"],
     lockedFor: {
-      editor: ["Orders", "Refunds", "Customer Data"],
-      support: ["Refunds Above $50", "Cancellations"],
+      editor: ["Contracts", "Usage Rights"],
+      studio: ["Contracts", "Terms"],
+      support: ["Contracts", "Terms"],
     },
   },
-  customers: {
-    title: "Customer Desk",
-    metric: "126 profiles",
-    actions: ["View Profile", "Order History", "Support Notes"],
+  payments: {
+    title: "Payments",
+    metric: "Deposits and installments",
+    actions: ["View History", "Record Deposit", "Refund", "Cancel"],
     lockedFor: {
-      editor: ["Customer Profiles", "Order History"],
+      editor: ["Payments", "Refunds"],
+      studio: ["Payments", "Refunds"],
+      support: ["Refunds Above 5%", "Gateway Settings"],
+    },
+  },
+  communication: {
+    title: "Client Communication",
+    metric: "Revision history",
+    actions: ["Reply", "Log Note", "Revision Request", "Thread History"],
+    lockedFor: {
+      editor: ["Client Threads", "Revision History"],
+      studio: ["Client Threads"],
       support: [],
     },
   },
+  measurements: {
+    title: "Measurements & Body Data",
+    metric: "Restricted client records",
+    actions: ["View Record", "Log Fitting", "Edit Measurement", "Revision Note"],
+    lockedFor: {
+      editor: ["Measurements", "Body Data"],
+      studio: ["Unassigned Client Records"],
+      support: ["Measurements", "Body Data"],
+    },
+  },
+  materials: {
+    title: "Materials & Sourcing",
+    metric: "Fabric and supplier tracking",
+    actions: ["Log Fabric", "Track Supplier", "Cost Materials", "Inventory"],
+    lockedFor: {
+      editor: ["Materials", "Supplier Pricing"],
+      studio: ["Supplier Pricing"],
+      support: ["Materials", "Supplier Info"],
+    },
+  },
+  pieces: {
+    title: "Portfolio",
+    metric: "Completed work",
+    actions: ["Feature Work", "Display Order", "Client Permission", "Media"],
+    lockedFor: {
+      editor: ["Publish Featured Work"],
+      studio: ["Portfolio Publishing"],
+      support: ["Portfolio Publishing"],
+    },
+  },
   content: {
-    title: "Portfolio & Content",
-    metric: "9 entries",
-    actions: ["Pages", "Projects", "Blog Posts", "Media Library"],
+    title: "Atelier & Content",
+    metric: "Pages and media",
+    actions: ["Pages", "Media Library", "Process Photos", "Blog"],
     lockedFor: {
       editor: [],
+      studio: ["Content Editing"],
       support: ["Content Editing", "Media Library"],
     },
   },
   marketing: {
     title: "Marketing Studio",
-    metric: "3 drafts",
-    actions: ["Discount Codes", "Promotions", "Featured Items"],
+    metric: "Promotions and features",
+    actions: ["Promo Code", "Featured Commission", "Draft Campaign", "Publish"],
     lockedFor: {
       editor: ["Publish Promotion"],
+      studio: ["Marketing"],
       support: ["Marketing"],
     },
   },
   analytics: {
     title: "Analytics",
-    metric: "Full reporting",
-    actions: ["Sales", "Traffic", "Conversion"],
+    metric: "Owner reporting",
+    actions: ["Inquiries", "Conversion", "Revenue", "Repeat Clients"],
     lockedFor: {
       editor: ["Analytics"],
+      studio: ["Analytics"],
       support: ["Analytics"],
     },
   },
   settings: {
-    title: "Store Settings",
+    title: "Settings",
     metric: "Owner only",
-    actions: ["Shipping Rules", "Tax Config", "Payment Gateway", "API Keys"],
+    actions: ["Payment Gateway", "Tax Config", "Integrations", "API Keys"],
     lockedFor: {
       editor: ["Settings"],
+      studio: ["Settings"],
       support: ["Settings"],
     },
   },
   audit: {
     title: "Audit Log",
-    metric: "Full history",
-    actions: ["View Activity", "Filter by User", "Export Log"],
+    metric: "Every change recorded",
+    actions: ["Status Updates", "Refunds", "Content Edits", "Measurement Edits"],
     lockedFor: {
       editor: ["Audit Log"],
+      studio: ["Audit Log"],
       support: ["Audit Log"],
     },
   },
 };
+
+const crossRoleRequirements = [
+  "2FA required for every admin account",
+  "Every change is tagged with user name and timestamp",
+  "Payment and API credentials visible to Owner only",
+  "No raw card data stored; payment processor tokenization only",
+  "Measurements limited to Owner and assigned Studio staff",
+  "Refunds above threshold require Owner approval",
+  "Editor drafts require Owner approval before publishing",
+  "Client data visible only to roles directly handling that project",
+];
 
 const defaultWorkspace = {
   requests: [
@@ -223,8 +386,8 @@ const defaultWorkspace = {
       email: "amara@example.com",
       artifact: "Evening Wear",
       budget: "$5,000 - $10,000",
-      status: "New Inquiry",
-      stage: "Inquiry",
+      status: "Inquiry received",
+      stage: "Inquiry received",
       due: "2026-07-18",
       updated: "Today",
       notes: "Wants a white structured silhouette with red styling references.",
@@ -235,8 +398,8 @@ const defaultWorkspace = {
       email: "tomi@example.com",
       artifact: "Bridal",
       budget: "$10,000 - $25,000",
-      status: "In Progress",
-      stage: "Fabric",
+      status: "In progress - Toile & Fittings",
+      stage: "Toile & Fittings",
       due: "2026-08-04",
       updated: "Yesterday",
       notes: "Fabric sourcing is pending. Client prefers a clean gallery-style mood board.",
@@ -247,8 +410,8 @@ const defaultWorkspace = {
       email: "kemi@example.com",
       artifact: "Others",
       budget: "$25,000+",
-      status: "Fitting",
-      stage: "Fitting",
+      status: "Revisions requested",
+      stage: "Revisions requested",
       due: "2026-07-02",
       updated: "2 days ago",
       notes: "First fitting complete. Adjust shoulder volume and sleeve drop.",
@@ -309,6 +472,13 @@ const defaultWorkspace = {
       name: "Client Support",
       email: "support@koredejames.com",
       role: "support",
+      status: "Active",
+    },
+    {
+      id: "team-04",
+      name: "Studio Tailor",
+      email: "studio@koredejames.com",
+      role: "studio",
       status: "Active",
     },
   ],
@@ -416,6 +586,7 @@ export default function AdminPage() {
   const [accessError, setAccessError] = useState("");
   const [workspace, setWorkspace] = useState(defaultWorkspace);
   const [activeView, setActiveView] = useState("overview");
+  const [sessionRole, setSessionRole] = useState("owner");
   const [currentRole, setCurrentRole] = useState("owner");
   const [selectedRequestId, setSelectedRequestId] = useState(
     defaultWorkspace.requests[0].id
@@ -438,13 +609,25 @@ export default function AdminPage() {
 
   useEffect(() => {
     setWorkspace(readWorkspace());
-    setUnlocked(window.localStorage.getItem(ACCESS_KEY) === "true");
+    const storedRole = window.localStorage.getItem(ACCESS_ROLE_KEY);
+    if (window.localStorage.getItem(ACCESS_KEY) === "true" && roleProfiles[storedRole]) {
+      setSessionRole(storedRole);
+      setCurrentRole(storedRole);
+      setUnlocked(true);
+    }
   }, []);
 
   const selectedRequest =
     workspace.requests.find((request) => request.id === selectedRequestId) ||
     workspace.requests[0];
   const activeRoleProfile = roleProfiles[currentRole];
+  const canManageRoles = sessionRole === "owner";
+  const statusOptions = getRequestStatusOptions(currentRole, selectedRequest?.status);
+  const stageOptions = getRequestStageOptions(currentRole, selectedRequest?.stage);
+  const visibleModules = useMemo(
+    () => adminModules.filter((module) => hasModuleAccess(module, currentRole)),
+    [currentRole]
+  );
 
   const filteredRequests = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -460,16 +643,51 @@ export default function AdminPage() {
     );
   }, [searchTerm, workspace.requests]);
 
+  useEffect(() => {
+    if (activeView === "overview") {
+      return;
+    }
+
+    const hasAccess = visibleModules.some((module) => module.id === activeView);
+    if (!hasAccess) {
+      setActiveView("overview");
+    }
+  }, [activeView, visibleModules]);
+
   const stats = useMemo(() => {
     const activeRequests = workspace.requests.filter(
-      (request) => !["Completed", "Archived"].includes(request.status)
+      (request) => !["Completed / delivered", "Archived"].includes(request.status)
     ).length;
     const newRequests = workspace.requests.filter(
-      (request) => request.status === "New Inquiry"
+      (request) => request.status === "Inquiry received"
     ).length;
     const visiblePieces = workspace.pieces.filter(
       (piece) => piece.visibility === "Visible"
     ).length;
+
+    if (currentRole === "editor") {
+      return [
+        { label: "Content Drafts", value: 3, detail: "Awaiting review", icon: FileText },
+        { label: "Portfolio Items", value: visiblePieces, detail: "Ready to feature", icon: Package },
+        { label: "Media Library", value: 18, detail: "Process assets", icon: Upload },
+      ];
+    }
+
+    if (currentRole === "studio") {
+      return [
+        { label: "Assigned Jobs", value: 3, detail: "Production queue", icon: Workflow },
+        { label: "Fittings", value: 2, detail: "Scheduled", icon: User },
+        { label: "Material Logs", value: 5, detail: "This week", icon: Package },
+      ];
+    }
+
+    if (currentRole === "support") {
+      return [
+        { label: "Open Threads", value: 6, detail: "Client replies", icon: Users },
+        { label: "Revision Requests", value: 2, detail: "Needs update", icon: Workflow },
+        { label: "Refund Limit", value: "5%", detail: "Owner above cap", icon: ShoppingBag },
+      ];
+    }
 
     return [
       {
@@ -485,13 +703,13 @@ export default function AdminPage() {
         icon: Workflow,
       },
       {
-        label: "Visible Pieces",
+        label: "Featured Work",
         value: visiblePieces,
-        detail: "Shown to client",
+        detail: "Portfolio ready",
         icon: Package,
       },
     ];
-  }, [workspace]);
+  }, [currentRole, workspace]);
 
   const commitWorkspace = (nextWorkspace) => {
     setWorkspace(nextWorkspace);
@@ -620,19 +838,30 @@ export default function AdminPage() {
 
   const handleUnlock = (event) => {
     event.preventDefault();
-    if (accessCode.trim().toLowerCase() !== PREVIEW_CODE.toLowerCase()) {
+    const matchedEntry = Object.entries(rolePasswords).find(
+      ([password]) => password.toLowerCase() === accessCode.trim().toLowerCase()
+    );
+
+    if (!matchedEntry) {
       setAccessError("Invalid access code.");
       return;
     }
 
+    const [, matchedRole] = matchedEntry;
     window.localStorage.setItem(ACCESS_KEY, "true");
+    window.localStorage.setItem(ACCESS_ROLE_KEY, matchedRole);
+    setSessionRole(matchedRole);
+    setCurrentRole(matchedRole);
     setUnlocked(true);
     setAccessError("");
   };
 
   const handleLogout = () => {
     window.localStorage.removeItem(ACCESS_KEY);
+    window.localStorage.removeItem(ACCESS_ROLE_KEY);
     setUnlocked(false);
+    setSessionRole("owner");
+    setCurrentRole("owner");
     setAccessCode("");
   };
 
@@ -686,38 +915,20 @@ export default function AdminPage() {
             <BarChart3 size={16} />
             <span>Overview</span>
           </button>
-          <button
-            className={activeView === "requests" ? "is-active" : ""}
-            onClick={() => setActiveView("requests")}
-            type="button"
-          >
-            <User size={16} />
-            <span>Requests</span>
-          </button>
-          <button
-            className={activeView === "pieces" ? "is-active" : ""}
-            onClick={() => setActiveView("pieces")}
-            type="button"
-          >
-            <Package size={16} />
-            <span>Products</span>
-          </button>
-          {adminModules
-            .filter((module) => module.id !== "products")
-            .map((module) => {
-              const Icon = module.icon;
-              return (
-                <button
-                  className={activeView === module.id ? "is-active" : ""}
-                  onClick={() => setActiveView(module.id)}
-                  type="button"
-                  key={module.id}
-                >
-                  <Icon size={16} />
-                  <span>{module.label}</span>
-                </button>
-              );
-            })}
+          {visibleModules.map((module) => {
+            const Icon = module.icon;
+            return (
+              <button
+                className={activeView === module.id ? "is-active" : ""}
+                onClick={() => setActiveView(module.id)}
+                type="button"
+                key={module.id}
+              >
+                <Icon size={16} />
+                <span>{module.label}</span>
+              </button>
+            );
+          })}
         </nav>
 
         <button className="admin-logout" onClick={handleLogout} type="button">
@@ -733,19 +944,23 @@ export default function AdminPage() {
             <h2>{viewTitle(activeView)}</h2>
           </div>
           <div className="admin-topbar__actions">
-            <label className="admin-role-switcher">
-              <span>Viewing as</span>
-              <select
-                value={currentRole}
-                onChange={(event) => setCurrentRole(event.target.value)}
-              >
-                {Object.entries(roleProfiles).map(([role, profile]) => (
-                  <option value={role} key={role}>
-                    {profile.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {canManageRoles ? (
+              <label className="admin-role-switcher">
+                <span>Viewing as</span>
+                <select
+                  value={currentRole}
+                  onChange={(event) => setCurrentRole(event.target.value)}
+                >
+                  {Object.entries(roleProfiles).map(([role, profile]) => (
+                    <option value={role} key={role}>
+                      {profile.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <span className="admin-role-badge">{activeRoleProfile.label}</span>
+            )}
             <span className="admin-private-pill">Private</span>
             <div className="admin-save-state">
               <CheckCircle2 size={15} />
@@ -770,52 +985,56 @@ export default function AdminPage() {
               );
             })}
 
-            <article className="admin-panel admin-panel--wide">
-              <div className="admin-panel__heading">
-                <div>
-                  <p className="admin-kicker">Commission Queue</p>
-                  <h3>Recent requests</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveView("requests")}
-                  className="admin-icon-button"
-                >
-                  <Workflow size={15} />
-                  <span>Open</span>
-                </button>
-              </div>
-              <RequestRows
-                requests={workspace.requests.slice(0, 4)}
-                selectedRequestId={selectedRequest?.id}
-                onSelect={(requestId) => {
-                  setSelectedRequestId(requestId);
-                  setActiveView("requests");
-                }}
-              />
-            </article>
-
-            <article className="admin-panel">
-              <div className="admin-panel__heading">
-                <div>
-                  <p className="admin-kicker">Products</p>
-                  <h3>Availability</h3>
-                </div>
-              </div>
-              <div className="admin-mini-list">
-                {workspace.pieces.slice(0, 4).map((piece) => (
-                  <div key={piece.id} className="admin-mini-piece">
-                    <img src={piece.image} alt="" />
-                    <div>
-                      <strong>{piece.title}</strong>
-                      <span className={availabilityClassName(piece.availability)}>
-                        {piece.availability}
-                      </span>
-                    </div>
+            {visibleModules.some((module) => module.id === "requests") ? (
+              <article className="admin-panel admin-panel--wide">
+                <div className="admin-panel__heading">
+                  <div>
+                    <p className="admin-kicker">Commission Queue</p>
+                    <h3>Recent requests</h3>
                   </div>
-                ))}
-              </div>
-            </article>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView("requests")}
+                    className="admin-icon-button"
+                  >
+                    <Workflow size={15} />
+                    <span>Open</span>
+                  </button>
+                </div>
+                <RequestRows
+                  requests={workspace.requests.slice(0, 4)}
+                  selectedRequestId={selectedRequest?.id}
+                  onSelect={(requestId) => {
+                    setSelectedRequestId(requestId);
+                    setActiveView("requests");
+                  }}
+                />
+              </article>
+            ) : null}
+
+            {visibleModules.some((module) => module.id === "pieces") ? (
+              <article className="admin-panel">
+                <div className="admin-panel__heading">
+                  <div>
+                    <p className="admin-kicker">Portfolio</p>
+                    <h3>Availability</h3>
+                  </div>
+                </div>
+                <div className="admin-mini-list">
+                  {workspace.pieces.slice(0, 4).map((piece) => (
+                    <div key={piece.id} className="admin-mini-piece">
+                      <img src={piece.image} alt="" />
+                      <div>
+                        <strong>{piece.title}</strong>
+                        <span className={availabilityClassName(piece.availability)}>
+                          {piece.availability}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ) : null}
 
             <article className="admin-panel admin-panel--wide">
               <div className="admin-panel__heading">
@@ -826,12 +1045,30 @@ export default function AdminPage() {
                 <span className="admin-role-badge">{activeRoleProfile.tone}</span>
               </div>
               <div className="admin-module-grid">
-                {adminModules.map((module) => (
+                {visibleModules.map((module) => (
                   <ModuleAccessCard
                     module={module}
                     role={currentRole}
                     key={module.id}
                   />
+                ))}
+              </div>
+            </article>
+
+            <article className="admin-panel admin-panel--wide">
+              <div className="admin-panel__heading">
+                <div>
+                  <p className="admin-kicker">Requirements</p>
+                  <h3>Security rules</h3>
+                </div>
+                <span className="admin-role-badge">Mandatory</span>
+              </div>
+              <div className="admin-requirement-grid">
+                {crossRoleRequirements.map((requirement) => (
+                  <div className="admin-requirement" key={requirement}>
+                    <ShieldCheck size={15} />
+                    <span>{requirement}</span>
+                  </div>
                 ))}
               </div>
             </article>
@@ -881,7 +1118,7 @@ export default function AdminPage() {
                 <div className="admin-detail__meta">
                   <span>{selectedRequest.email}</span>
                   <span>{selectedRequest.artifact}</span>
-                  <span>{selectedRequest.budget}</span>
+                  {currentRole === "owner" ? <span>{selectedRequest.budget}</span> : null}
                 </div>
 
                 <div className="admin-field-grid">
@@ -895,7 +1132,7 @@ export default function AdminPage() {
                         })
                       }
                     >
-                      {requestStatuses.map((status) => (
+                      {statusOptions.map((status) => (
                         <option key={status}>{status}</option>
                       ))}
                     </select>
@@ -910,7 +1147,7 @@ export default function AdminPage() {
                         })
                       }
                     >
-                      {commissionStages.map((stage) => (
+                      {stageOptions.map((stage) => (
                         <option key={stage}>{stage}</option>
                       ))}
                     </select>
@@ -918,12 +1155,12 @@ export default function AdminPage() {
                 </div>
 
                 <div className="admin-progress">
-                  {commissionStages.map((stage) => (
+                  {stageOptions.map((stage) => (
                     <button
                       key={stage}
                       className={
-                        commissionStages.indexOf(stage) <=
-                        commissionStages.indexOf(selectedRequest.stage)
+                        stageOptions.indexOf(stage) <=
+                        stageOptions.indexOf(selectedRequest.stage)
                           ? "is-done"
                           : ""
                       }
@@ -960,8 +1197,8 @@ export default function AdminPage() {
             <article className="admin-panel admin-panel--wide">
               <div className="admin-panel__heading">
                 <div>
-                  <p className="admin-kicker">Commission Pieces</p>
-                  <h3>Available products</h3>
+                  <p className="admin-kicker">Portfolio</p>
+                  <h3>Featured work</h3>
                 </div>
               </div>
 
@@ -1066,8 +1303,8 @@ export default function AdminPage() {
             <article className="admin-panel">
               <div className="admin-panel__heading">
                 <div>
-                  <p className="admin-kicker">New Piece</p>
-                  <h3>Add product</h3>
+                  <p className="admin-kicker">New Entry</p>
+                  <h3>Add work</h3>
                 </div>
               </div>
               <form className="admin-add-form" onSubmit={handleAddPiece}>
@@ -1078,7 +1315,7 @@ export default function AdminPage() {
                     onChange={(event) =>
                       setNewPiece({ ...newPiece, title: event.target.value })
                     }
-                    placeholder="Piece name"
+                    placeholder="Work title"
                   />
                 </label>
                 <label>
@@ -1137,14 +1374,15 @@ export default function AdminPage() {
                 </label>
                 <button type="submit">
                   <Plus size={15} />
-                  <span>Add Piece</span>
+                  <span>Add Work</span>
                 </button>
               </form>
             </article>
           </section>
         ) : null}
 
-        {["orders", "customers", "content", "marketing", "analytics", "settings", "audit"].includes(activeView) ? (
+        {visibleModules.some((module) => module.id === activeView) &&
+        !["requests", "pieces", "team"].includes(activeView) ? (
           <ModulePanel
             view={activeView}
             role={currentRole}
@@ -1177,6 +1415,7 @@ export default function AdminPage() {
                 ))}
               </div>
               <PermissionMatrix role={currentRole} />
+              <AccessCodeList />
             </article>
 
             <article className="admin-panel">
@@ -1278,11 +1517,14 @@ export default function AdminPage() {
 function viewTitle(view) {
   const titles = {
     overview: "Workspace overview",
-    requests: "Commission requests",
-    pieces: "Products",
-    orders: "Orders",
-    customers: "Customers",
-    content: "Portfolio & content",
+    requests: "Commission pipeline",
+    contracts: "Contracts",
+    payments: "Payments",
+    communication: "Client communication",
+    measurements: "Measurements",
+    materials: "Materials",
+    pieces: "Portfolio",
+    content: "Atelier content",
     marketing: "Marketing",
     analytics: "Analytics",
     settings: "Settings",
@@ -1410,21 +1652,63 @@ function PermissionMatrix({ role }) {
   );
 }
 
+function AccessCodeList() {
+  return (
+    <div className="admin-access-code-list">
+      <div>
+        <p className="admin-kicker">Access Codes</p>
+        <h4>Role passwords</h4>
+      </div>
+      <div className="admin-code-grid">
+        {roleAccessCodes.map((item) => (
+          <div className="admin-code-card" key={item.role}>
+            <LockKeyhole size={15} />
+            <span>{item.label}</span>
+            <strong>{item.code}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function getModuleRows(view, workspace) {
-  if (view === "orders") {
+  if (view === "contracts") {
+    return [
+      { title: "KJ-1024 Agreement", subtitle: "Usage rights and delivery terms", meta: "Owner only" },
+      { title: "KJ-1025 Bridal Contract", subtitle: "Pending signature", meta: "Draft" },
+    ];
+  }
+
+  if (view === "payments") {
     return workspace.orders.map((order) => ({
       title: order.id,
-      subtitle: order.customer,
-      meta: `${order.status} / Refund cap ${order.refundLimit}`,
+      subtitle: `${order.customer} / ${order.total}`,
+      meta: `${order.status} / Support refund cap 5%`,
     }));
   }
 
-  if (view === "customers") {
+  if (view === "communication") {
     return workspace.customers.map((customer) => ({
       title: customer.name,
-      subtitle: customer.email,
-      meta: `${customer.orders} orders`,
+      subtitle: customer.note,
+      meta: `${customer.orders} projects`,
     }));
+  }
+
+  if (view === "measurements") {
+    return [
+      { title: "Amara Okoye", subtitle: "Assigned fitting record", meta: "Restricted" },
+      { title: "Tomi Adeyemi", subtitle: "Revision measurements pending", meta: "Restricted" },
+    ];
+  }
+
+  if (view === "materials") {
+    return [
+      { title: "Structured cotton", subtitle: "Logged for Independence Jacket", meta: "Inventory" },
+      { title: "White voile", subtitle: "Used for fitting toile", meta: "Studio" },
+      { title: "Supplier cost sheet", subtitle: "Owner visibility only", meta: "Restricted" },
+    ];
   }
 
   if (view === "content") {
@@ -1445,18 +1729,19 @@ function getModuleRows(view, workspace) {
 
   if (view === "analytics") {
     return [
-      { title: "Sales", subtitle: "Monthly overview", meta: "$18,400" },
-      { title: "Traffic", subtitle: "Site visits", meta: "12,904" },
-      { title: "Conversion", subtitle: "Portal requests", meta: "4.8%" },
+      { title: "Inquiries", subtitle: "Commission request volume", meta: "42" },
+      { title: "Conversion", subtitle: "Inquiry to deposit", meta: "4.8%" },
+      { title: "Revenue", subtitle: "Monthly commission value", meta: "$18,400" },
+      { title: "Repeat Clients", subtitle: "Returning private clients", meta: "12" },
     ];
   }
 
   if (view === "settings") {
     return [
-      { title: "Shipping Rules", subtitle: "Regional fulfillment", meta: "Configured" },
-      { title: "Tax Config", subtitle: "Checkout taxation", meta: "Owner only" },
-      { title: "Payment Gateway", subtitle: "Cards and bank transfer", meta: "Owner only" },
-      { title: "API Keys", subtitle: "Private integrations", meta: "Owner only" },
+      { title: "Payment Gateway", subtitle: "Processor tokenization only", meta: "Owner only" },
+      { title: "Tax Config", subtitle: "Commission invoices", meta: "Owner only" },
+      { title: "Integrations", subtitle: "Private workflow tools", meta: "Owner only" },
+      { title: "API Keys", subtitle: "Credential visibility restricted", meta: "Owner only" },
     ];
   }
 
@@ -1467,14 +1752,36 @@ function getModuleRows(view, workspace) {
   }));
 }
 
+function hasModuleAccess(module, role) {
+  return module[role] && module[role] !== "No access";
+}
+
+function getRequestStatusOptions(role, selectedStatus) {
+  return withCurrentOption(requestStatusByRole[role] || [], selectedStatus);
+}
+
+function getRequestStageOptions(role, selectedStage) {
+  return withCurrentOption(commissionStagesByRole[role] || [], selectedStage);
+}
+
+function withCurrentOption(options, currentValue) {
+  if (!currentValue || options.includes(currentValue)) {
+    return options;
+  }
+
+  return [currentValue, ...options];
+}
+
 function statusClassName(status) {
   return `admin-status admin-status--${status
     .toLowerCase()
-    .replace(/\s+/g, "-")}`;
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`;
 }
 
 function availabilityClassName(availability) {
   return `admin-availability admin-availability--${availability
     .toLowerCase()
-    .replace(/\s+/g, "-")}`;
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`;
 }

@@ -233,30 +233,41 @@
   background: #eee9e2;
 }
 
-.admin-status--new-inquiry {
+.admin-status--new-inquiry,
+.admin-status--inquiry-received {
   color: #7a4c10;
   background: #fff0d5;
 }
 
-.admin-status--reviewed {
+.admin-status--reviewed,
+.admin-status--quoted {
   color: #4f4a44;
   background: #ece8e1;
 }
 
-.admin-status--in-progress {
+.admin-status--in-progress,
+.admin-status--in-progress-consultation,
+.admin-status--in-progress-toile-fittings {
   color: #2c4f61;
   background: #e2f0f4;
 }
 
-.admin-status--fitting {
+.admin-status--fitting,
+.admin-status--accepted-deposit-paid {
   color: #61436a;
   background: #f2e7f4;
 }
 
 .admin-status--completed,
+.admin-status--completed-delivered,
 .admin-availability--available {
   color: #315c38;
   background: #edf6ef;
+}
+
+.admin-status--revisions-requested {
+  color: #7c3636;
+  background: #f7e7e7;
 }
 
 .admin-status--archived,
@@ -712,6 +723,31 @@
   gap: 10px;
 }
 
+.admin-requirement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-requirement {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 66px;
+  padding: 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.admin-requirement svg {
+  flex: none;
+  color: var(--admin-accent);
+}
+
 .admin-module-card {
   display: grid;
   gap: 8px;
@@ -864,7 +900,7 @@
 
 .admin-role-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -905,6 +941,56 @@
   color: var(--admin-muted);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.admin-access-code-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-access-code-list h4 {
+  margin: 4px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.admin-code-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-code-card {
+  display: grid;
+  gap: 8px;
+  min-height: 108px;
+  padding: 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: #fbfaf7;
+}
+
+.admin-code-card svg {
+  color: var(--admin-accent);
+}
+
+.admin-code-card span {
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-code-card strong {
+  color: var(--admin-ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  word-break: break-word;
 }
 
 .admin-team-member {
@@ -1016,7 +1102,9 @@
   }
 
   .admin-module-grid,
-  .admin-role-grid {
+  .admin-role-grid,
+  .admin-code-grid,
+  .admin-requirement-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1052,7 +1140,9 @@
   .admin-piece-row,
   .admin-piece-fields,
   .admin-module-grid,
+  .admin-requirement-grid,
   .admin-role-grid,
+  .admin-code-grid,
   .admin-action-grid,
   .admin-team-member,
   .admin-data-row,

@@ -1,0 +1,237 @@
+.account-page {
+  min-height: 100vh;
+  background: #fff;
+  color: #111;
+}
+
+.account-shell {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 10rem 1.5rem 7rem;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(320px, 1fr);
+  gap: clamp(3rem, 8vw, 7rem);
+  align-items: start;
+}
+
+.account-copy {
+  display: grid;
+  gap: 1.5rem;
+  padding-top: 1rem;
+}
+
+.account-kicker {
+  margin: 0;
+  color: #b07032;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+}
+
+.account-copy h1,
+.account-card h2,
+.account-card h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.account-copy h1 {
+  max-width: 12ch;
+  font-size: clamp(2.75rem, 7vw, 6rem);
+}
+
+.account-copy p,
+.account-card p {
+  margin: 0;
+  color: #5f6368;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.8;
+}
+
+.account-card {
+  display: grid;
+  gap: 1.75rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid #eee8df;
+  background: #fbfaf7;
+}
+
+.account-card h2,
+.account-card h3 {
+  font-size: clamp(1.6rem, 4vw, 2.5rem);
+}
+
+.account-form {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.account-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.account-form label {
+  display: grid;
+  gap: 0.55rem;
+  color: #73777d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.account-form input {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid #dfd8cf;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  letter-spacing: 0;
+  outline: none;
+  padding: 0 1rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.account-form input:focus {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+
+.account-button,
+.account-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 54px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  padding: 0 1.25rem;
+  text-transform: uppercase;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.account-button:hover,
+.account-link-button:hover {
+  border-color: #8d5c2d;
+  background: #8d5c2d;
+}
+
+.account-link-button.is-secondary {
+  background: transparent;
+  color: #111;
+}
+
+.account-link-button.is-secondary:hover {
+  background: #111;
+  color: #fff;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.account-status {
+  border: 1px solid #e5dccf;
+  background: #fff;
+  color: #5b4a38;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 1rem;
+}
+
+.account-status.is-error {
+  border-color: #ead2d2;
+  background: #fff7f7;
+  color: #7c3636;
+}
+
+.account-mini-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.account-mini-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #eee8df;
+  padding-bottom: 0.85rem;
+  color: #5f6368;
+  font-size: 12px;
+}
+
+.account-mini-row strong {
+  color: #111;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.account-divider {
+  height: 1px;
+  background: #eee8df;
+}
+
+.account-footnote {
+  color: #8a8d92;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.account-inline-link {
+  color: #111;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 860px) {
+  .account-shell {
+    padding-top: 8rem;
+  }
+
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-copy h1 {
+    max-width: none;
+    font-size: clamp(2.3rem, 13vw, 4.5rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .account-shell {
+    padding-inline: 1rem;
+  }
+
+  .account-field-grid,
+  .account-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .account-link-button,
+  .account-button {
+    width: 100%;
+  }
+}

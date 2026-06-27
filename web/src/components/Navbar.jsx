@@ -12,6 +12,7 @@ import {
   Headphones,
   MapPin,
   Globe,
+  User,
 } from "lucide-react";
 import useStore from "../store/useStore";
 import "./Navbar.css";
@@ -177,6 +178,15 @@ export default function Navbar() {
                 </a>
               ))}
             </div>
+
+            {/* Wishlist Icon */}
+            <a
+              href="/account"
+              aria-label="Account"
+              className="relative hover:text-amber-600 transition-colors"
+            >
+              <User size={20} strokeWidth={1.5} />
+            </a>
 
             {/* Wishlist Icon */}
             <button
@@ -580,14 +590,22 @@ export default function Navbar() {
               variants={mobileMenuItemVariants}
               className="border-t border-black/10 px-5 py-5"
             >
-              <div className="mb-5 grid grid-cols-2 gap-px bg-black/10">
+              <div className="mb-5 grid grid-cols-3 gap-px bg-black/10">
+                <a
+                  href="/account"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-1.5 bg-white px-2 py-4 text-center text-[9px] uppercase tracking-[0.12em] font-semibold transition-colors hover:bg-gray-50"
+                >
+                  <User size={13} strokeWidth={1.6} />
+                  <span>Account</span>
+                </a>
                 <button
                   type="button"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     openWishlist();
                   }}
-                  className="flex items-center gap-2 bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.2em] font-semibold transition-colors hover:bg-gray-50"
+                  className="flex items-center justify-center gap-1.5 bg-white px-2 py-4 text-center text-[9px] uppercase tracking-[0.12em] font-semibold transition-colors hover:bg-gray-50"
                 >
                   <Heart size={13} strokeWidth={1.6} />
                   <span>
@@ -601,7 +619,7 @@ export default function Navbar() {
                     setIsMobileMenuOpen(false);
                     openCart();
                   }}
-                  className="flex items-center gap-2 bg-white px-4 py-4 text-left text-[10px] uppercase tracking-[0.2em] font-semibold transition-colors hover:bg-gray-50"
+                  className="flex items-center justify-center gap-1.5 bg-white px-2 py-4 text-center text-[9px] uppercase tracking-[0.12em] font-semibold transition-colors hover:bg-gray-50"
                 >
                   <ShoppingBag size={13} strokeWidth={1.6} />
                   <span>Bag {cartCount > 0 ? `(${cartCount})` : ""}</span>
