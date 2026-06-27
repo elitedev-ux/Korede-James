@@ -166,7 +166,7 @@ export default function Navbar() {
           </a>
 
           {/* Right: nav links + icons */}
-          <div className="site-navbar__actions flex items-center space-x-6">
+          <div className="site-navbar__actions flex items-center">
             <div className="hidden lg:flex space-x-8 mr-8">
               {navLinks.slice(3).map((link) => (
                 <a
@@ -179,11 +179,10 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* Wishlist Icon */}
             <a
               href="/account"
               aria-label="Account"
-              className="relative hover:text-amber-600 transition-colors"
+              className="site-navbar__account-icon relative hover:text-amber-600 transition-colors"
             >
               <User size={20} strokeWidth={1.5} />
             </a>
@@ -191,7 +190,8 @@ export default function Navbar() {
             {/* Wishlist Icon */}
             <button
               onClick={openWishlist}
-              className="relative hover:text-amber-600 transition-colors"
+              className="site-navbar__wishlist-icon relative hover:text-amber-600 transition-colors"
+              aria-label="Open wishlist"
             >
               <Heart size={20} strokeWidth={1.5} />
               {wishlist.length > 0 && (
@@ -204,7 +204,8 @@ export default function Navbar() {
             {/* Cart Icon */}
             <button
               onClick={openCart}
-              className="relative hover:text-amber-600 transition-colors"
+              className="site-navbar__cart-icon relative hover:text-amber-600 transition-colors"
+              aria-label="Open commission brief"
             >
               <ShoppingBag size={20} strokeWidth={1.5} />
               {cartCount > 0 && (
