@@ -511,6 +511,7 @@
   text-transform: uppercase;
 }
 
+.admin-field-grid input,
 .admin-field-grid select,
 .admin-notes textarea,
 .admin-piece-row input,
@@ -536,6 +537,7 @@
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.admin-field-grid input:focus,
 .admin-field-grid select:focus,
 .admin-notes textarea:focus,
 .admin-piece-row input:focus,
@@ -895,6 +897,58 @@
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-data-row--button {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-data-row--button:hover {
+  border-color: var(--admin-ink);
+  box-shadow: 0 10px 24px rgba(40, 34, 27, 0.06);
+  transform: translateY(-1px);
+}
+
+.admin-module-editor {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-module-editor .admin-panel__heading button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  background: #fbfaf7;
+  color: var(--admin-ink);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-module-save {
+  min-height: 46px;
+  border: 1px solid var(--admin-ink);
+  border-radius: 6px;
+  background: var(--admin-ink);
+  color: #fff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 

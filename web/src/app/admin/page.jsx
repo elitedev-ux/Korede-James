@@ -512,19 +512,80 @@ const defaultWorkspace = {
       note: "Waiting for fabric confirmation.",
     },
   ],
+  contracts: [
+    {
+      id: "contract-01",
+      title: "KJ-1024 Agreement",
+      subtitle: "Usage rights and delivery terms",
+      meta: "Owner only",
+      notes: "Client permission required before portfolio publishing.",
+    },
+    {
+      id: "contract-02",
+      title: "KJ-1025 Bridal Contract",
+      subtitle: "Pending signature",
+      meta: "Draft",
+      notes: "Send revised delivery terms after quote approval.",
+    },
+  ],
+  measurements: [
+    {
+      id: "measurement-01",
+      title: "Amara Okoye",
+      subtitle: "Assigned fitting record",
+      meta: "Restricted",
+      notes: "Shoulder width 15.5, waist confirmation pending.",
+    },
+    {
+      id: "measurement-02",
+      title: "Tomi Adeyemi",
+      subtitle: "Revision measurements pending",
+      meta: "Restricted",
+      notes: "Confirm hem length at next fitting.",
+    },
+  ],
+  materials: [
+    {
+      id: "material-01",
+      title: "Structured cotton",
+      subtitle: "Logged for Independence Jacket",
+      meta: "Inventory",
+      notes: "Three meters reserved for active commission.",
+    },
+    {
+      id: "material-02",
+      title: "White voile",
+      subtitle: "Used for fitting toile",
+      meta: "Studio",
+      notes: "Used during toile and fitting stage.",
+    },
+    {
+      id: "material-03",
+      title: "Supplier cost sheet",
+      subtitle: "Owner visibility only",
+      meta: "Restricted",
+      notes: "Hide supplier pricing from Studio unless granted.",
+    },
+  ],
   content: [
-    { title: "Freedom Collection", type: "Portfolio", status: "Published" },
-    { title: "Atelier Notes", type: "Blog", status: "Draft" },
-    { title: "Commission Guide", type: "Page", status: "Published" },
+    { id: "content-01", title: "Freedom Collection", type: "Portfolio", status: "Published", notes: "Visible on collection page." },
+    { id: "content-02", title: "Atelier Notes", type: "Blog", status: "Draft", notes: "Awaiting Owner review." },
+    { id: "content-03", title: "Commission Guide", type: "Page", status: "Published", notes: "Keep concise and client-facing." },
   ],
   promotions: [
-    { title: "Private Client Preview", status: "Draft", ownerApproval: "Required" },
-    { title: "Featured Freedom Pieces", status: "Published", ownerApproval: "Approved" },
+    { id: "promotion-01", title: "Private Client Preview", status: "Draft", ownerApproval: "Required", notes: "For client previews only." },
+    { id: "promotion-02", title: "Featured Freedom Pieces", status: "Published", ownerApproval: "Approved", notes: "Feature on homepage after approval." },
+  ],
+  settings: [
+    { id: "setting-01", title: "Payment Gateway", subtitle: "Processor tokenization only", meta: "Owner only", notes: "Paystack wiring pending." },
+    { id: "setting-02", title: "Tax Config", subtitle: "Commission invoices", meta: "Owner only", notes: "Confirm regional tax policy." },
+    { id: "setting-03", title: "Integrations", subtitle: "Private workflow tools", meta: "Owner only", notes: "Supabase customer auth connected." },
+    { id: "setting-04", title: "API Keys", subtitle: "Credential visibility restricted", meta: "Owner only", notes: "Keep keys in Vercel env only." },
   ],
   audit: [
-    { actor: "Korede James", action: "Updated product availability", time: "Today" },
-    { actor: "Studio Editor", action: "Drafted promotion", time: "Yesterday" },
-    { actor: "Client Support", action: "Added support note", time: "2 days ago" },
+    { id: "audit-01", actor: "Korede James", action: "Updated product availability", time: "Today" },
+    { id: "audit-02", actor: "Studio Editor", action: "Drafted promotion", time: "Yesterday" },
+    { id: "audit-03", actor: "Client Support", action: "Added support note", time: "2 days ago" },
   ],
 };
 
@@ -557,8 +618,12 @@ function normalizeWorkspace(workspace) {
     team: workspace.team || defaultWorkspace.team,
     orders: workspace.orders || defaultWorkspace.orders,
     customers: workspace.customers || defaultWorkspace.customers,
+    contracts: workspace.contracts || defaultWorkspace.contracts,
+    measurements: workspace.measurements || defaultWorkspace.measurements,
+    materials: workspace.materials || defaultWorkspace.materials,
     content: workspace.content || defaultWorkspace.content,
     promotions: workspace.promotions || defaultWorkspace.promotions,
+    settings: workspace.settings || defaultWorkspace.settings,
     audit: workspace.audit || defaultWorkspace.audit,
   };
 }
@@ -755,6 +820,28 @@ export default function AdminPage() {
       team: workspace.team.filter((member) => member.id !== memberId),
     };
     commitWorkspace(nextWorkspace);
+  };
+
+  const appendAudit = (nextWorkspace, action) => ({
+    ...nextWorkspace,
+    audit: [
+      {
+        id: createId("audit"),
+        actor: activeRoleProfile.label,
+        action,
+        time: "Just now",
+      },
+      ...nextWorkspace.audit,
+    ],
+  });
+
+  const handleModuleSave = (view, payload) => {
+    const nextWorkspace = applyModulePayload(workspace, view, payload);
+    const auditAction =
+      payload.mode === "action"
+        ? `${payload.action} in ${viewTitle(view)}`
+        : `Updated ${payload.title || viewTitle(view)}`;
+    commitWorkspace(appendAudit(nextWorkspace, auditAction));
   };
 
   const handleAddTeamMember = (event) => {
@@ -1387,6 +1474,7 @@ export default function AdminPage() {
             view={activeView}
             role={currentRole}
             workspace={workspace}
+            onSave={handleModuleSave}
           />
         ) : null}
 
@@ -1559,17 +1647,55 @@ function RequestRows({ requests, selectedRequestId, onSelect }) {
   );
 }
 
-function ModulePanel({ view, role, workspace }) {
+function ModulePanel({ view, role, workspace, onSave }) {
   const module = adminModules.find((item) => item.id === view);
   const summary = moduleSummaries[view];
   const access = module?.[role] || "No access";
   const isLocked = access === "No access";
   const lockedItems = summary?.lockedFor?.[role] || [];
   const rows = getModuleRows(view, workspace);
+  const [draft, setDraft] = useState(null);
 
   if (!module || !summary) {
     return null;
   }
+
+  const openAction = (action) => {
+    setDraft({
+      mode: "action",
+      action,
+      title: action,
+      subtitle: summary.title,
+      meta: roleProfiles[role].label,
+      notes: "",
+    });
+  };
+
+  const openRow = (row) => {
+    setDraft({
+      mode: "row",
+      ...row,
+      notes: row.notes || "",
+    });
+  };
+
+  const closeDraft = () => setDraft(null);
+
+  const submitDraft = (event) => {
+    event.preventDefault();
+    if (!draft?.title?.trim()) {
+      return;
+    }
+
+    onSave(view, {
+      ...draft,
+      title: draft.title.trim(),
+      subtitle: draft.subtitle.trim(),
+      meta: draft.meta.trim(),
+      notes: draft.notes.trim(),
+    });
+    closeDraft();
+  };
 
   return (
     <section className="admin-module-view">
@@ -1591,7 +1717,12 @@ function ModulePanel({ view, role, workspace }) {
           </div>
           <div className="admin-action-grid">
             {summary.actions.map((action) => (
-              <button type="button" disabled={isLocked} key={action}>
+              <button
+                type="button"
+                disabled={isLocked}
+                key={action}
+                onClick={() => openAction(action)}
+              >
                 {action}
               </button>
             ))}
@@ -1608,15 +1739,80 @@ function ModulePanel({ view, role, workspace }) {
 
         <div className="admin-data-list">
           {rows.map((row) => (
-            <div className="admin-data-row" key={row.title}>
+            <button
+              className="admin-data-row admin-data-row--button"
+              key={row.id || row.title}
+              type="button"
+              onClick={() => openRow(row)}
+            >
               <div>
                 <strong>{row.title}</strong>
                 <span>{row.subtitle}</span>
               </div>
               <em>{row.meta}</em>
-            </div>
+            </button>
           ))}
         </div>
+
+        {draft ? (
+          <form className="admin-module-editor" onSubmit={submitDraft}>
+            <div className="admin-panel__heading">
+              <div>
+                <p className="admin-kicker">
+                  {draft.mode === "action" ? "Action" : "Record"}
+                </p>
+                <h3>{draft.mode === "action" ? draft.action : draft.title}</h3>
+              </div>
+              <button type="button" onClick={closeDraft}>
+                Close
+              </button>
+            </div>
+            <div className="admin-field-grid">
+              <label>
+                Title
+                <input
+                  value={draft.title}
+                  onChange={(event) =>
+                    setDraft({ ...draft, title: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Status / Meta
+                <input
+                  value={draft.meta}
+                  onChange={(event) =>
+                    setDraft({ ...draft, meta: event.target.value })
+                  }
+                />
+              </label>
+            </div>
+            <label className="admin-notes">
+              Details
+              <textarea
+                rows={4}
+                value={draft.subtitle}
+                onChange={(event) =>
+                  setDraft({ ...draft, subtitle: event.target.value })
+                }
+              />
+            </label>
+            <label className="admin-notes">
+              Internal Notes
+              <textarea
+                rows={5}
+                value={draft.notes}
+                onChange={(event) =>
+                  setDraft({ ...draft, notes: event.target.value })
+                }
+                placeholder="Add next step, approval note, fitting feedback, or client update."
+              />
+            </label>
+            <button className="admin-module-save" type="submit">
+              Save Update
+            </button>
+          </form>
+        ) : null}
       </article>
     </section>
   );
@@ -1674,56 +1870,54 @@ function AccessCodeList() {
 
 function getModuleRows(view, workspace) {
   if (view === "contracts") {
-    return [
-      { title: "KJ-1024 Agreement", subtitle: "Usage rights and delivery terms", meta: "Owner only" },
-      { title: "KJ-1025 Bridal Contract", subtitle: "Pending signature", meta: "Draft" },
-    ];
+    return workspace.contracts;
   }
 
   if (view === "payments") {
     return workspace.orders.map((order) => ({
+      id: order.id,
       title: order.id,
       subtitle: `${order.customer} / ${order.total}`,
       meta: `${order.status} / Support refund cap 5%`,
+      notes: order.notes || "",
     }));
   }
 
   if (view === "communication") {
     return workspace.customers.map((customer) => ({
+      id: customer.email,
       title: customer.name,
       subtitle: customer.note,
       meta: `${customer.orders} projects`,
+      notes: customer.notes || customer.note,
     }));
   }
 
   if (view === "measurements") {
-    return [
-      { title: "Amara Okoye", subtitle: "Assigned fitting record", meta: "Restricted" },
-      { title: "Tomi Adeyemi", subtitle: "Revision measurements pending", meta: "Restricted" },
-    ];
+    return workspace.measurements;
   }
 
   if (view === "materials") {
-    return [
-      { title: "Structured cotton", subtitle: "Logged for Independence Jacket", meta: "Inventory" },
-      { title: "White voile", subtitle: "Used for fitting toile", meta: "Studio" },
-      { title: "Supplier cost sheet", subtitle: "Owner visibility only", meta: "Restricted" },
-    ];
+    return workspace.materials;
   }
 
   if (view === "content") {
     return workspace.content.map((entry) => ({
+      id: entry.id || entry.title,
       title: entry.title,
       subtitle: entry.type,
       meta: entry.status,
+      notes: entry.notes || "",
     }));
   }
 
   if (view === "marketing") {
     return workspace.promotions.map((promotion) => ({
+      id: promotion.id || promotion.title,
       title: promotion.title,
       subtitle: promotion.ownerApproval,
       meta: promotion.status,
+      notes: promotion.notes || "",
     }));
   }
 
@@ -1737,19 +1931,209 @@ function getModuleRows(view, workspace) {
   }
 
   if (view === "settings") {
-    return [
-      { title: "Payment Gateway", subtitle: "Processor tokenization only", meta: "Owner only" },
-      { title: "Tax Config", subtitle: "Commission invoices", meta: "Owner only" },
-      { title: "Integrations", subtitle: "Private workflow tools", meta: "Owner only" },
-      { title: "API Keys", subtitle: "Credential visibility restricted", meta: "Owner only" },
-    ];
+    return workspace.settings;
   }
 
   return workspace.audit.map((entry) => ({
-    title: entry.actor,
-    subtitle: entry.action,
-    meta: entry.time,
+    id: entry.id || `${entry.actor}-${entry.time}`,
+    title: entry.title || entry.actor,
+    subtitle: entry.subtitle || entry.action,
+    meta: entry.meta || entry.time,
+    notes: entry.notes || "",
   }));
+}
+
+function applyModulePayload(workspace, view, payload) {
+  if (payload.mode === "action") {
+    return appendModuleAction(workspace, view, payload);
+  }
+
+  return updateModuleRecord(workspace, view, payload);
+}
+
+function appendModuleAction(workspace, view, payload) {
+  const baseRecord = {
+    id: createId(view),
+    title: payload.title,
+    subtitle: payload.subtitle || payload.action,
+    meta: payload.meta || "Draft",
+    notes: payload.notes,
+  };
+
+  if (view === "payments") {
+    return {
+      ...workspace,
+      orders: [
+        {
+          id: `KJ-${Date.now().toString().slice(-4)}`,
+          customer: payload.title,
+          total: payload.subtitle || "$0",
+          status: payload.action,
+          refundLimit: "5%",
+          notes: payload.notes,
+        },
+        ...workspace.orders,
+      ],
+    };
+  }
+
+  if (view === "communication") {
+    return {
+      ...workspace,
+      customers: workspace.customers.map((customer, index) =>
+        index === 0
+          ? {
+              ...customer,
+              note: payload.notes || payload.subtitle,
+              notes: payload.notes,
+              orders: customer.orders,
+            }
+          : customer
+      ),
+    };
+  }
+
+  if (view === "content") {
+    return {
+      ...workspace,
+      content: [
+        {
+          id: baseRecord.id,
+          title: payload.title,
+          type: payload.action,
+          status: payload.meta || "Draft",
+          notes: payload.notes,
+        },
+        ...workspace.content,
+      ],
+    };
+  }
+
+  if (view === "marketing") {
+    return {
+      ...workspace,
+      promotions: [
+        {
+          id: baseRecord.id,
+          title: payload.title,
+          ownerApproval: payload.subtitle || "Required",
+          status: payload.meta || "Draft",
+          notes: payload.notes,
+        },
+        ...workspace.promotions,
+      ],
+    };
+  }
+
+  const collection = moduleCollectionKey(view);
+  if (!collection) {
+    return workspace;
+  }
+
+  return {
+    ...workspace,
+    [collection]: [baseRecord, ...workspace[collection]],
+  };
+}
+
+function updateModuleRecord(workspace, view, payload) {
+  if (view === "payments") {
+    return {
+      ...workspace,
+      orders: workspace.orders.map((order) =>
+        order.id === payload.id
+          ? {
+              ...order,
+              customer: payload.subtitle.split("/")[0]?.trim() || order.customer,
+              total: payload.subtitle.split("/")[1]?.trim() || order.total,
+              status: payload.meta.split("/")[0]?.trim() || order.status,
+              notes: payload.notes,
+            }
+          : order
+      ),
+    };
+  }
+
+  if (view === "communication") {
+    return {
+      ...workspace,
+      customers: workspace.customers.map((customer) =>
+        customer.email === payload.id
+          ? {
+              ...customer,
+              name: payload.title,
+              note: payload.subtitle,
+              notes: payload.notes,
+            }
+          : customer
+      ),
+    };
+  }
+
+  if (view === "content") {
+    return {
+      ...workspace,
+      content: workspace.content.map((entry) =>
+        (entry.id || entry.title) === payload.id
+          ? {
+              ...entry,
+              title: payload.title,
+              type: payload.subtitle,
+              status: payload.meta,
+              notes: payload.notes,
+            }
+          : entry
+      ),
+    };
+  }
+
+  if (view === "marketing") {
+    return {
+      ...workspace,
+      promotions: workspace.promotions.map((promotion) =>
+        (promotion.id || promotion.title) === payload.id
+          ? {
+              ...promotion,
+              title: payload.title,
+              ownerApproval: payload.subtitle,
+              status: payload.meta,
+              notes: payload.notes,
+            }
+          : promotion
+      ),
+    };
+  }
+
+  const collection = moduleCollectionKey(view);
+  if (!collection) {
+    return workspace;
+  }
+
+  return {
+    ...workspace,
+    [collection]: workspace[collection].map((record) =>
+      record.id === payload.id
+        ? {
+            ...record,
+            title: payload.title,
+            subtitle: payload.subtitle,
+            meta: payload.meta,
+            notes: payload.notes,
+          }
+        : record
+    ),
+  };
+}
+
+function moduleCollectionKey(view) {
+  const keys = {
+    contracts: "contracts",
+    measurements: "measurements",
+    materials: "materials",
+    settings: "settings",
+    audit: "audit",
+  };
+  return keys[view];
 }
 
 function hasModuleAccess(module, role) {
