@@ -3,7 +3,7 @@ import {
   ok,
   readBody,
   updatePasswordWithToken,
-} from "../../utils/customerAuth";
+} from "../../utils/customerAuth.js";
 
 export async function POST(request) {
   try {

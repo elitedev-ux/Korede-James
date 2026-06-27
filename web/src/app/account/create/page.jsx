@@ -53,7 +53,7 @@ export default function CreateAccountPage() {
         <div className="account-grid">
           <div className="account-copy">
             <p className="account-kicker">New Client</p>
-            <h1>Create Account</h1>
+            <h1>Client Account</h1>
             <p>
               Open a private account before starting a commission, saving pieces,
               or continuing a fitting conversation.

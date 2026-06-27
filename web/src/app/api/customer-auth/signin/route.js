@@ -3,7 +3,7 @@ import {
   fail,
   readBody,
   verifyCustomer,
-} from "../utils/customerAuth";
+} from "../utils/customerAuth.js";
 
 export async function POST(request) {
   try {

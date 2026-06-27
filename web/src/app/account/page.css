@@ -5,15 +5,16 @@
 }
 
 .account-shell {
-  width: min(100%, 1080px);
+  width: min(100%, 980px);
   margin: 0 auto;
-  padding: 9rem 1.5rem 7rem;
+  padding: 8.5rem 1.5rem 6rem;
 }
 
 .account-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.78fr) minmax(380px, 520px);
-  gap: 4rem;
+  grid-template-columns: minmax(260px, 340px) minmax(360px, 520px);
+  justify-content: center;
+  gap: 5rem;
   align-items: start;
 }
 
@@ -44,10 +45,10 @@
 }
 
 .account-copy h1 {
-  max-width: 8.25ch;
-  font-size: 4.7rem;
-  letter-spacing: 0.14em;
-  overflow-wrap: normal;
+  max-width: 7.5ch;
+  font-size: 3.9rem;
+  letter-spacing: 0.13em;
+  line-height: 1.12;
 }
 
 .account-copy p,
@@ -57,6 +58,10 @@
   font-size: 14px;
   font-weight: 300;
   line-height: 1.8;
+}
+
+.account-copy p {
+  max-width: 21rem;
 }
 
 .account-card {
@@ -217,11 +222,12 @@
 
   .account-grid {
     grid-template-columns: 1fr;
+    gap: 2.25rem;
   }
 
   .account-copy h1 {
-    max-width: none;
-    font-size: 3.5rem;
+    max-width: 9ch;
+    font-size: 3rem;
   }
 }
 
@@ -235,7 +241,7 @@
   }
 
   .account-copy h1 {
-    font-size: 2.75rem;
+    font-size: 2.35rem;
     letter-spacing: 0.1em;
   }
 
