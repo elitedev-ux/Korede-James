@@ -9,6 +9,7 @@ import { recordAdminInquiry } from "../../utils/adminWorkspace";
 export default function CommissionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedId, setSubmittedId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,24 +20,30 @@ export default function CommissionPage() {
     notes: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const request = recordAdminInquiry({
-      client: formData.name,
-      email: formData.email,
-      artifact: formData.type,
-      budget: formData.budget,
-      due: formData.date,
-      source: "Bespoke enquiry",
-      notes: [
-        formData.measurements ? `Measurements: ${formData.measurements}` : "",
-        formData.notes,
-      ]
-        .filter(Boolean)
-        .join("\n\n"),
-    });
-    setSubmittedId(request.id);
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+
+    try {
+      const request = await recordAdminInquiry({
+        client: formData.name,
+        email: formData.email,
+        artifact: formData.type,
+        budget: formData.budget,
+        due: formData.date,
+        source: "Bespoke enquiry",
+        notes: [
+          formData.measurements ? `Measurements: ${formData.measurements}` : "",
+          formData.notes,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+      });
+      setSubmittedId(request.id);
+      setIsSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -263,13 +270,14 @@ export default function CommissionPage() {
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4 group"
                 >
                   <Send
                     size={16}
                     className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform"
                   />
-                  <span>Send Inquiry</span>
+                  <span>{isSubmitting ? "Sending..." : "Send Inquiry"}</span>
                 </button>
               </form>
             )}

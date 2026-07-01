@@ -11,34 +11,41 @@ export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
   const [orderId, setOrderId] = useState("");
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const firstName = String(form.get("firstName") || "").trim();
     const lastName = String(form.get("lastName") || "").trim();
-    const order = recordAdminOrder({
-      customer: {
-        name: [firstName, lastName].filter(Boolean).join(" ") || "Website Client",
-        email: String(form.get("email") || "").trim(),
-        phone: String(form.get("phone") || "").trim(),
-      },
-      contact: String(form.get("phone") || "").trim(),
-      shipping: [
-        form.get("address"),
-        form.get("city"),
-        form.get("region"),
-        form.get("postalCode"),
-        form.get("country"),
-      ]
-        .filter(Boolean)
-        .join(", "),
-      items: cart,
-    });
-    setSubmittedBlueprint(cart);
-    setOrderId(order.id);
-    clearCart();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsSubmitting(true);
+
+    try {
+      const order = await recordAdminOrder({
+        customer: {
+          name: [firstName, lastName].filter(Boolean).join(" ") || "Website Client",
+          email: String(form.get("email") || "").trim(),
+          phone: String(form.get("phone") || "").trim(),
+        },
+        contact: String(form.get("phone") || "").trim(),
+        shipping: [
+          form.get("address"),
+          form.get("city"),
+          form.get("region"),
+          form.get("postalCode"),
+          form.get("country"),
+        ]
+          .filter(Boolean)
+          .join(", "),
+        items: cart,
+      });
+      setSubmittedBlueprint(cart);
+      setOrderId(order.id);
+      clearCart();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (orderId) {
@@ -66,7 +73,7 @@ export default function CheckoutPage() {
           </div>
           <div className="text-center">
             <a
-              href="/track"
+              href={`/track?commission=${encodeURIComponent(orderId)}`}
               className="inline-flex items-center justify-center bg-black text-white px-12 py-5 text-[10px] uppercase tracking-[0.35em] font-semibold hover:bg-amber-800 transition-colors"
             >
               Track Commission
@@ -154,9 +161,10 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all"
               >
-                Submit Commission
+                {isSubmitting ? "Submitting..." : "Submit Commission"}
               </button>
             </form>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   CheckCircle2,
@@ -24,8 +24,11 @@ import {
   Workflow,
 } from "lucide-react";
 import {
+  ADMIN_ACCESS_SECRET_KEY,
   ADMIN_WORKSPACE_STORAGE_KEY,
   createEmptyAdminWorkspace,
+  fetchAdminWorkspace,
+  saveAdminWorkspace,
 } from "../../utils/adminWorkspace";
 import "./page.css";
 
@@ -423,12 +426,8 @@ function normalizeWorkspace(workspace) {
   };
 }
 
-function persistWorkspace(workspace) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+async function persistWorkspace(workspace) {
+  return saveAdminWorkspace(workspace);
 }
 
 function readFileAsDataUrl(file) {
@@ -453,6 +452,7 @@ export default function AdminPage() {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [saveState, setSaveState] = useState("Saved");
+  const saveTimerRef = useRef(null);
   const [newPiece, setNewPiece] = useState({
     title: "",
     category: "Outerwear",
@@ -474,7 +474,16 @@ export default function AdminPage() {
       setSessionRole(storedRole);
       setCurrentRole(storedRole);
       setUnlocked(true);
+      fetchAdminWorkspace().then(setWorkspace);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+      }
+    };
   }, []);
 
   const selectedRequest =
@@ -583,8 +592,18 @@ export default function AdminPage() {
 
   const commitWorkspace = (nextWorkspace) => {
     setWorkspace(nextWorkspace);
-    persistWorkspace(nextWorkspace);
-    setSaveState("Saved");
+    setSaveState("Saving...");
+
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+
+    persistWorkspace(nextWorkspace).then((savedWorkspace) => {
+      setWorkspace(savedWorkspace);
+      saveTimerRef.current = window.setTimeout(() => {
+        setSaveState("Saved just now");
+      }, 500);
+    });
   };
 
   const updateRequest = (requestId, patch) => {
@@ -741,15 +760,20 @@ export default function AdminPage() {
     const [, matchedRole] = matchedEntry;
     window.localStorage.setItem(ACCESS_KEY, "true");
     window.localStorage.setItem(ACCESS_ROLE_KEY, matchedRole);
+    window.localStorage.setItem(ADMIN_ACCESS_SECRET_KEY, accessCode.trim());
+    window.sessionStorage.setItem(ADMIN_ACCESS_SECRET_KEY, accessCode.trim());
     setSessionRole(matchedRole);
     setCurrentRole(matchedRole);
     setUnlocked(true);
     setAccessError("");
+    fetchAdminWorkspace().then(setWorkspace);
   };
 
   const handleLogout = () => {
     window.localStorage.removeItem(ACCESS_KEY);
     window.localStorage.removeItem(ACCESS_ROLE_KEY);
+    window.localStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
+    window.sessionStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
     setUnlocked(false);
     setSessionRole("owner");
     setCurrentRole("owner");
@@ -853,8 +877,11 @@ export default function AdminPage() {
               <span className="admin-role-badge">{activeRoleProfile.label}</span>
             )}
             <span className="admin-private-pill">Private</span>
-            <div className="admin-save-state">
-              <CheckCircle2 size={15} />
+            <div
+              className={`admin-save-state ${saveState === "Saving..." ? "is-saving" : ""}`}
+              aria-live="polite"
+            >
+              {saveState === "Saving..." ? <Clock size={15} /> : <CheckCircle2 size={15} />}
               <span>{saveState}</span>
             </div>
           </div>

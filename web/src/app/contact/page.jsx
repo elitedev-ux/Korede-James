@@ -7,20 +7,27 @@ import { recordAdminInquiry } from "../../utils/adminWorkspace";
 
 export default function ContactPage() {
   const [submittedId, setSubmittedId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const request = recordAdminInquiry({
-      client: String(form.get("name") || "").trim(),
-      email: String(form.get("email") || "").trim(),
-      artifact: String(form.get("subject") || "").trim(),
-      budget: "To be quoted",
-      source: "Contact enquiry",
-      notes: String(form.get("message") || "").trim(),
-    });
-    setSubmittedId(request.id);
-    event.currentTarget.reset();
+    setIsSubmitting(true);
+
+    try {
+      const request = await recordAdminInquiry({
+        client: String(form.get("name") || "").trim(),
+        email: String(form.get("email") || "").trim(),
+        artifact: String(form.get("subject") || "").trim(),
+        budget: "To be quoted",
+        source: "Contact enquiry",
+        notes: String(form.get("message") || "").trim(),
+      });
+      setSubmittedId(request.id);
+      event.currentTarget.reset();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -189,9 +196,10 @@ export default function ContactPage() {
               </div>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4"
               >
-                <span>Submit Inquiry</span>
+                <span>{isSubmitting ? "Submitting..." : "Submit Inquiry"}</span>
                 <Send size={16} />
               </button>
             </form>

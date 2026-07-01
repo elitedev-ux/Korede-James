@@ -1,4 +1,5 @@
 export const ADMIN_WORKSPACE_STORAGE_KEY = "korede-james-admin-workspace-v2";
+export const ADMIN_ACCESS_SECRET_KEY = "korede-james-admin-secret";
 
 export function createEmptyAdminWorkspace() {
   return {
@@ -41,7 +42,72 @@ export function writeAdminWorkspace(workspace) {
   );
 }
 
-export function recordAdminInquiry({
+export async function fetchAdminWorkspace() {
+  try {
+    const data = await apiRequest("/api/admin-workspace", {
+      headers: adminHeaders(),
+    });
+    writeAdminWorkspace(data.workspace);
+    return normalizeAdminWorkspace(data.workspace);
+  } catch {
+    return readAdminWorkspace();
+  }
+}
+
+export async function saveAdminWorkspace(workspace) {
+  writeAdminWorkspace(workspace);
+
+  try {
+    const data = await apiRequest("/api/admin-workspace", {
+      method: "PATCH",
+      headers: adminHeaders(),
+      body: JSON.stringify({ workspace }),
+    });
+    writeAdminWorkspace(data.workspace);
+    return normalizeAdminWorkspace(data.workspace);
+  } catch {
+    return normalizeAdminWorkspace(workspace);
+  }
+}
+
+export async function recordAdminInquiry(payload) {
+  try {
+    const data = await apiRequest("/api/commissions", {
+      method: "POST",
+      body: JSON.stringify({ ...payload, type: "inquiry" }),
+    });
+    writeAdminWorkspace(data.workspace);
+    return data.request;
+  } catch {
+    return recordAdminInquiryLocally(payload);
+  }
+}
+
+export async function recordAdminOrder(payload) {
+  try {
+    const data = await apiRequest("/api/commissions", {
+      method: "POST",
+      body: JSON.stringify({ ...payload, type: "order" }),
+    });
+    writeAdminWorkspace(data.workspace);
+    return data.order;
+  } catch {
+    return recordAdminOrderLocally(payload);
+  }
+}
+
+export async function trackAdminCommission({ commissionId, email }) {
+  try {
+    return await apiRequest("/api/commissions/track", {
+      method: "POST",
+      body: JSON.stringify({ commissionId, email }),
+    });
+  } catch {
+    return findLocalCommissionRecord({ commissionId, email });
+  }
+}
+
+function recordAdminInquiryLocally({
   client,
   email,
   artifact,
@@ -95,7 +161,7 @@ export function recordAdminInquiry({
   return request;
 }
 
-export function recordAdminOrder({ customer, items, contact, shipping }) {
+function recordAdminOrderLocally({ customer, items, contact, shipping }) {
   const workspace = readAdminWorkspace();
   const orderId = createWorkspaceId("KJ");
   const itemSummary = items
@@ -149,6 +215,46 @@ export function recordAdminOrder({ customer, items, contact, shipping }) {
   });
 
   return order;
+}
+
+function findLocalCommissionRecord({ commissionId, email }) {
+  const workspace = readAdminWorkspace();
+  const normalizedInputId = normalizeLookup(commissionId);
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+
+  const order = workspace.orders.find(
+    (item) => normalizeLookup(item.id) === normalizedInputId,
+  );
+  const request = workspace.requests.find((item) => {
+    const requestIds = [
+      item.id,
+      item.id?.replace(/^req-/i, ""),
+      order ? `req-${order.id}` : "",
+    ].map(normalizeLookup);
+    const matchesId = requestIds.includes(normalizedInputId);
+    const matchesEmail =
+      String(item.email || "").trim().toLowerCase() === normalizedEmail;
+
+    if (order) {
+      return (
+        matchesEmail &&
+        (requestIds.includes(normalizeLookup(`req-${order.id}`)) ||
+          item.client === order.customer)
+      );
+    }
+
+    return matchesId && matchesEmail;
+  });
+
+  if (!request) {
+    return null;
+  }
+
+  return {
+    request,
+    order,
+    displayId: order?.id || request.id,
+  };
 }
 
 function normalizeAdminWorkspace(workspace) {
@@ -224,4 +330,44 @@ function formatWorkspaceDetails(value) {
   }
 
   return Object.values(value).filter(Boolean).join(", ");
+}
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const text = await response.text();
+  let data = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || data.message || "Workspace request failed.");
+  }
+
+  return data;
+}
+
+function adminHeaders() {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const code =
+    window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY) ||
+    window.localStorage.getItem(ADMIN_ACCESS_SECRET_KEY);
+
+  return code ? { "x-kj-admin-code": code } : {};
+}
+
+function normalizeLookup(value = "") {
+  return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }

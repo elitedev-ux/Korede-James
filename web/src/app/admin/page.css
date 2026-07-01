@@ -220,6 +220,16 @@
 .admin-save-state {
   color: #315c38;
   background: #edf6ef;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.admin-save-state.is-saving {
+  color: #6d4c18;
+  background: #fff3d9;
+}
+
+.admin-save-state.is-saving svg {
+  animation: admin-save-spin 900ms linear infinite;
 }
 
 .admin-private-pill,
@@ -231,6 +241,12 @@
 .admin-status {
   color: #5e544b;
   background: #eee9e2;
+}
+
+@keyframes admin-save-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .admin-status--new-inquiry,
