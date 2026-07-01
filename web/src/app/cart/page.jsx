@@ -8,6 +8,12 @@ import useStore from "../../store/useStore";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity } = useStore();
+  const subtotal = cart.reduce(
+    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
+    0,
+  );
+  const shipping = subtotal > 0 ? 75 : 0;
+  const total = subtotal + shipping;
 
   return (
     <main className="min-h-screen bg-white">
@@ -46,7 +52,7 @@ export default function CartPage() {
                         </p>
                       </div>
                       <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400">
-                        Quote pending
+                        {formatCurrency(item.price * item.quantity)}
                       </p>
                     </div>
 
@@ -116,25 +122,25 @@ export default function CartPage() {
                 </h3>
                 <div className="space-y-6 mb-10">
                   <div className="flex justify-between text-xs tracking-widest">
-                    <span className="text-gray-400 uppercase">Selected pieces</span>
-                    <span className="font-bold">{cart.length}</span>
+                    <span className="text-gray-400 uppercase">Subtotal</span>
+                    <span className="font-bold">{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
-                    <span className="text-gray-400 uppercase">Atelier review</span>
-                    <span className="font-bold">Required</span>
+                    <span className="text-gray-400 uppercase">Transit</span>
+                    <span className="font-bold">{formatCurrency(shipping)}</span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
                     <span className="text-gray-400 uppercase">
                       Payment
                     </span>
-                    <span className="font-bold">Not required now</span>
+                    <span className="font-bold">Due at checkout</span>
                   </div>
                   <div className="pt-6 border-t border-gray-200 flex justify-between items-end">
                     <span className="text-xs uppercase tracking-widest font-bold">
-                      Total Due
+                      Total
                     </span>
                     <span className="text-2xl font-serif">
-                      Free
+                      {formatCurrency(total)}
                     </span>
                   </div>
                 </div>
@@ -151,8 +157,8 @@ export default function CartPage() {
                 </a>
 
                 <p className="mt-8 text-center text-[8px] uppercase tracking-widest text-gray-400 leading-loose">
-                  Final pricing, delivery, and atelier details are confirmed
-                  after your commission request is reviewed.
+                  Payment is captured with your commission request and reviewed
+                  by the atelier desk.
                 </p>
               </div>
             </div>
@@ -183,4 +189,8 @@ export default function CartPage() {
       <Footer />
     </main>
   );
+}
+
+function formatCurrency(value) {
+  return `\u00a3${Number(value || 0).toLocaleString()}`;
 }

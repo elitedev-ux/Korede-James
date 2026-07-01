@@ -104,13 +104,22 @@ export async function appendOrder(payload) {
     .join(", ");
   const contactSummary = formatWorkspaceDetails(payload.contact);
   const shippingSummary = formatWorkspaceDetails(payload.shipping);
+  const payment = payload.payment || {};
+  const computedSubtotal = items.reduce(
+    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
+    0
+  );
+  const subtotal = Number(payment.subtotal) || computedSubtotal;
+  const shipping = Number(payment.shipping) || (subtotal > 0 ? 75 : 0);
+  const total = Number(payment.total) || subtotal + shipping;
+  const totalLabel = formatCurrency(total);
   const customer = payload.customer || {};
   const request = {
     id: `req-${orderId.toLowerCase()}`,
     client: customer.name || "Website Client",
     email: customer.email || "No email provided",
     artifact: itemSummary || "Collection order",
-    budget: "No payment due at submission",
+    budget: totalLabel,
     status: "Inquiry received",
     stage: "Inquiry received",
     due: "To be scheduled",
@@ -121,7 +130,7 @@ export async function appendOrder(payload) {
       contactSummary ? `Contact: ${contactSummary}` : "",
       shippingSummary ? `Delivery: ${shippingSummary}` : "",
       itemSummary ? `Pieces: ${itemSummary}` : "",
-      "Payment: no payment collected. Atelier review required.",
+      `Payment: ${totalLabel} via ${payment.method || "Card"}${payment.cardLast4 ? ` ending ${payment.cardLast4}` : ""}.`,
     ]
       .filter(Boolean)
       .join("\n"),
@@ -129,7 +138,7 @@ export async function appendOrder(payload) {
   const order = {
     id: orderId,
     customer: request.client,
-    total: "No payment due",
+    total: totalLabel,
     status: "Inquiry received",
     refundLimit: "Not applicable",
     notes: request.notes,
@@ -144,7 +153,7 @@ export async function appendOrder(payload) {
       note: `Submitted ${items.length} collection piece${items.length === 1 ? "" : "s"}.`,
     }),
     audit: [
-      createAuditEntry(`Received free collection order ${orderId}`),
+      createAuditEntry(`Received paid collection order ${orderId}`),
       ...workspace.audit,
     ],
   });
@@ -304,6 +313,10 @@ function formatWorkspaceDetails(value) {
   }
 
   return Object.values(value).filter(Boolean).join(", ");
+}
+
+function formatCurrency(value) {
+  return `\u00a3${Number(value || 0).toLocaleString()}`;
 }
 
 function normalizeLookup(value = "") {

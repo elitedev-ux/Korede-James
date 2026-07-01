@@ -161,7 +161,7 @@ function recordAdminInquiryLocally({
   return request;
 }
 
-function recordAdminOrderLocally({ customer, items, contact, shipping }) {
+function recordAdminOrderLocally({ customer, items, contact, shipping, payment }) {
   const workspace = readAdminWorkspace();
   const orderId = createWorkspaceId("KJ");
   const itemSummary = items
@@ -169,12 +169,20 @@ function recordAdminOrderLocally({ customer, items, contact, shipping }) {
     .join(", ");
   const contactSummary = formatWorkspaceDetails(contact);
   const shippingSummary = formatWorkspaceDetails(shipping);
+  const computedSubtotal = items.reduce(
+    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
+    0,
+  );
+  const subtotal = Number(payment?.subtotal) || computedSubtotal;
+  const transit = Number(payment?.shipping) || (subtotal > 0 ? 75 : 0);
+  const total = Number(payment?.total) || subtotal + transit;
+  const totalLabel = formatCurrency(total);
   const request = {
     id: `req-${orderId.toLowerCase()}`,
     client: customer.name,
     email: customer.email,
     artifact: itemSummary || "Collection order",
-    budget: "No payment due at submission",
+    budget: totalLabel,
     status: "Inquiry received",
     stage: "Inquiry received",
     due: "To be scheduled",
@@ -185,7 +193,7 @@ function recordAdminOrderLocally({ customer, items, contact, shipping }) {
       contactSummary ? `Contact: ${contactSummary}` : "",
       shippingSummary ? `Delivery: ${shippingSummary}` : "",
       itemSummary ? `Pieces: ${itemSummary}` : "",
-      "Payment: no payment collected. Atelier review required.",
+      `Payment: ${totalLabel} via ${payment?.method || "Card"}${payment?.cardLast4 ? ` ending ${payment.cardLast4}` : ""}.`,
     ]
       .filter(Boolean)
       .join("\n"),
@@ -193,7 +201,7 @@ function recordAdminOrderLocally({ customer, items, contact, shipping }) {
   const order = {
     id: orderId,
     customer: customer.name,
-    total: "No payment due",
+    total: totalLabel,
     status: "Inquiry received",
     refundLimit: "Not applicable",
     notes: request.notes,
@@ -209,7 +217,7 @@ function recordAdminOrderLocally({ customer, items, contact, shipping }) {
       note: `Submitted ${items.length} collection piece${items.length === 1 ? "" : "s"}.`,
     }),
     audit: [
-      createAuditEntry(`Received free collection order ${orderId}`),
+      createAuditEntry(`Received paid collection order ${orderId}`),
       ...workspace.audit,
     ],
   });
@@ -330,6 +338,10 @@ function formatWorkspaceDetails(value) {
   }
 
   return Object.values(value).filter(Boolean).join(", ");
+}
+
+function formatCurrency(value) {
+  return `\u00a3${Number(value || 0).toLocaleString()}`;
 }
 
 async function apiRequest(path, options = {}) {

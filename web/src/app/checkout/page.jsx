@@ -12,6 +12,12 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState("");
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const subtotal = cart.reduce(
+    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
+    0,
+  );
+  const shipping = subtotal > 0 ? 75 : 0;
+  const total = subtotal + shipping;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -38,6 +44,13 @@ export default function CheckoutPage() {
           .filter(Boolean)
           .join(", "),
         items: cart,
+        payment: {
+          subtotal,
+          shipping,
+          total,
+          method: String(form.get("paymentMethod") || "Card").trim(),
+          cardLast4: String(form.get("cardNumber") || "").replace(/\D/g, "").slice(-4),
+        },
       });
       setSubmittedBlueprint(cart);
       setOrderId(order.id);
@@ -64,7 +77,7 @@ export default function CheckoutPage() {
           <p className="text-gray-500 font-light leading-relaxed mb-12 text-center max-w-2xl mx-auto">
             Thank you. Your commission request has been received. A member of the
             Korede James team will contact you to confirm measurements, delivery
-            details, and the next atelier steps. No payment has been collected.
+            details, payment status, and the next atelier steps.
           </p>
           <div className="space-y-8 mb-12">
             {submittedBlueprint.map((item, index) => (
@@ -152,10 +165,32 @@ export default function CheckoutPage() {
                 </div>
               </CheckoutSection>
 
+              <CheckoutSection title="Payment Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="block md:col-span-2">
+                    <span className="block text-[9px] uppercase tracking-[0.3em] text-gray-400 mb-3">
+                      Payment Method
+                    </span>
+                    <select
+                      name="paymentMethod"
+                      className="w-full bg-white border border-gray-200 px-5 py-4 text-sm focus:outline-none focus:border-black transition-colors"
+                    >
+                      <option>Card</option>
+                      <option>Bank Transfer</option>
+                    </select>
+                  </label>
+                  <Field label="Card Number" name="cardNumber" inputMode="numeric" />
+                  <Field label="Expiry" name="cardExpiry" placeholder="MM / YY" />
+                  <Field label="Security Code" name="cardCvc" inputMode="numeric" />
+                  <Field label="Name on Card" name="cardName" />
+                </div>
+              </CheckoutSection>
+
               <CheckoutSection title="Submission">
                 <p className="text-xs font-light leading-loose text-gray-500">
-                  This order is submitted for atelier review only. No card,
-                  deposit, or payment is required to test or begin the request.
+                  Your payment details are attached to the commission request for
+                  atelier review. Final capture and fulfillment status will be
+                  confirmed by the studio desk.
                 </p>
               </CheckoutSection>
 
@@ -188,10 +223,10 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-5 text-xs tracking-widest border-t border-gray-200 pt-6">
-                  <SummaryLine label="Registered Value" value="Atelier quote pending" />
-                  <SummaryLine label="Transit" value="Confirmed after review" />
-                  <SummaryLine label="Payment" value="Not required now" />
-                  <SummaryLine label="Total Due" value="No payment due" />
+                  <SummaryLine label="Registered Value" value={formatCurrency(subtotal)} />
+                  <SummaryLine label="Transit" value={formatCurrency(shipping)} />
+                  <SummaryLine label="Payment" value="Card / transfer" />
+                  <SummaryLine label="Total Due" value={formatCurrency(total)} />
                 </div>
 
                 <p className="mt-8 text-[9px] uppercase tracking-widest text-gray-400 leading-loose">
@@ -244,6 +279,10 @@ function SummaryLine({ label, value }) {
       <span className="font-bold">{value}</span>
     </div>
   );
+}
+
+function formatCurrency(value) {
+  return `\u00a3${Number(value || 0).toLocaleString()}`;
 }
 
 function ArtifactBlueprint({ item }) {

@@ -92,6 +92,14 @@ export default function ProductDetailsPage({ params }) {
                     {product.name}
                   </span>
                 </div>
+                <div className="flex items-center justify-between gap-8 border-b border-gray-100 py-6">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-gray-400">
+                    Registered value
+                  </span>
+                  <span className="text-xs uppercase tracking-[0.2em] font-semibold text-right">
+                    {formatCurrency(product.price)}
+                  </span>
+                </div>
               </PortalStep>
 
               <PortalStep number="02" title="The Palette">
@@ -210,4 +218,8 @@ function PortalStep({ number, title, children }) {
       {children}
     </section>
   );
+}
+
+function formatCurrency(value) {
+  return `\u00a3${Number(value || 0).toLocaleString()}`;
 }

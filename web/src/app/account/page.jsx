@@ -67,8 +67,8 @@ export default function AccountPage() {
             <p className="account-kicker">Private Account</p>
             <h1>Client Portal</h1>
             <p>
-              Keep commission details, saved pieces, fitting updates, and atelier
-              communication in one quiet place.
+              Keep commission details, fitting updates, payment records, and
+              atelier communication in one quiet place.
             </p>
           </div>
 
@@ -93,8 +93,8 @@ export default function AccountPage() {
                   <span>Awaiting atelier update</span>
                 </div>
                 <div className="account-mini-row">
-                  <strong>Saved Pieces</strong>
-                  <span>Synced from wishlist later</span>
+                  <strong>Payments</strong>
+                  <span>Awaiting atelier invoice</span>
                 </div>
               </div>
 

@@ -19,7 +19,6 @@
 }
 
 .site-navbar__account-icon,
-.site-navbar__wishlist-icon,
 .site-navbar__cart-icon {
   display: inline-flex;
   align-items: center;
@@ -52,8 +51,7 @@
     gap: 0;
   }
 
-  .site-navbar__account-icon,
-  .site-navbar__wishlist-icon {
+  .site-navbar__account-icon {
     display: none;
   }
 }
