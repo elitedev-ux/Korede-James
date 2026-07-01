@@ -23,9 +23,13 @@ import {
   Users,
   Workflow,
 } from "lucide-react";
+import {
+  ADMIN_WORKSPACE_STORAGE_KEY,
+  createEmptyAdminWorkspace,
+} from "../../utils/adminWorkspace";
 import "./page.css";
 
-const STORAGE_KEY = "korede-james-admin-workspace-v1";
+const STORAGE_KEY = ADMIN_WORKSPACE_STORAGE_KEY;
 const ACCESS_KEY = "korede-james-admin-unlocked";
 const ACCESS_ROLE_KEY = "korede-james-admin-role";
 const rolePasswords = {
@@ -378,216 +382,7 @@ const crossRoleRequirements = [
   "Client data visible only to roles directly handling that project",
 ];
 
-const defaultWorkspace = {
-  requests: [
-    {
-      id: "req-1001",
-      client: "Amara Okoye",
-      email: "amara@example.com",
-      artifact: "Evening Wear",
-      budget: "$5,000 - $10,000",
-      status: "Inquiry received",
-      stage: "Inquiry received",
-      due: "2026-07-18",
-      updated: "Today",
-      notes: "Wants a white structured silhouette with red styling references.",
-    },
-    {
-      id: "req-1002",
-      client: "Tomi Adeyemi",
-      email: "tomi@example.com",
-      artifact: "Bridal",
-      budget: "$10,000 - $25,000",
-      status: "In progress - Toile & Fittings",
-      stage: "Toile & Fittings",
-      due: "2026-08-04",
-      updated: "Yesterday",
-      notes: "Fabric sourcing is pending. Client prefers a clean gallery-style mood board.",
-    },
-    {
-      id: "req-1003",
-      client: "Kemi Lawal",
-      email: "kemi@example.com",
-      artifact: "Others",
-      budget: "$25,000+",
-      status: "Revisions requested",
-      stage: "Revisions requested",
-      due: "2026-07-02",
-      updated: "2 days ago",
-      notes: "First fitting complete. Adjust shoulder volume and sleeve drop.",
-    },
-  ],
-  pieces: [
-    {
-      id: "piece-01",
-      title: "Independence Jacket",
-      category: "Outerwear",
-      image: "/assets/freedom/freedom-product-01.jpg",
-      visibility: "Visible",
-      availability: "Available",
-      budget: "$5,000 - $10,000",
-      description:
-        "Structured white outerwear with exposed stitching and a clean gallery-ready silhouette.",
-    },
-    {
-      id: "piece-02",
-      title: "Inheritance Wrap",
-      category: "Tailoring",
-      image: "/assets/freedom/freedom-product-02.jpg",
-      visibility: "Visible",
-      availability: "Commissioned",
-      budget: "$10,000 - $25,000",
-      description:
-        "Layered wrap tailoring for private commission requests and atelier reference.",
-    },
-    {
-      id: "piece-03",
-      title: "Memory Suit",
-      category: "Suits",
-      image: "/assets/freedom/freedom-product-04.jpg",
-      visibility: "Hidden",
-      availability: "Available",
-      budget: "$25,000+",
-      description:
-        "Ceremonial white suit with sculptural volume and quiet formal presence.",
-    },
-  ],
-  team: [
-    {
-      id: "team-01",
-      name: "Korede James",
-      email: "owner@koredejames.com",
-      role: "owner",
-      status: "Active",
-    },
-    {
-      id: "team-02",
-      name: "Studio Editor",
-      email: "editor@koredejames.com",
-      role: "editor",
-      status: "Invited",
-    },
-    {
-      id: "team-03",
-      name: "Client Support",
-      email: "support@koredejames.com",
-      role: "support",
-      status: "Active",
-    },
-    {
-      id: "team-04",
-      name: "Studio Tailor",
-      email: "studio@koredejames.com",
-      role: "studio",
-      status: "Active",
-    },
-  ],
-  orders: [
-    {
-      id: "KJ-1024",
-      customer: "Amara Okoye",
-      total: "$2,850",
-      status: "Fulfillment",
-      refundLimit: "$50",
-    },
-    {
-      id: "KJ-1025",
-      customer: "Tomi Adeyemi",
-      total: "$5,200",
-      status: "Review",
-      refundLimit: "$50",
-    },
-  ],
-  customers: [
-    {
-      name: "Amara Okoye",
-      email: "amara@example.com",
-      orders: 3,
-      note: "Prefers WhatsApp updates.",
-    },
-    {
-      name: "Tomi Adeyemi",
-      email: "tomi@example.com",
-      orders: 1,
-      note: "Waiting for fabric confirmation.",
-    },
-  ],
-  contracts: [
-    {
-      id: "contract-01",
-      title: "KJ-1024 Agreement",
-      subtitle: "Usage rights and delivery terms",
-      meta: "Owner only",
-      notes: "Client permission required before portfolio publishing.",
-    },
-    {
-      id: "contract-02",
-      title: "KJ-1025 Bridal Contract",
-      subtitle: "Pending signature",
-      meta: "Draft",
-      notes: "Send revised delivery terms after quote approval.",
-    },
-  ],
-  measurements: [
-    {
-      id: "measurement-01",
-      title: "Amara Okoye",
-      subtitle: "Assigned fitting record",
-      meta: "Restricted",
-      notes: "Shoulder width 15.5, waist confirmation pending.",
-    },
-    {
-      id: "measurement-02",
-      title: "Tomi Adeyemi",
-      subtitle: "Revision measurements pending",
-      meta: "Restricted",
-      notes: "Confirm hem length at next fitting.",
-    },
-  ],
-  materials: [
-    {
-      id: "material-01",
-      title: "Structured cotton",
-      subtitle: "Logged for Independence Jacket",
-      meta: "Inventory",
-      notes: "Three meters reserved for active commission.",
-    },
-    {
-      id: "material-02",
-      title: "White voile",
-      subtitle: "Used for fitting toile",
-      meta: "Studio",
-      notes: "Used during toile and fitting stage.",
-    },
-    {
-      id: "material-03",
-      title: "Supplier cost sheet",
-      subtitle: "Owner visibility only",
-      meta: "Restricted",
-      notes: "Hide supplier pricing from Studio unless granted.",
-    },
-  ],
-  content: [
-    { id: "content-01", title: "Freedom Collection", type: "Portfolio", status: "Published", notes: "Visible on collection page." },
-    { id: "content-02", title: "Atelier Notes", type: "Blog", status: "Draft", notes: "Awaiting Owner review." },
-    { id: "content-03", title: "Commission Guide", type: "Page", status: "Published", notes: "Keep concise and client-facing." },
-  ],
-  promotions: [
-    { id: "promotion-01", title: "Private Client Preview", status: "Draft", ownerApproval: "Required", notes: "For client previews only." },
-    { id: "promotion-02", title: "Featured Freedom Pieces", status: "Published", ownerApproval: "Approved", notes: "Feature on homepage after approval." },
-  ],
-  settings: [
-    { id: "setting-01", title: "Payment Gateway", subtitle: "Processor tokenization only", meta: "Owner only", notes: "Paystack wiring pending." },
-    { id: "setting-02", title: "Tax Config", subtitle: "Commission invoices", meta: "Owner only", notes: "Confirm regional tax policy." },
-    { id: "setting-03", title: "Integrations", subtitle: "Private workflow tools", meta: "Owner only", notes: "Supabase customer auth connected." },
-    { id: "setting-04", title: "API Keys", subtitle: "Credential visibility restricted", meta: "Owner only", notes: "Keep keys in Vercel env only." },
-  ],
-  audit: [
-    { id: "audit-01", actor: "Korede James", action: "Updated product availability", time: "Today" },
-    { id: "audit-02", actor: "Studio Editor", action: "Drafted promotion", time: "Yesterday" },
-    { id: "audit-03", actor: "Client Support", action: "Added support note", time: "2 days ago" },
-  ],
-};
+const defaultWorkspace = createEmptyAdminWorkspace();
 
 function createId(prefix) {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -654,7 +449,7 @@ export default function AdminPage() {
   const [sessionRole, setSessionRole] = useState("owner");
   const [currentRole, setCurrentRole] = useState("owner");
   const [selectedRequestId, setSelectedRequestId] = useState(
-    defaultWorkspace.requests[0].id
+    defaultWorkspace.requests[0]?.id || ""
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [saveState, setSaveState] = useState("Saved");
@@ -732,24 +527,34 @@ export default function AdminPage() {
 
     if (currentRole === "editor") {
       return [
-        { label: "Content Drafts", value: 3, detail: "Awaiting review", icon: FileText },
+        {
+          label: "Content Drafts",
+          value: workspace.content.filter((entry) => entry.status === "Draft").length,
+          detail: "Awaiting review",
+          icon: FileText,
+        },
         { label: "Portfolio Items", value: visiblePieces, detail: "Ready to feature", icon: Package },
-        { label: "Media Library", value: 18, detail: "Process assets", icon: Upload },
+        { label: "Media Library", value: workspace.pieces.length, detail: "Uploaded pieces", icon: Upload },
       ];
     }
 
     if (currentRole === "studio") {
       return [
-        { label: "Assigned Jobs", value: 3, detail: "Production queue", icon: Workflow },
-        { label: "Fittings", value: 2, detail: "Scheduled", icon: User },
-        { label: "Material Logs", value: 5, detail: "This week", icon: Package },
+        { label: "Assigned Jobs", value: activeRequests, detail: "Production queue", icon: Workflow },
+        { label: "Fittings", value: workspace.measurements.length, detail: "Scheduled", icon: User },
+        { label: "Material Logs", value: workspace.materials.length, detail: "This week", icon: Package },
       ];
     }
 
     if (currentRole === "support") {
       return [
-        { label: "Open Threads", value: 6, detail: "Client replies", icon: Users },
-        { label: "Revision Requests", value: 2, detail: "Needs update", icon: Workflow },
+        { label: "Open Threads", value: workspace.customers.length, detail: "Client replies", icon: Users },
+        {
+          label: "Revision Requests",
+          value: workspace.requests.filter((request) => request.status === "Revisions requested").length,
+          detail: "Needs update",
+          icon: Workflow,
+        },
         { label: "Refund Limit", value: "5%", detail: "Owner above cap", icon: ShoppingBag },
       ];
     }
@@ -879,8 +684,7 @@ export default function AdminPage() {
       id: createId("piece"),
       title: newPiece.title.trim(),
       category: newPiece.category,
-      image:
-        newPiece.image.trim() || "/assets/freedom/freedom-product-01.jpg",
+      image: newPiece.image.trim(),
       visibility: "Hidden",
       availability: newPiece.availability,
       budget: newPiece.budget,
@@ -1108,17 +912,21 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="admin-mini-list">
-                  {workspace.pieces.slice(0, 4).map((piece) => (
-                    <div key={piece.id} className="admin-mini-piece">
-                      <img src={piece.image} alt="" />
-                      <div>
-                        <strong>{piece.title}</strong>
-                        <span className={availabilityClassName(piece.availability)}>
-                          {piece.availability}
-                        </span>
+                  {workspace.pieces.length ? (
+                    workspace.pieces.slice(0, 4).map((piece) => (
+                      <div key={piece.id} className="admin-mini-piece">
+                        {piece.image ? <img src={piece.image} alt="" /> : null}
+                        <div>
+                          <strong>{piece.title}</strong>
+                          <span className={availabilityClassName(piece.availability)}>
+                            {piece.availability}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="admin-empty">No portfolio work added yet.</p>
+                  )}
                 </div>
               </article>
             ) : null}
@@ -1290,10 +1098,11 @@ export default function AdminPage() {
               </div>
 
               <div className="admin-piece-table">
-                {workspace.pieces.map((piece) => (
-                  <div className="admin-piece-row" key={piece.id}>
+                {workspace.pieces.length ? (
+                  workspace.pieces.map((piece) => (
+                    <div className="admin-piece-row" key={piece.id}>
                     <div className="admin-piece-media">
-                      <img src={piece.image} alt="" />
+                      {piece.image ? <img src={piece.image} alt="" /> : null}
                       <label className="admin-upload admin-upload--small">
                         <Upload size={14} />
                         <span>Upload</span>
@@ -1383,7 +1192,10 @@ export default function AdminPage() {
                       <span>{piece.visibility}</span>
                     </button>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="admin-empty">No portfolio entries yet.</p>
+                )}
               </div>
             </article>
 
@@ -1922,11 +1734,20 @@ function getModuleRows(view, workspace) {
   }
 
   if (view === "analytics") {
+    const openRequests = workspace.requests.filter(
+      (request) => !["Completed / delivered", "Archived"].includes(request.status)
+    ).length;
+    const completedRequests = workspace.requests.filter(
+      (request) => request.status === "Completed / delivered"
+    ).length;
+    const conversionRate = workspace.requests.length
+      ? `${Math.round((completedRequests / workspace.requests.length) * 100)}%`
+      : "0%";
     return [
-      { title: "Inquiries", subtitle: "Commission request volume", meta: "42" },
-      { title: "Conversion", subtitle: "Inquiry to deposit", meta: "4.8%" },
-      { title: "Revenue", subtitle: "Monthly commission value", meta: "$18,400" },
-      { title: "Repeat Clients", subtitle: "Returning private clients", meta: "12" },
+      { title: "Inquiries", subtitle: "Commission request volume", meta: workspace.requests.length },
+      { title: "Open Requests", subtitle: "Awaiting atelier action", meta: openRequests },
+      { title: "Conversion", subtitle: "Completed request rate", meta: conversionRate },
+      { title: "Repeat Clients", subtitle: "Returning private clients", meta: workspace.customers.filter((customer) => customer.orders > 1).length },
     ];
   }
 

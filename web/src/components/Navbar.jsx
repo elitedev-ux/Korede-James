@@ -70,10 +70,6 @@ export default function Navbar() {
     };
   }, [isCartOpen, isWishlistOpen, isMobileMenuOpen]);
 
-  const cartTotal = cart.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0,
-  );
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const navLinks = [
@@ -340,8 +336,8 @@ export default function Navbar() {
                             </button>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-sm font-medium">
-                              £{(item.price * item.quantity).toLocaleString()}
+                            <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gray-400">
+                              Quote pending
                             </span>
                             <button
                               onClick={() =>
@@ -364,14 +360,12 @@ export default function Navbar() {
                 <div className="px-8 py-7 border-t border-gray-100 space-y-5">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] uppercase tracking-[0.3em] text-gray-500">
-                      Subtotal
+                      Payment
                     </span>
-                    <span className="text-lg font-serif">
-                      £{cartTotal.toLocaleString()}
-                    </span>
+                    <span className="text-lg font-serif">Free</span>
                   </div>
                   <p className="text-[9px] text-gray-400 uppercase tracking-widest">
-                    Final pricing confirmed by the atelier
+                    No payment is collected before atelier review
                   </p>
                   <a
                     href="/checkout"
@@ -478,8 +472,8 @@ export default function Navbar() {
                           <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
                             {item.category}
                           </p>
-                          <p className="text-sm font-medium mt-2">
-                            £{item.price?.toLocaleString()}
+                          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gray-400 mt-2">
+                            Quote pending
                           </p>
                         </div>
                         <div className="flex items-center gap-3">

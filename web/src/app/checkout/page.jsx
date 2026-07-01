@@ -1,27 +1,42 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, CheckCircle2, Lock, ShoppingBag } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShoppingBag } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
+import { recordAdminOrder } from "../../utils/adminWorkspace";
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
   const [orderId, setOrderId] = useState("");
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
 
-  const subtotal = cart.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0,
-  );
-  const shipping = subtotal > 2000 || subtotal === 0 ? 0 : 50;
-  const total = subtotal + shipping;
-
   const handleSubmit = (event) => {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const firstName = String(form.get("firstName") || "").trim();
+    const lastName = String(form.get("lastName") || "").trim();
+    const order = recordAdminOrder({
+      customer: {
+        name: [firstName, lastName].filter(Boolean).join(" ") || "Website Client",
+        email: String(form.get("email") || "").trim(),
+        phone: String(form.get("phone") || "").trim(),
+      },
+      contact: String(form.get("phone") || "").trim(),
+      shipping: [
+        form.get("address"),
+        form.get("city"),
+        form.get("region"),
+        form.get("postalCode"),
+        form.get("country"),
+      ]
+        .filter(Boolean)
+        .join(", "),
+      items: cart,
+    });
     setSubmittedBlueprint(cart);
-    setOrderId(`KJ-${Date.now().toString().slice(-6)}`);
+    setOrderId(order.id);
     clearCart();
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -42,7 +57,7 @@ export default function CheckoutPage() {
           <p className="text-gray-500 font-light leading-relaxed mb-12 text-center max-w-2xl mx-auto">
             Thank you. Your commission request has been received. A member of the
             Korede James team will contact you to confirm measurements, delivery
-            details, and final payment.
+            details, and the next atelier steps. No payment has been collected.
           </p>
           <div className="space-y-8 mb-12">
             {submittedBlueprint.map((item, index) => (
@@ -130,25 +145,10 @@ export default function CheckoutPage() {
                 </div>
               </CheckoutSection>
 
-              <CheckoutSection title="Payment Registration">
-                <div className="grid grid-cols-1 gap-4">
-                  <Field label="Name on Card" name="cardName" required />
-                  <Field
-                    label="Card Number"
-                    name="cardNumber"
-                    inputMode="numeric"
-                    placeholder="0000 0000 0000 0000"
-                    required
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Expiry" name="expiry" placeholder="MM/YY" required />
-                    <Field label="CVC" name="cvc" inputMode="numeric" required />
-                  </div>
-                </div>
-                <p className="mt-5 flex items-center gap-2 text-[9px] uppercase tracking-widest text-gray-400">
-                  <Lock size={12} />
-                  Secure commission preview. Payment is confirmed after team
-                  review.
+              <CheckoutSection title="Submission">
+                <p className="text-xs font-light leading-loose text-gray-500">
+                  This order is submitted for atelier review only. No card,
+                  deposit, or payment is required to test or begin the request.
                 </p>
               </CheckoutSection>
 
@@ -180,10 +180,10 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-5 text-xs tracking-widest border-t border-gray-200 pt-6">
-                  <SummaryLine label="Registered Value" value={`$${subtotal.toLocaleString()}`} />
-                  <SummaryLine label="Transit" value={shipping === 0 ? "Complimentary" : `$${shipping}`} />
-                  <SummaryLine label="Tax" value="$0.00" />
-                  <SummaryLine label="Total Due" value={`$${total.toLocaleString()}`} />
+                  <SummaryLine label="Registered Value" value="Atelier quote pending" />
+                  <SummaryLine label="Transit" value="Confirmed after review" />
+                  <SummaryLine label="Payment" value="Not required now" />
+                  <SummaryLine label="Total Due" value="No payment due" />
                 </div>
 
                 <p className="mt-8 text-[9px] uppercase tracking-widest text-gray-400 leading-loose">

@@ -8,12 +8,6 @@ import useStore from "../../store/useStore";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity } = useStore();
-  const subtotal = cart.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0,
-  );
-  const shipping = subtotal > 2000 ? 0 : 50;
-  const total = subtotal + shipping;
 
   return (
     <main className="min-h-screen bg-white">
@@ -51,8 +45,8 @@ export default function CartPage() {
                           {item.category}
                         </p>
                       </div>
-                      <p className="text-lg font-serif font-light">
-                        ${item.price.toLocaleString()}
+                      <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400">
+                        Quote pending
                       </p>
                     </div>
 
@@ -122,29 +116,25 @@ export default function CartPage() {
                 </h3>
                 <div className="space-y-6 mb-10">
                   <div className="flex justify-between text-xs tracking-widest">
-                    <span className="text-gray-400 uppercase">Subtotal</span>
-                    <span className="font-bold">
-                      ${subtotal.toLocaleString()}
-                    </span>
+                    <span className="text-gray-400 uppercase">Selected pieces</span>
+                    <span className="font-bold">{cart.length}</span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
-                    <span className="text-gray-400 uppercase">Shipping</span>
-                    <span className="font-bold">
-                      {shipping === 0 ? "Complimentary" : `$${shipping}`}
-                    </span>
+                    <span className="text-gray-400 uppercase">Atelier review</span>
+                    <span className="font-bold">Required</span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
                     <span className="text-gray-400 uppercase">
-                      Estimated Tax
+                      Payment
                     </span>
-                    <span className="font-bold">$0.00</span>
+                    <span className="font-bold">Not required now</span>
                   </div>
                   <div className="pt-6 border-t border-gray-200 flex justify-between items-end">
                     <span className="text-xs uppercase tracking-widest font-bold">
-                      Total
+                      Total Due
                     </span>
                     <span className="text-2xl font-serif">
-                      ${total.toLocaleString()}
+                      Free
                     </span>
                   </div>
                 </div>

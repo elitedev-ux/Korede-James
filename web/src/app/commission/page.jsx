@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Upload, Calendar, Ruler, Send, CheckCircle2 } from "lucide-react";
+import { Upload, Calendar, Send, CheckCircle2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
+import { recordAdminInquiry } from "../../utils/adminWorkspace";
 
 export default function CommissionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedId, setSubmittedId] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,6 +21,21 @@ export default function CommissionPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const request = recordAdminInquiry({
+      client: formData.name,
+      email: formData.email,
+      artifact: formData.type,
+      budget: formData.budget,
+      due: formData.date,
+      source: "Bespoke enquiry",
+      notes: [
+        formData.measurements ? `Measurements: ${formData.measurements}` : "",
+        formData.notes,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    });
+    setSubmittedId(request.id);
     setIsSubmitted(true);
   };
 
@@ -110,6 +127,9 @@ export default function CommissionPage() {
                 <h3 className="text-2xl font-serif tracking-widest uppercase mb-4">
                   Inquiry Received
                 </h3>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-amber-700 mb-5">
+                  {submittedId}
+                </p>
                 <p className="text-gray-500 font-light text-sm tracking-wide mb-8">
                   A design consultant will contact you within 48 hours to
                   schedule your initial consultation.
