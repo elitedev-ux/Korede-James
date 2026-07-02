@@ -24,7 +24,7 @@ export async function sendTransactionalEmail({ to, subject, preview, html }) {
       },
       body: JSON.stringify({
         from,
-        to,
+        to: [to],
         subject,
         html: emailLayout({ preview, html }),
       }),
@@ -32,11 +32,22 @@ export async function sendTransactionalEmail({ to, subject, preview, html }) {
 
     if (!response.ok) {
       const message = await response.text();
+      console.warn("[email] Resend rejected email", {
+        to,
+        subject,
+        status: response.status,
+        message,
+      });
       return { sent: false, reason: message || "resend-error" };
     }
 
     return { sent: true };
   } catch (error) {
+    console.warn("[email] Resend email failed", {
+      to,
+      subject,
+      error: error instanceof Error ? error.message : "email-error",
+    });
     return {
       sent: false,
       reason: error instanceof Error ? error.message : "email-error",

@@ -114,6 +114,7 @@ if (import.meta.env.DEV) {
 }
 const tree = buildRouteTree(__dirname);
 const apiRoutes = [
+	route('api/email-test', './api/email-test/resource.js'),
 	route('api/customer-auth/signup', './api/customer-auth/signup/resource.js'),
 	route('api/customer-auth/signin', './api/customer-auth/signin/resource.js'),
 	route('api/customer-auth/session', './api/customer-auth/session/resource.js'),
