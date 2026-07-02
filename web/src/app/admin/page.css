@@ -1225,3 +1225,274 @@
     aspect-ratio: auto;
   }
 }
+
+/* Jacquemus-leaning admin refinement: quieter, flatter, and more editorial. */
+.admin-page,
+.admin-access {
+  --admin-ink: #0f0f0f;
+  --admin-muted: #6d6d6d;
+  --admin-soft: #fafafa;
+  --admin-panel: #ffffff;
+  --admin-line: #e3e3e3;
+  --admin-line-strong: #0f0f0f;
+  --admin-accent: #0f0f0f;
+  background: #fff;
+}
+
+.admin-page {
+  grid-template-columns: 268px minmax(0, 1fr);
+}
+
+.admin-sidebar {
+  padding: 34px 18px 24px;
+  background: #fff;
+  border-right: 1px solid #e5e5e5;
+}
+
+.admin-sidebar__brand {
+  padding: 0 8px 30px;
+  border-bottom: 1px solid #111;
+}
+
+.admin-sidebar__brand h1 {
+  font-size: 24px;
+  letter-spacing: 0.16em;
+}
+
+.admin-sidebar__brand span {
+  color: #111;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+.admin-kicker {
+  color: #8a5a2e;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+}
+
+.admin-nav {
+  gap: 0;
+  margin-top: 30px;
+  border-top: 1px solid #ececec;
+}
+
+.admin-nav button {
+  min-height: 48px;
+  padding: 0 10px;
+  border-bottom: 1px solid #ececec;
+  border-radius: 0;
+  color: #111;
+  background: transparent;
+}
+
+.admin-nav button:hover,
+.admin-nav button.is-active {
+  background: #111;
+  color: #fff;
+  transform: none;
+}
+
+.admin-logout {
+  min-height: 48px;
+  border-radius: 0;
+  border-color: #111;
+}
+
+.admin-main {
+  padding: 30px clamp(22px, 3vw, 52px) 52px;
+  background: #fff;
+}
+
+.admin-topbar {
+  align-items: flex-start;
+  padding: 0 0 26px;
+  margin-bottom: 22px;
+  border: 0;
+  border-bottom: 1px solid #111;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-topbar h2 {
+  font-size: clamp(30px, 4vw, 52px);
+  letter-spacing: 0.14em;
+}
+
+.admin-role-switcher,
+.admin-save-state,
+.admin-private-pill,
+.admin-pill,
+.admin-status,
+.admin-availability,
+.admin-role-badge,
+.admin-access-badge,
+.admin-detail__meta span,
+.admin-locked-strip span {
+  border: 1px solid #d9d9d9;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+}
+
+.admin-save-state.is-saving {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.admin-panel,
+.admin-stat,
+.admin-request-list button,
+.admin-search,
+.admin-progress,
+.admin-mini-piece,
+.admin-piece-row,
+.admin-requirement,
+.admin-module-card,
+.admin-module-hero,
+.admin-data-row,
+.admin-team-member,
+.admin-permission-row,
+.admin-module-editor,
+.admin-code-card,
+.admin-access__panel {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-panel,
+.admin-stat {
+  border-color: #dedede;
+  background: #fff;
+}
+
+.admin-stat {
+  min-height: 150px;
+  padding: 22px;
+}
+
+.admin-stat strong {
+  font-size: clamp(40px, 4vw, 62px);
+  letter-spacing: 0.04em;
+}
+
+.admin-panel {
+  padding: 22px;
+}
+
+.admin-panel__heading {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9e9e9;
+}
+
+.admin-panel__heading h3,
+.admin-module-hero strong,
+.admin-role-card strong,
+.admin-access-code-list h4 {
+  letter-spacing: 0.12em;
+}
+
+.admin-icon-button,
+.admin-add-form button,
+.admin-upload,
+.admin-module-save,
+.admin-access__form button {
+  border-radius: 0;
+  background: #111;
+  color: #fff;
+}
+
+.admin-action-grid button,
+.admin-visibility,
+.admin-module-editor .admin-panel__heading button {
+  border-radius: 0;
+  background: #fff;
+}
+
+.admin-action-grid button:hover,
+.admin-visibility:hover,
+.admin-module-editor .admin-panel__heading button:hover {
+  border-color: #111;
+}
+
+.admin-field-grid input,
+.admin-field-grid select,
+.admin-notes textarea,
+.admin-piece-row input,
+.admin-piece-row select,
+.admin-piece-row textarea,
+.admin-add-form input,
+.admin-add-form select,
+.admin-add-form textarea,
+.admin-team-member select,
+.admin-access__form input {
+  border-radius: 0;
+  background: #fff;
+}
+
+.admin-field-grid input:focus,
+.admin-field-grid select:focus,
+.admin-notes textarea:focus,
+.admin-piece-row input:focus,
+.admin-piece-row select:focus,
+.admin-piece-row textarea:focus,
+.admin-add-form input:focus,
+.admin-add-form select:focus,
+.admin-add-form textarea:focus,
+.admin-team-member select:focus,
+.admin-access__form input:focus {
+  border-color: #111;
+  box-shadow: 0 0 0 1px #111;
+}
+
+.admin-request-list button:hover,
+.admin-request-list button.is-selected,
+.admin-data-row--button:hover,
+.admin-role-card.is-active {
+  border-color: #111;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-module-card.is-locked {
+  background: #f7f7f7;
+}
+
+.admin-access {
+  background: #fff;
+}
+
+.admin-access__panel {
+  padding: 38px;
+  border-color: #111;
+}
+
+.admin-access__mark {
+  border-radius: 0;
+}
+
+@media (max-width: 1080px) {
+  .admin-page {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-nav {
+    border-left: 1px solid #ececec;
+  }
+
+  .admin-nav button {
+    border-right: 1px solid #ececec;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-main {
+    padding: 18px;
+  }
+
+  .admin-topbar h2 {
+    font-size: 30px;
+  }
+}

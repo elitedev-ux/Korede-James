@@ -39,6 +39,11 @@ export async function getCustomerSession() {
   return data.customer || null;
 }
 
+export async function getCustomerCommissions() {
+  const data = await apiRequest("/api/customer-auth/commissions");
+  return Array.isArray(data.commissions) ? data.commissions : [];
+}
+
 export async function clearCustomerSession() {
   await apiRequest("/api/customer-auth/logout", { method: "POST" });
 }

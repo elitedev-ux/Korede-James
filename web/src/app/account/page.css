@@ -114,6 +114,30 @@
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
+.account-password-field {
+  position: relative;
+  display: block;
+}
+
+.account-password-field input {
+  padding-right: 3.25rem;
+}
+
+.account-password-field button {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #111;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
 .account-form input:focus {
   border-color: #111;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
@@ -188,6 +212,16 @@
   padding-bottom: 0.85rem;
   color: #5f6368;
   font-size: 12px;
+}
+
+.account-mini-row--link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-mini-row--link:hover strong,
+.account-mini-row--link:hover span {
+  color: #8d5c2d;
 }
 
 .account-mini-row strong {

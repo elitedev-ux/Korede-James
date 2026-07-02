@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRight, LockKeyhole, LogOut, Mail, User } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, LogOut, Mail, User } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import {
   clearCustomerSession,
+  getCustomerCommissions,
   getCustomerSession,
   signInCustomer,
 } from "../../utils/customerAccount";
@@ -12,6 +13,9 @@ import "./page.css";
 export default function AccountPage() {
   const [session, setSession] = useState(null);
   const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [commissions, setCommissions] = useState([]);
+  const [commissionsLoading, setCommissionsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,6 +38,39 @@ export default function AccountPage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!session) {
+      setCommissions([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setCommissionsLoading(true);
+    getCustomerCommissions()
+      .then((items) => {
+        if (isMounted) {
+          setCommissions(items);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setCommissions([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setCommissionsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -84,10 +121,30 @@ export default function AccountPage() {
               {message ? <div className="account-status">{message}</div> : null}
 
               <div className="account-mini-list">
-                <div className="account-mini-row">
-                  <strong>Commission</strong>
-                  <span>No active commission yet</span>
-                </div>
+                {commissionsLoading ? (
+                  <div className="account-mini-row">
+                    <strong>Commissions</strong>
+                    <span>Loading recent numbers</span>
+                  </div>
+                ) : commissions.length ? (
+                  commissions.slice(0, 4).map((commission) => (
+                    <a
+                      className="account-mini-row account-mini-row--link"
+                      href={`/track?commission=${encodeURIComponent(
+                        commission.displayId
+                      )}`}
+                      key={commission.id}
+                    >
+                      <strong>{commission.displayId}</strong>
+                      <span>{commission.status || commission.stage}</span>
+                    </a>
+                  ))
+                ) : (
+                  <div className="account-mini-row">
+                    <strong>Commission</strong>
+                    <span>No active commission yet</span>
+                  </div>
+                )}
                 <div className="account-mini-row">
                   <strong>Fitting Notes</strong>
                   <span>Awaiting atelier update</span>
@@ -136,15 +193,24 @@ export default function AccountPage() {
                 </label>
                 <label>
                   Password
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(event) =>
-                      setForm({ ...form, password: event.target.value })
-                    }
-                    autoComplete="current-password"
-                    required
-                  />
+                  <span className="account-password-field">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={(event) =>
+                        setForm({ ...form, password: event.target.value })
+                      }
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </span>
                 </label>
                 {error ? <div className="account-status is-error">{error}</div> : null}
                 {message ? <div className="account-status">{message}</div> : null}

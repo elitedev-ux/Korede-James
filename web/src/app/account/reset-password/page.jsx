@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, KeyRound, Mail } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, KeyRound, Mail } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import {
@@ -20,6 +20,10 @@ export default function ResetPasswordPage() {
   const [passwordUpdated, setPasswordUpdated] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState({
+    password: false,
+    confirmPassword: false,
+  });
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
@@ -69,6 +73,13 @@ export default function ResetPasswordPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const togglePassword = (field) => {
+    setVisiblePasswords((current) => ({
+      ...current,
+      [field]: !current[field],
+    }));
   };
 
   return (
@@ -139,33 +150,61 @@ export default function ResetPasswordPage() {
               </label>
               <label>
                 New Password
-                <input
-                  type="password"
-                  value={passwordForm.password}
-                  onChange={(event) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      password: event.target.value,
-                    })
-                  }
-                  autoComplete="new-password"
-                  required
-                />
+                <span className="account-password-field">
+                  <input
+                    type={visiblePasswords.password ? "text" : "password"}
+                    value={passwordForm.password}
+                    onChange={(event) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        password: event.target.value,
+                      })
+                    }
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      visiblePasswords.password ? "Hide password" : "Show password"
+                    }
+                    onClick={() => togglePassword("password")}
+                  >
+                    {visiblePasswords.password ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </span>
               </label>
               <label>
                 Confirm New Password
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(event) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      confirmPassword: event.target.value,
-                    })
-                  }
-                  autoComplete="new-password"
-                  required
-                />
+                <span className="account-password-field">
+                  <input
+                    type={visiblePasswords.confirmPassword ? "text" : "password"}
+                    value={passwordForm.confirmPassword}
+                    onChange={(event) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        confirmPassword: event.target.value,
+                      })
+                    }
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      visiblePasswords.confirmPassword
+                        ? "Hide confirm password"
+                        : "Show confirm password"
+                    }
+                    onClick={() => togglePassword("confirmPassword")}
+                  >
+                    {visiblePasswords.confirmPassword ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
+                  </button>
+                </span>
               </label>
               {error ? <div className="account-status is-error">{error}</div> : null}
               {passwordUpdated ? (
