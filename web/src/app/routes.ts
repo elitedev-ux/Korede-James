@@ -113,7 +113,23 @@ if (import.meta.env.DEV) {
 	}
 }
 const tree = buildRouteTree(__dirname);
+const apiRoutes = [
+	route('api/email-test', './api/email-test/resource.js'),
+	route('api/customer-auth/signup', './api/customer-auth/signup/resource.js'),
+	route('api/customer-auth/signin', './api/customer-auth/signin/resource.js'),
+	route('api/customer-auth/session', './api/customer-auth/session/resource.js'),
+	route('api/customer-auth/commissions', './api/customer-auth/commissions/resource.js'),
+	route('api/customer-auth/logout', './api/customer-auth/logout/resource.js'),
+	route(
+		'api/customer-auth/password/request',
+		'./api/customer-auth/password/request/resource.js'
+	),
+	route(
+		'api/customer-auth/password/confirm',
+		'./api/customer-auth/password/confirm/resource.js'
+	),
+];
 const notFound = route('*?', './__create/not-found.tsx');
-const routes = [...generateRoutes(tree), notFound];
+const routes = [...apiRoutes, ...generateRoutes(tree), notFound];
 
 export default routes;

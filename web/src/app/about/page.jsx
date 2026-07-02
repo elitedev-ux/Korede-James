@@ -23,21 +23,18 @@ export default function AboutPage() {
     },
   ];
 
-  const milestones = [
+  const ethos = [
     {
-      year: "1960",
-      title: "The Promise",
-      text: "Freedom begins with Nigeria's independence, returning to a national moment that promised the birth of a new future.",
+      title: "Inherited Form",
+      text: "The work begins with cultural memory, translating familiar shapes, rituals, and dress codes into contemporary garments.",
     },
     {
-      year: "Now",
-      title: "The Distance",
-      text: "Through a modern Nigerian lens, the work reflects on the gap between liberation as an event and freedom as a lived experience.",
+      title: "Modern Silhouette",
+      text: "Volume, proportion, and restraint shape each piece, allowing heritage to feel present without becoming costume.",
     },
     {
-      year: "2025",
-      title: "The Collection",
-      text: "Freedom is presented as one focused body of work, shaped by white garments, red accents, and living inheritance.",
+      title: "Living Craft",
+      text: "Construction is treated as a quiet language: considered, exact, and made for the contemporary body.",
     },
   ];
 
@@ -127,8 +124,13 @@ export default function AboutPage() {
       </section>
 
       <section className="py-32 px-6 max-w-7xl mx-auto">
+        <SectionTitle
+          title="Our Ethos"
+          subtitle="Heritage in silhouette"
+          align="center"
+        />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-          {milestones.map((item, index) => (
+          {ethos.map((item, index) => (
             <motion.div
               key={item.title}
               initial={{ opacity: 0, y: 20 }}
@@ -137,9 +139,6 @@ export default function AboutPage() {
               transition={{ delay: index * 0.15 }}
               className="border-t border-gray-200 pt-8"
             >
-              <p className="text-[10px] uppercase tracking-[0.4em] text-amber-700 font-bold mb-5">
-                {item.year}
-              </p>
               <h3 className="text-xl font-serif uppercase tracking-[0.18em] mb-5">
                 {item.title}
               </h3>

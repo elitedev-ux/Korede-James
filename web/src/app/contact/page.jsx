@@ -1,11 +1,35 @@
-import React from "react";
-import { motion } from "motion/react";
-import { Phone, Mail, MapPin, Instagram, Twitter, Send } from "lucide-react";
+import React, { useState } from "react";
+import { CheckCircle2, Phone, Mail, MapPin, Instagram, Twitter, Send } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
+import { recordAdminInquiry } from "../../utils/adminWorkspace";
 
 export default function ContactPage() {
+  const [submittedId, setSubmittedId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setIsSubmitting(true);
+
+    try {
+      const request = await recordAdminInquiry({
+        client: String(form.get("name") || "").trim(),
+        email: String(form.get("email") || "").trim(),
+        artifact: String(form.get("subject") || "").trim(),
+        budget: "To be quoted",
+        source: "Contact enquiry",
+        notes: String(form.get("message") || "").trim(),
+      });
+      setSubmittedId(request.id);
+      event.currentTarget.reset();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
@@ -34,10 +58,10 @@ export default function ContactPage() {
                     Speak with us
                   </h4>
                   <p className="text-xs text-gray-500 font-light">
-                    +33 1 23 45 67 89
+                    Available after inquiry
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">
-                    Mon - Fri, 9AM - 6PM CET
+                    Private appointments only
                   </p>
                 </div>
               </div>
@@ -51,10 +75,10 @@ export default function ContactPage() {
                     General Inquiries
                   </h4>
                   <p className="text-xs text-gray-500 font-light">
-                    concierge@korede-james.com
+                    Use the inquiry form
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">
-                    Response within 24 hours
+                    Routed into the atelier desk
                   </p>
                 </div>
               </div>
@@ -104,13 +128,30 @@ export default function ContactPage() {
             <h3 className="text-xl font-serif tracking-widest uppercase mb-10">
               Send a Message
             </h3>
-            <form className="space-y-8">
+            {submittedId ? (
+              <div className="border border-amber-200 bg-white p-6 mb-8">
+                <CheckCircle2
+                  size={28}
+                  strokeWidth={1.2}
+                  className="text-amber-700 mb-4"
+                />
+                <p className="text-[10px] uppercase tracking-[0.3em] text-amber-700 mb-2">
+                  {submittedId}
+                </p>
+                <p className="text-sm font-light leading-relaxed text-gray-500">
+                  Inquiry received. It is now available in the admin pipeline.
+                </p>
+              </div>
+            ) : null}
+            <form className="space-y-8" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
                     Name
                   </label>
                   <input
+                    name="name"
+                    required
                     type="text"
                     className="w-full bg-white border border-gray-200 px-6 py-4 text-sm focus:outline-none focus:border-black"
                   />
@@ -120,6 +161,8 @@ export default function ContactPage() {
                     Email
                   </label>
                   <input
+                    name="email"
+                    required
                     type="email"
                     className="w-full bg-white border border-gray-200 px-6 py-4 text-sm focus:outline-none focus:border-black"
                   />
@@ -129,7 +172,10 @@ export default function ContactPage() {
                 <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
                   Subject
                 </label>
-                <select className="w-full bg-white border border-gray-200 px-6 py-4 text-sm focus:outline-none focus:border-black">
+                <select
+                  name="subject"
+                  className="w-full bg-white border border-gray-200 px-6 py-4 text-sm focus:outline-none focus:border-black"
+                >
                   <option>Commission Assistance</option>
                   <option>Fitting Appointment</option>
                   <option>Press & Media</option>
@@ -141,13 +187,19 @@ export default function ContactPage() {
                   Message
                 </label>
                 <textarea
+                  name="message"
+                  required
                   rows="6"
                   className="w-full bg-white border border-gray-200 px-6 py-4 text-sm focus:outline-none focus:border-black resize-none"
                   placeholder="How can we assist you today?"
                 ></textarea>
               </div>
-              <button className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4">
-                <span>Submit Inquiry</span>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4"
+              >
+                <span>{isSubmitting ? "Submitting..." : "Submit Inquiry"}</span>
                 <Send size={16} />
               </button>
             </form>
@@ -172,7 +224,7 @@ export default function ContactPage() {
               strokeWidth={1}
             />
             <h4 className="text-xs uppercase tracking-[0.2em] font-bold">
-              Korede-james Flagship
+              Korede James Atelier
             </h4>
             <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-2">
               Lagos, NG

@@ -89,23 +89,4 @@ export const collections = [
   },
 ];
 
-export const testimonials = [
-  {
-    id: "1",
-    name: "Isabella Rossi",
-    role: "Fashion Critic",
-    text: "A masterclass in modern minimalism. Every stitch tells a story of craftsmanship and dedication.",
-  },
-  {
-    id: "2",
-    name: "Julian Chen",
-    role: "Creative Director",
-    text: "The silhouette and choice of fabric are unparalleled. This is what true luxury feels like.",
-  },
-  {
-    id: "3",
-    name: "Sophia Laurent",
-    role: "Private Client",
-    text: "The bespoke service was seamless, and the final piece surpassed all my expectations.",
-  },
-];
+export const testimonials = [];

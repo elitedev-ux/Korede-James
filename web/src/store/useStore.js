@@ -10,7 +10,6 @@ const useStore = create(
   persist(
     (set) => ({
       cart: [],
-      wishlist: [],
       addToCart: (product, size, color) =>
         set((state) => {
           const existing = state.cart.find(
@@ -57,20 +56,6 @@ const useStore = create(
               : item,
           ),
         })),
-      toggleWishlist: (product) =>
-        set((state) => {
-          const isWishlisted = state.wishlist.find(
-            (item) => item.id === product.id,
-          );
-
-          if (isWishlisted) {
-            return {
-              wishlist: state.wishlist.filter((item) => item.id !== product.id),
-            };
-          }
-
-          return { wishlist: [...state.wishlist, product] };
-        }),
       clearCart: () => set({ cart: [] }),
     }),
     {
@@ -78,7 +63,6 @@ const useStore = create(
       storage: browserStorage,
       partialize: (state) => ({
         cart: state.cart,
-        wishlist: state.wishlist,
       }),
     },
   ),

@@ -1,29 +1,82 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, CheckCircle2, Lock, ShoppingBag } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShoppingBag } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
+import { recordAdminOrder } from "../../utils/adminWorkspace";
+import { getCustomerSession } from "../../utils/customerAccount";
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
   const [orderId, setOrderId] = useState("");
+  const [customerSession, setCustomerSession] = useState(null);
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const subtotal = cart.reduce(
-    (acc, item) => acc + item.price * item.quantity,
+    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
     0,
   );
-  const shipping = subtotal > 2000 || subtotal === 0 ? 0 : 50;
+  const shipping = subtotal > 0 ? 75 : 0;
   const total = subtotal + shipping;
 
-  const handleSubmit = (event) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    getCustomerSession()
+      .then((customer) => {
+        if (isMounted) {
+          setCustomerSession(customer);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setSubmittedBlueprint(cart);
-    setOrderId(`KJ-${Date.now().toString().slice(-6)}`);
-    clearCart();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const form = new FormData(event.currentTarget);
+    const firstName = String(form.get("firstName") || "").trim();
+    const lastName = String(form.get("lastName") || "").trim();
+    setIsSubmitting(true);
+
+    try {
+      const order = await recordAdminOrder({
+        customer: {
+          name: [firstName, lastName].filter(Boolean).join(" ") || "Website Client",
+          email: String(form.get("email") || "").trim(),
+          phone: String(form.get("phone") || "").trim(),
+        },
+        contact: String(form.get("phone") || "").trim(),
+        shipping: [
+          form.get("address"),
+          form.get("city"),
+          form.get("region"),
+          form.get("postalCode"),
+          form.get("country"),
+        ]
+          .filter(Boolean)
+          .join(", "),
+        items: cart,
+        payment: {
+          subtotal,
+          shipping,
+          total,
+          method: String(form.get("paymentMethod") || "Card").trim(),
+          cardLast4: String(form.get("cardNumber") || "").replace(/\D/g, "").slice(-4),
+        },
+      });
+      setSubmittedBlueprint(cart);
+      setOrderId(order.id);
+      clearCart();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (orderId) {
@@ -42,7 +95,7 @@ export default function CheckoutPage() {
           <p className="text-gray-500 font-light leading-relaxed mb-12 text-center max-w-2xl mx-auto">
             Thank you. Your commission request has been received. A member of the
             Korede James team will contact you to confirm measurements, delivery
-            details, and final payment.
+            details, payment status, and the next atelier steps.
           </p>
           <div className="space-y-8 mb-12">
             {submittedBlueprint.map((item, index) => (
@@ -51,7 +104,7 @@ export default function CheckoutPage() {
           </div>
           <div className="text-center">
             <a
-              href="/track"
+              href={`/track?commission=${encodeURIComponent(orderId)}`}
               className="inline-flex items-center justify-center bg-black text-white px-12 py-5 text-[10px] uppercase tracking-[0.35em] font-semibold hover:bg-amber-800 transition-colors"
             >
               Track Commission
@@ -101,17 +154,29 @@ export default function CheckoutPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
             <form
+              key={customerSession?.email || "guest-checkout"}
               onSubmit={handleSubmit}
               className="lg:col-span-2 space-y-12"
             >
               <CheckoutSection title="Custodian Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="First Name" name="firstName" required />
-                  <Field label="Last Name" name="lastName" required />
+                  <Field
+                    label="First Name"
+                    name="firstName"
+                    defaultValue={customerSession?.firstName || ""}
+                    required
+                  />
+                  <Field
+                    label="Last Name"
+                    name="lastName"
+                    defaultValue={customerSession?.lastName || ""}
+                    required
+                  />
                   <Field
                     label="Email Address"
                     name="email"
                     type="email"
+                    defaultValue={customerSession?.email || ""}
                     required
                   />
                   <Field label="Phone Number" name="phone" required />
@@ -130,33 +195,41 @@ export default function CheckoutPage() {
                 </div>
               </CheckoutSection>
 
-              <CheckoutSection title="Payment Registration">
-                <div className="grid grid-cols-1 gap-4">
-                  <Field label="Name on Card" name="cardName" required />
-                  <Field
-                    label="Card Number"
-                    name="cardNumber"
-                    inputMode="numeric"
-                    placeholder="0000 0000 0000 0000"
-                    required
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Expiry" name="expiry" placeholder="MM/YY" required />
-                    <Field label="CVC" name="cvc" inputMode="numeric" required />
-                  </div>
+              <CheckoutSection title="Payment Details">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="block md:col-span-2">
+                    <span className="block text-[9px] uppercase tracking-[0.3em] text-gray-400 mb-3">
+                      Payment Method
+                    </span>
+                    <select
+                      name="paymentMethod"
+                      className="w-full bg-white border border-gray-200 px-5 py-4 text-sm focus:outline-none focus:border-black transition-colors"
+                    >
+                      <option>Card</option>
+                      <option>Bank Transfer</option>
+                    </select>
+                  </label>
+                  <Field label="Card Number" name="cardNumber" inputMode="numeric" />
+                  <Field label="Expiry" name="cardExpiry" placeholder="MM / YY" />
+                  <Field label="Security Code" name="cardCvc" inputMode="numeric" />
+                  <Field label="Name on Card" name="cardName" />
                 </div>
-                <p className="mt-5 flex items-center gap-2 text-[9px] uppercase tracking-widest text-gray-400">
-                  <Lock size={12} />
-                  Secure commission preview. Payment is confirmed after team
-                  review.
+              </CheckoutSection>
+
+              <CheckoutSection title="Submission">
+                <p className="text-xs font-light leading-loose text-gray-500">
+                  Your payment details are attached to the commission request for
+                  atelier review. Final capture and fulfillment status will be
+                  confirmed by the studio desk.
                 </p>
               </CheckoutSection>
 
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all"
               >
-                Submit Commission
+                {isSubmitting ? "Submitting..." : "Submit Commission"}
               </button>
             </form>
 
@@ -180,10 +253,10 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-5 text-xs tracking-widest border-t border-gray-200 pt-6">
-                  <SummaryLine label="Registered Value" value={`$${subtotal.toLocaleString()}`} />
-                  <SummaryLine label="Transit" value={shipping === 0 ? "Complimentary" : `$${shipping}`} />
-                  <SummaryLine label="Tax" value="$0.00" />
-                  <SummaryLine label="Total Due" value={`$${total.toLocaleString()}`} />
+                  <SummaryLine label="Registered Value" value={formatCurrency(subtotal)} />
+                  <SummaryLine label="Transit" value={formatCurrency(shipping)} />
+                  <SummaryLine label="Payment" value="Card / transfer" />
+                  <SummaryLine label="Total Due" value={formatCurrency(total)} />
                 </div>
 
                 <p className="mt-8 text-[9px] uppercase tracking-widest text-gray-400 leading-loose">
@@ -236,6 +309,10 @@ function SummaryLine({ label, value }) {
       <span className="font-bold">{value}</span>
     </div>
   );
+}
+
+function formatCurrency(value) {
+  return `\u00a3${Number(value || 0).toLocaleString()}`;
 }
 
 function ArtifactBlueprint({ item }) {

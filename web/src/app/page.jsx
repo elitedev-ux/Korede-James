@@ -4,7 +4,7 @@ import { ArrowRight, ChevronRight } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SectionTitle from "../components/SectionTitle";
-import { collections, testimonials } from "../data/fashion-data";
+import { collections } from "../data/fashion-data";
 import "./page.css";
 
 const heroVideo = "/assets/Hero%201.mp4?v=2";
@@ -25,13 +25,46 @@ export default function HomePage() {
   }, [showHeroContent]);
 
   const galleryImages = [
-    "/assets/freedom/freedom-gallery-01.jpg",
-    "/assets/freedom/freedom-gallery-02.jpg",
-    "/assets/freedom/freedom-gallery-03.jpg",
-    "/assets/freedom/freedom-gallery-04.jpg",
-    "/assets/freedom/freedom-gallery-05.jpg",
-    "/assets/freedom/freedom-gallery-06.jpg",
-    "/assets/freedom/freedom-gallery-07.jpg",
+    "/assets/freedom/edit-window-red-legs-upright.jpg",
+    "/assets/freedom/IMG_4143.jpeg",
+    "/assets/freedom/edit-green-portrait.jpg",
+    "/assets/freedom/edit-room-bw.jpg",
+    "/assets/freedom/edit-negative-window.jpg",
+    "/assets/freedom/edit-foliage-bw.jpg",
+    "/assets/freedom/edit-pink-shutter.jpg",
+  ];
+
+  const editorialTiles = [
+    {
+      src: galleryImages[0],
+      tileClass: "home-editorial__tile--hero",
+      imageClass: "home-editorial__image--window",
+    },
+    {
+      src: galleryImages[1],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--red-door",
+    },
+    {
+      src: galleryImages[2],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--green-portrait",
+    },
+    {
+      src: galleryImages[3],
+      tileClass: "home-editorial__tile--wide-strip",
+      imageClass: "home-editorial__image--room-bw",
+    },
+    {
+      src: galleryImages[4],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--negative-window",
+    },
+    {
+      src: galleryImages[5],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--foliage-bw",
+    },
   ];
 
   return (
@@ -72,7 +105,7 @@ export default function HomePage() {
                 transition={{ delay: 0.3, duration: 0.9 }}
                 className="home-hero__eyebrow text-white text-xs uppercase tracking-[0.6em] mb-6 font-medium"
               >
-                Nigeria, 1960
+                Modern Heritage
               </motion.p>
 
               <motion.h1
@@ -81,7 +114,7 @@ export default function HomePage() {
                 transition={{ delay: 0.55, duration: 0.9 }}
                 className="home-hero__title text-white text-5xl md:text-8xl font-serif tracking-[0.2em] font-light uppercase mb-12"
               >
-                Freedom
+                Korede James
               </motion.h1>
 
               <motion.div
@@ -148,6 +181,25 @@ export default function HomePage() {
         </div>
 
         {/* Row 1 — three portrait images, middle one taller */}
+        <div className="home-editorial__grid">
+          {editorialTiles.map((tile, index) => (
+            <motion.div
+              key={`${tile.src}-${index}`}
+              className={`home-editorial__tile ${tile.tileClass} overflow-hidden group cursor-pointer`}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, delay: Math.min(index * 0.08, 0.3) }}
+            >
+              <img
+                src={tile.src}
+                alt=""
+                className={`home-editorial__image ${tile.imageClass} transition-transform duration-700 group-hover:scale-105`}
+              />
+            </motion.div>
+          ))}
+        </div>
+
         <div className="home-editorial__row home-editorial__row--feature flex gap-[3px] w-full">
           <motion.div
             className="home-editorial__tile home-editorial__tile--narrow overflow-hidden group cursor-pointer"
@@ -157,9 +209,9 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0 }}
           >
             <img
-              src="/assets/freedom/freedom-archive-rectangular.jpg"
+              src="/assets/freedom/freedom-detail-01.jpg"
               alt=""
-              className="home-editorial__image home-editorial__image--archive"
+              className="home-editorial__image home-editorial__image--archive transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
           <motion.div
@@ -193,7 +245,7 @@ export default function HomePage() {
         {/* Row 2 — landscape wide + two stacked portraits */}
         <div className="home-editorial__row home-editorial__row--split flex gap-[3px] w-full mt-[3px]">
           <motion.div
-            className="home-editorial__tile home-editorial__tile--wide overflow-hidden group cursor-pointer"
+            className="home-editorial__tile home-editorial__tile--wide home-editorial__tile--freedom-frame overflow-hidden group cursor-pointer"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -260,9 +312,9 @@ export default function HomePage() {
           className="home-editorial-pair__panel home-editorial-pair__panel--image"
         >
           <img
-            src="/assets/freedom/freedom-cover.jpg"
+            src="/assets/freedom/edit-pink-shutter.jpg"
             alt="Freedom collection"
-            className="home-editorial-pair__media home-editorial-pair__image"
+            className="home-editorial-pair__media home-editorial-pair__image home-editorial-pair__image--pink-shutter"
           />
           <div className="home-story__quote home-editorial-pair__quote absolute bg-white p-12 hidden md:block shadow-sm">
             <h4 className="text-xl font-serif mb-4 italic">
@@ -340,28 +392,6 @@ export default function HomePage() {
               </div>
             </motion.a>
           ))}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="home-testimonials py-32 bg-white px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <SectionTitle title="Voices of Elegance" subtitle="Testimonials" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {testimonials.map((t) => (
-              <div key={t.id} className="flex flex-col items-center">
-                <p className="text-gray-600 font-light italic mb-8 leading-relaxed">
-                  "{t.text}"
-                </p>
-                <h5 className="text-[10px] uppercase tracking-[0.2em] font-bold">
-                  {t.name}
-                </h5>
-                <span className="text-[9px] uppercase tracking-widest text-amber-600 mt-1">
-                  {t.role}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Upload, Calendar, Ruler, Send, CheckCircle2 } from "lucide-react";
+import { Upload, Calendar, Send, CheckCircle2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
+import { recordAdminInquiry } from "../../utils/adminWorkspace";
+import { getCustomerSession } from "../../utils/customerAccount";
 
 export default function CommissionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedId, setSubmittedId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -17,9 +21,54 @@ export default function CommissionPage() {
     notes: "",
   });
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    getCustomerSession()
+      .then((customer) => {
+        if (!isMounted || !customer) {
+          return;
+        }
+
+        setFormData((current) => ({
+          ...current,
+          name:
+            current.name ||
+            [customer.firstName, customer.lastName].filter(Boolean).join(" "),
+          email: current.email || customer.email,
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+
+    try {
+      const request = await recordAdminInquiry({
+        client: formData.name,
+        email: formData.email,
+        artifact: formData.type,
+        budget: formData.budget,
+        due: formData.date,
+        source: "Bespoke enquiry",
+        notes: [
+          formData.measurements ? `Measurements: ${formData.measurements}` : "",
+          formData.notes,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+      });
+      setSubmittedId(request.id);
+      setIsSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -110,6 +159,9 @@ export default function CommissionPage() {
                 <h3 className="text-2xl font-serif tracking-widest uppercase mb-4">
                   Inquiry Received
                 </h3>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-amber-700 mb-5">
+                  {submittedId}
+                </p>
                 <p className="text-gray-500 font-light text-sm tracking-wide mb-8">
                   A design consultant will contact you within 48 hours to
                   schedule your initial consultation.
@@ -170,6 +222,7 @@ export default function CommissionPage() {
                       <option>Bridal</option>
                       <option>Outerwear</option>
                       <option>Bespoke Suit</option>
+                      <option>Others</option>
                     </select>
                   </div>
                   <div className="space-y-2">
@@ -242,13 +295,14 @@ export default function CommissionPage() {
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4 group"
                 >
                   <Send
                     size={16}
                     className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform"
                   />
-                  <span>Send Inquiry</span>
+                  <span>{isSubmitting ? "Sending..." : "Send Inquiry"}</span>
                 </button>
               </form>
             )}
