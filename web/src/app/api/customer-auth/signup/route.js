@@ -4,11 +4,13 @@ import {
   fail,
   readBody,
 } from "../utils/customerAuth.js";
+import { sendWelcomeEmail } from "../../utils/email.js";
 
 export async function POST(request) {
   try {
     const body = await readBody(request);
     const customer = await createCustomer(body);
+    await sendWelcomeEmail(customer);
     return createSessionResponse(customer, request);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create account.";

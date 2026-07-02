@@ -11,6 +11,7 @@ import {
   readBody,
   supabaseRequest,
 } from "../../utils/supabaseRest.js";
+import { sendPasswordResetEmail } from "../../utils/email.js";
 
 const COOKIE_NAME = "kj_customer_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
@@ -20,7 +21,7 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
-export { fail, ok, readBody };
+export { fail, ok, readBody, sendPasswordResetEmail };
 
 export function validateEmail(email) {
   const normalized = normalizeEmail(email);
@@ -189,36 +190,6 @@ export function readCustomerSession(request) {
   }
 
   return verifySession(value);
-}
-
-export async function sendPasswordResetEmail({ email, resetUrl }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL || process.env.CUSTOMER_AUTH_FROM_EMAIL;
-
-  if (!apiKey || !from) {
-    return { sent: false };
-  }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: email,
-      subject: "Reset your Korede James password",
-      html: `<p>Use this secure link to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 30 minutes.</p>`,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || "Resend email failed.");
-  }
-
-  return { sent: true };
 }
 
 export function buildResetUrl(request, token) {
