@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
@@ -12,6 +12,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import { trackAdminCommission } from "../../utils/adminWorkspace";
+import { getCustomerSession } from "../../utils/customerAccount";
 
 export default function OrderTrackingPage() {
   const [orderId, setOrderId] = useState(() => {
@@ -25,6 +26,22 @@ export default function OrderTrackingPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [trackingResult, setTrackingResult] = useState(null);
   const [trackError, setTrackError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getCustomerSession()
+      .then((customer) => {
+        if (isMounted && customer?.email) {
+          setEmail((current) => current || customer.email);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleTrack = (e) => {
     e.preventDefault();

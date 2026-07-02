@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, CheckCircle2, ShoppingBag } from "lucide-react";
 import Navbar from "../../components/Navbar";
@@ -6,10 +6,12 @@ import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
 import { recordAdminOrder } from "../../utils/adminWorkspace";
+import { getCustomerSession } from "../../utils/customerAccount";
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
   const [orderId, setOrderId] = useState("");
+  const [customerSession, setCustomerSession] = useState(null);
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const subtotal = cart.reduce(
@@ -18,6 +20,22 @@ export default function CheckoutPage() {
   );
   const shipping = subtotal > 0 ? 75 : 0;
   const total = subtotal + shipping;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getCustomerSession()
+      .then((customer) => {
+        if (isMounted) {
+          setCustomerSession(customer);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -136,17 +154,29 @@ export default function CheckoutPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
             <form
+              key={customerSession?.email || "guest-checkout"}
               onSubmit={handleSubmit}
               className="lg:col-span-2 space-y-12"
             >
               <CheckoutSection title="Custodian Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="First Name" name="firstName" required />
-                  <Field label="Last Name" name="lastName" required />
+                  <Field
+                    label="First Name"
+                    name="firstName"
+                    defaultValue={customerSession?.firstName || ""}
+                    required
+                  />
+                  <Field
+                    label="Last Name"
+                    name="lastName"
+                    defaultValue={customerSession?.lastName || ""}
+                    required
+                  />
                   <Field
                     label="Email Address"
                     name="email"
                     type="email"
+                    defaultValue={customerSession?.email || ""}
                     required
                   />
                   <Field label="Phone Number" name="phone" required />

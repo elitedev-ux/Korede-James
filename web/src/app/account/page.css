@@ -204,6 +204,26 @@
   gap: 0.75rem;
 }
 
+.account-mini-heading {
+  display: grid;
+  gap: 0.35rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #111;
+}
+
+.account-mini-heading strong {
+  color: #111;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.account-mini-heading span {
+  color: #7d8187;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .account-mini-row {
   display: flex;
   justify-content: space-between;

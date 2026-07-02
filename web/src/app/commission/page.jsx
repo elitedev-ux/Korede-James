@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Upload, Calendar, Send, CheckCircle2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import { recordAdminInquiry } from "../../utils/adminWorkspace";
+import { getCustomerSession } from "../../utils/customerAccount";
 
 export default function CommissionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -19,6 +20,30 @@ export default function CommissionPage() {
     measurements: "",
     notes: "",
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getCustomerSession()
+      .then((customer) => {
+        if (!isMounted || !customer) {
+          return;
+        }
+
+        setFormData((current) => ({
+          ...current,
+          name:
+            current.name ||
+            [customer.firstName, customer.lastName].filter(Boolean).join(" "),
+          email: current.email || customer.email,
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -50,7 +50,7 @@ export default function AccountPage() {
     }
 
     setCommissionsLoading(true);
-    getCustomerCommissions()
+    getCustomerCommissions(session)
       .then((items) => {
         if (isMounted) {
           setCommissions(items);
@@ -121,6 +121,10 @@ export default function AccountPage() {
               {message ? <div className="account-status">{message}</div> : null}
 
               <div className="account-mini-list">
+                <div className="account-mini-heading">
+                  <strong>Recent Commission Numbers</strong>
+                  <span>Tap a number to track progress</span>
+                </div>
                 {commissionsLoading ? (
                   <div className="account-mini-row">
                     <strong>Commissions</strong>
@@ -142,7 +146,7 @@ export default function AccountPage() {
                 ) : (
                   <div className="account-mini-row">
                     <strong>Commission</strong>
-                    <span>No active commission yet</span>
+                    <span>Use this account email for new enquiries</span>
                   </div>
                 )}
                 <div className="account-mini-row">
