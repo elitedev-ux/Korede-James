@@ -62,11 +62,23 @@ export function sendWelcomeEmail(customer) {
     to: customer?.email,
     subject: "Welcome to Korede James",
     preview: "Your private client account is ready.",
-    html: `
-      <p>Hello ${escapeHtml(name)},</p>
-      <p>Your private Korede James client account has been created. You can now use it to follow commission updates, track atelier progress, and keep your project records in one place.</p>
-      <p><a href="${escapeHtml(accountUrl())}">Open your account</a></p>
-    `,
+    html: brandedMessage({
+      eyebrow: "Private Account",
+      title: "Client Portal",
+      greeting: `Hello ${name},`,
+      body: [
+        "Your private Korede James client account has been created.",
+        "Use the portal to follow commission updates, track atelier progress, and keep project records in one place.",
+      ],
+      details: [
+        ["Access", "Client account"],
+        ["Status", "Ready"],
+      ],
+      action: {
+        label: "Open Account",
+        href: accountUrl(),
+      },
+    }),
   });
 }
 
@@ -75,11 +87,23 @@ export function sendPasswordResetEmail({ email, resetUrl }) {
     to: email,
     subject: "Reset your Korede James password",
     preview: "Use this secure link to reset your password.",
-    html: `
-      <p>Use this secure link to reset your Korede James password:</p>
-      <p><a href="${escapeHtml(resetUrl)}">${escapeHtml(resetUrl)}</a></p>
-      <p>This link expires in 30 minutes. If you did not request this, you can ignore this email.</p>
-    `,
+    html: brandedMessage({
+      eyebrow: "Account Security",
+      title: "Password Reset",
+      body: [
+        "Use the secure link below to reset your Korede James password.",
+        "This link expires in 30 minutes. If you did not request this, you can ignore this email.",
+      ],
+      details: [
+        ["Request", "Password reset"],
+        ["Expiry", "30 minutes"],
+      ],
+      action: {
+        label: "Reset Password",
+        href: resetUrl,
+      },
+      fallbackUrl: resetUrl,
+    }),
   });
 }
 
@@ -88,14 +112,24 @@ export function sendCommissionReceivedEmail({ email, client, displayId, artifact
     to: email,
     subject: `Commission received: ${displayId}`,
     preview: "Your Korede James commission request has been received.",
-    html: `
-      <p>Hello ${escapeHtml(client || "there")},</p>
-      <p>Thank you. Your Korede James commission request has been received.</p>
-      <p><strong>Commission number:</strong> ${escapeHtml(displayId)}</p>
-      ${artifact ? `<p><strong>Request:</strong> ${escapeHtml(artifact)}</p>` : ""}
-      <p>The atelier team will review the details and update the commission progress from the admin desk.</p>
-      <p><a href="${escapeHtml(trackUrl(displayId))}">Track your commission</a></p>
-    `,
+    html: brandedMessage({
+      eyebrow: "Commission Received",
+      title: displayId || "Atelier Request",
+      greeting: `Hello ${client || "there"},`,
+      body: [
+        "Thank you. Your Korede James commission request has been received.",
+        "The atelier team will review the details and update the commission progress from the admin desk.",
+      ],
+      details: [
+        ["Commission", displayId],
+        artifact ? ["Request", artifact] : null,
+        ["Next Step", "Atelier review"],
+      ].filter(Boolean),
+      action: {
+        label: "Track Commission",
+        href: trackUrl(displayId),
+      },
+    }),
   });
 }
 
@@ -104,13 +138,24 @@ export function sendPaymentReceivedEmail({ email, client, displayId, total, meth
     to: email,
     subject: `Payment details received: ${displayId}`,
     preview: "Your commission payment details have been received.",
-    html: `
-      <p>Hello ${escapeHtml(client || "there")},</p>
-      <p>Your payment details have been received for commission ${escapeHtml(displayId)}.</p>
-      ${total ? `<p><strong>Registered value:</strong> ${escapeHtml(total)}</p>` : ""}
-      ${method ? `<p><strong>Method:</strong> ${escapeHtml(method)}</p>` : ""}
-      <p>The studio will confirm the payment and next atelier steps.</p>
-    `,
+    html: brandedMessage({
+      eyebrow: "Payment Record",
+      title: "Details Received",
+      greeting: `Hello ${client || "there"},`,
+      body: [
+        `Your payment details have been received for commission ${displayId}.`,
+        "The studio will confirm the payment and next atelier steps.",
+      ],
+      details: [
+        ["Commission", displayId],
+        total ? ["Registered Value", total] : null,
+        method ? ["Method", method] : null,
+      ].filter(Boolean),
+      action: {
+        label: "View Commission",
+        href: trackUrl(displayId),
+      },
+    }),
   });
 }
 
@@ -119,14 +164,24 @@ export function sendCommissionProgressEmail({ request, displayId }) {
     to: request?.email,
     subject: `Commission update: ${displayId}`,
     preview: "Your Korede James commission progress has been updated.",
-    html: `
-      <p>Hello ${escapeHtml(request?.client || "there")},</p>
-      <p>Your Korede James commission progress has been updated.</p>
-      <p><strong>Commission number:</strong> ${escapeHtml(displayId)}</p>
-      <p><strong>Status:</strong> ${escapeHtml(request?.status || "Updated")}</p>
-      <p><strong>Stage:</strong> ${escapeHtml(request?.stage || "Updated")}</p>
-      <p><a href="${escapeHtml(trackUrl(displayId))}">Track your commission</a></p>
-    `,
+    html: brandedMessage({
+      eyebrow: "Atelier Update",
+      title: "Progress Changed",
+      greeting: `Hello ${request?.client || "there"},`,
+      body: [
+        "Your Korede James commission progress has been updated.",
+        "You can open the private tracking page to review the current status and atelier stage.",
+      ],
+      details: [
+        ["Commission", displayId],
+        ["Status", request?.status || "Updated"],
+        ["Stage", request?.stage || "Updated"],
+      ],
+      action: {
+        label: "Track Commission",
+        href: trackUrl(displayId),
+      },
+    }),
   });
 }
 
@@ -158,13 +213,136 @@ export async function notifyCommissionProgressUpdates({ previousWorkspace, nextW
 
 function emailLayout({ preview, html }) {
   return `
-    <div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preview || "")}</div>
-    <main style="font-family:Georgia,'Times New Roman',serif;color:#111;line-height:1.7;padding:32px;background:#ffffff">
-      <p style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#8a5a2e;margin:0 0 20px">Korede James</p>
-      <div style="font-family:Arial,sans-serif;font-size:14px;color:#333;max-width:620px">
-        ${html}
-      </div>
-    </main>
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light">
+        <title>Korede James</title>
+      </head>
+      <body style="margin:0;padding:0;background:#f6f4ef;color:#111111;">
+        <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(preview || "")}</div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f4ef;margin:0;padding:0;">
+          <tr>
+            <td align="center" style="padding:36px 14px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#fbfaf7;border:1px solid #ddd6ca;">
+                <tr>
+                  <td style="padding:28px 30px;border-bottom:1px solid #e5ded2;text-align:center;">
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:1;letter-spacing:0.32em;text-transform:uppercase;color:#111111;">
+                      Korede James
+                    </div>
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.6;letter-spacing:0.36em;text-transform:uppercase;color:#8a5a2e;margin-top:12px;">
+                      Atelier Correspondence
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:34px 30px 30px;">
+                    ${html}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:22px 30px;background:#111111;color:#ffffff;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="font-family:Arial,Helvetica,sans-serif;font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:#d8c7ae;">
+                          Private Atelier Desk
+                        </td>
+                        <td align="right" style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#f6f4ef;">
+                          <a href="${escapeHtml(siteOrigin())}" style="color:#f6f4ef;text-decoration:none;">koredejames.com</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <p style="max-width:640px;margin:18px auto 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.7;color:#8a8378;text-align:center;">
+                You are receiving this email because you used Korede James client services.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+}
+
+function brandedMessage({
+  eyebrow,
+  title,
+  greeting,
+  body = [],
+  details = [],
+  action,
+  fallbackUrl,
+}) {
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td>
+          <div style="font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.6;letter-spacing:0.38em;text-transform:uppercase;color:#8a5a2e;margin-bottom:14px;">
+            ${escapeHtml(eyebrow || "Korede James")}
+          </div>
+          <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:42px;line-height:1.08;letter-spacing:0.18em;text-transform:uppercase;font-weight:400;color:#111111;margin:0 0 26px;">
+            ${escapeHtml(title || "Atelier Note")}
+          </h1>
+          <div style="width:72px;height:1px;background:#ddd6ca;margin:0 0 28px;"></div>
+          ${greeting ? paragraph(greeting) : ""}
+          ${body.map((line) => paragraph(line)).join("")}
+          ${details.length ? detailTable(details) : ""}
+          ${action ? actionButton(action) : ""}
+          ${
+            fallbackUrl
+              ? `<p style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.7;color:#6f6a63;margin:22px 0 0;">If the button does not work, copy this link into your browser:<br><a href="${escapeHtml(fallbackUrl)}" style="color:#111111;text-decoration:underline;word-break:break-all;">${escapeHtml(fallbackUrl)}</a></p>`
+              : ""
+          }
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function paragraph(value) {
+  return `
+    <p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.85;color:#3d3934;margin:0 0 18px;">
+      ${escapeHtml(value)}
+    </p>
+  `;
+}
+
+function detailTable(rows) {
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-top:1px solid #e5ded2;border-bottom:1px solid #e5ded2;margin:28px 0 30px;">
+      ${rows
+        .map(
+          ([label, value]) => `
+            <tr>
+              <td style="width:42%;padding:14px 0;border-bottom:1px solid #eee8de;font-family:Arial,Helvetica,sans-serif;font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:#8a5a2e;vertical-align:top;">
+                ${escapeHtml(label)}
+              </td>
+              <td style="padding:14px 0;border-bottom:1px solid #eee8de;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.7;color:#111111;text-align:right;vertical-align:top;">
+                ${escapeHtml(value || "Pending")}
+              </td>
+            </tr>
+          `
+        )
+        .join("")}
+    </table>
+  `;
+}
+
+function actionButton({ label, href }) {
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:8px 0 0;">
+      <tr>
+        <td style="background:#111111;">
+          <a href="${escapeHtml(href)}" style="display:inline-block;padding:16px 24px;font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:0.32em;text-transform:uppercase;font-weight:700;color:#ffffff;text-decoration:none;">
+            ${escapeHtml(label)}
+          </a>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
