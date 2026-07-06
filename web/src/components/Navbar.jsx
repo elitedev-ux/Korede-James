@@ -468,14 +468,14 @@ export default function Navbar() {
 
               <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-[10px] uppercase tracking-[0.18em] text-gray-500">
                 <a
-                  href="https://www.instagram.com/koredejames/"
+                  href="https://www.instagram.com/korede.james/"
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-2"
                 >
                   <Instagram size={13} strokeWidth={1.5} />
-                  Instagram
+                  Korede.james
                 </a>
                 <a
                   href="/contact"

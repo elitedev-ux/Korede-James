@@ -57,9 +57,12 @@ export default function ContactPage() {
                   <h4 className="text-[10px] uppercase tracking-widest font-bold mb-2">
                     Speak with us
                   </h4>
-                  <p className="text-xs text-gray-500 font-light">
-                    Available after inquiry
-                  </p>
+                  <a
+                    href="tel:+2349164900646"
+                    className="text-xs text-gray-500 font-light hover:text-amber-600 transition-colors"
+                  >
+                    +234 916 490 0646
+                  </a>
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">
                     Private appointments only
                   </p>
@@ -107,13 +110,13 @@ export default function ContactPage() {
               </h4>
               <div className="flex space-x-6">
                 <a
-                  href="https://www.instagram.com/koredejames/"
+                  href="https://www.instagram.com/korede.james/"
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center space-x-2 text-[10px] uppercase tracking-widest font-bold hover:text-amber-600 transition-colors"
                 >
                   <Instagram size={16} />
-                  <span>Instagram</span>
+                  <span>Korede.james</span>
                 </a>
                 <a
                   href="mailto:hello@koredejames.com"

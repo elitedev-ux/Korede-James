@@ -102,7 +102,7 @@ export default function Footer() {
           </h4>
           <div className="flex space-x-4 mb-6">
             <a
-              href="https://www.instagram.com/koredejames/"
+              href="https://www.instagram.com/korede.james/"
               aria-label="Instagram"
               target="_blank"
               rel="noreferrer"
@@ -132,7 +132,12 @@ export default function Footer() {
             </div>
             <div className="flex items-center space-x-3 text-sm text-gray-500">
               <Phone size={16} strokeWidth={1.5} />
-              <span>By appointment only</span>
+              <a
+                href="tel:+2349164900646"
+                className="hover:text-amber-600 transition-colors"
+              >
+                +234 916 490 0646
+              </a>
             </div>
           </div>
         </div>
