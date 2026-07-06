@@ -108,5 +108,5 @@ function getPaystackSecretKey() {
 }
 
 function paystackCurrency() {
-  return process.env.PAYSTACK_CURRENCY || "USD";
+  return process.env.PAYSTACK_CURRENCY || "NGN";
 }

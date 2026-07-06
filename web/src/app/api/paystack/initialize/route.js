@@ -82,7 +82,7 @@ function resolvePaymentAmount(body) {
 }
 
 function paystackCurrency() {
-  return process.env.PAYSTACK_CURRENCY || "USD";
+  return process.env.PAYSTACK_CURRENCY || "NGN";
 }
 
 function siteOrigin() {

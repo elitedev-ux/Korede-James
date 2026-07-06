@@ -1,7 +1,7 @@
 import { readWorkspace } from "../admin-workspace/utils/workspaceStore.js";
 import { ok } from "../utils/supabaseRest.js";
 
-const TEST_PRODUCT_PRICE = 2;
+const TEST_PRODUCT_PRICE = 2000;
 
 export async function GET() {
   const workspace = await readWorkspace();

@@ -1,5 +1,5 @@
 const freedomBase = "/assets/freedom";
-const testPrice = 2;
+const testPrice = 2000;
 
 export const products = [
   {

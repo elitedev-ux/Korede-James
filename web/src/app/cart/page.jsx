@@ -192,5 +192,5 @@ export default function CartPage() {
 }
 
 function formatCurrency(value) {
-  return `$${Number(value || 0).toLocaleString()}`;
+  return `₦${Number(value || 0).toLocaleString()}`;
 }

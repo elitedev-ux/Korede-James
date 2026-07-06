@@ -367,7 +367,7 @@ function SummaryLine({ label, value }) {
 }
 
 function formatCurrency(value) {
-  return `$${Number(value || 0).toLocaleString()}`;
+  return `₦${Number(value || 0).toLocaleString()}`;
 }
 
 function ArtifactBlueprint({ item }) {
