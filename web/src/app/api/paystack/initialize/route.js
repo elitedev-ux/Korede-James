@@ -6,7 +6,7 @@ export async function POST(request) {
   try {
     const secretKey = getPaystackSecretKey();
     const body = await readBody(request);
-    const amount = Number(body.total || 0);
+    const amount = resolvePaymentAmount(body);
     const email = String(body.customer?.email || "").trim();
 
     if (!email) {
@@ -65,6 +65,20 @@ function getPaystackSecretKey() {
 
 function toMinorUnits(amount) {
   return Math.round(Number(amount || 0) * 100);
+}
+
+function resolvePaymentAmount(body) {
+  const explicitTotal = Number(body?.payment?.total ?? body?.total ?? 0);
+
+  if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
+    return explicitTotal;
+  }
+
+  return (body?.items || []).reduce((sum, item) => {
+    const price = Number(item?.price) || 0;
+    const quantity = Number(item?.quantity) || 1;
+    return sum + price * quantity;
+  }, 0);
 }
 
 function paystackCurrency() {
