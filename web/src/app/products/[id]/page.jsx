@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
@@ -14,7 +14,10 @@ const paletteSwatches = {
 
 export default function ProductDetailsPage({ params }) {
   const { id } = params;
-  const product = products.find((p) => p.id === id);
+  const staticProduct = products.find((p) => p.id === id);
+  const [adminProduct, setAdminProduct] = useState(null);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(!staticProduct);
+  const product = staticProduct || adminProduct;
   const addToCart = useStore((state) => state.addToCart);
   const openCartPreview = useStore((state) => state.openCartPreview);
   const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
@@ -22,21 +25,72 @@ export default function ProductDetailsPage({ params }) {
   const [tailoringNotes, setTailoringNotes] = useState("");
   const [archivalNotes, setArchivalNotes] = useState("");
 
+  useEffect(() => {
+    if (staticProduct) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingProduct(true);
+
+    fetch("/api/public-products")
+      .then((response) => (response.ok ? response.json() : { products: [] }))
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const nextProduct = (data.products || []).find((item) => item.id === id);
+        setAdminProduct(nextProduct || null);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAdminProduct(null);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingProduct(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, staticProduct]);
+
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    const paletteOptions = normalizePaletteOptions(product);
+    setSelectedColor((currentColor) =>
+      paletteOptions.includes(currentColor)
+        ? currentColor
+        : paletteOptions[0] || "",
+    );
+  }, [product]);
+
   if (!product) {
     return (
       <main className="min-h-screen bg-white">
         <Navbar />
         <div className="pt-40 text-center uppercase tracking-widest">
-          Artifact not found
+          {isLoadingProduct ? "Loading artifact" : "Artifact not found"}
         </div>
       </main>
     );
   }
 
+  const paletteOptions = normalizePaletteOptions(product);
+  const selectedProductImage = getColorImage(product, selectedColor);
+
   const handleSubmit = () => {
     addToCart(
       {
         ...product,
+        image: selectedProductImage,
         tailoringNotes,
         archivalNotes,
       },
@@ -63,8 +117,8 @@ export default function ProductDetailsPage({ params }) {
           <aside className="lg:sticky lg:top-28">
             <div className="bg-[#f8f8f6] overflow-hidden">
               <img
-                src={product.image}
-                alt={product.name}
+                src={selectedProductImage}
+                alt={`${product.name} in ${selectedColor || "selected colour"}`}
                 className="w-full aspect-[4/5] object-cover"
               />
             </div>
@@ -106,7 +160,7 @@ export default function ProductDetailsPage({ params }) {
               <PortalStep number="02" title="The Palette">
                 <div className="grid gap-6">
                   <div className="flex flex-wrap gap-4">
-                    {[...new Set([...product.colors, "Black", "Ivory"])].map((color) => (
+                    {paletteOptions.map((color) => (
                       <button
                         key={color}
                         type="button"
@@ -132,7 +186,7 @@ export default function ProductDetailsPage({ params }) {
                   <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-5 border border-gray-100 bg-[#fafafa] p-4">
                     <div className="aspect-[4/5] overflow-hidden bg-white">
                       <img
-                        src={product.image}
+                        src={selectedProductImage}
                         alt={`${product.name} in ${selectedColor}`}
                         className="h-full w-full object-cover"
                       />
@@ -267,4 +321,14 @@ function PortalStep({ number, title, children }) {
 
 function formatCurrency(value) {
   return `\u00a3${Number(value || 0).toLocaleString()}`;
+}
+
+function normalizePaletteOptions(product) {
+  const colors = product?.colors || [];
+  const imageColors = Object.keys(product?.colorImages || {});
+  return [...new Set([...colors, ...imageColors])].filter(Boolean);
+}
+
+function getColorImage(product, color) {
+  return product?.colorImages?.[color] || product?.image || "";
 }

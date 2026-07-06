@@ -9,6 +9,9 @@ export const products = [
     category: "Outerwear",
     price: 1850,
     image: `${freedomBase}/freedom-product-01.jpg`,
+    colorImages: {
+      White: `${freedomBase}/freedom-product-01.jpg`,
+    },
     description:
       "A structured white jacket from Freedom, shaped through Yoruba sartorial language and finished with exposed linear stitching.",
     sizes: ["XS", "S", "M", "L"],
@@ -25,6 +28,10 @@ export const products = [
     category: "Tailoring",
     price: 2200,
     image: `${freedomBase}/freedom-product-02.jpg`,
+    colorImages: {
+      White: `${freedomBase}/freedom-product-02.jpg`,
+      Red: `${freedomBase}/edit-window-red-legs-upright.jpg`,
+    },
     description:
       "A layered wrap silhouette that carries the weight of tradition while opening into a modern Nigerian form.",
     sizes: ["S", "M", "L"],
@@ -41,6 +48,9 @@ export const products = [
     category: "Robes",
     price: 2600,
     image: `${freedomBase}/freedom-product-03.jpg`,
+    colorImages: {
+      White: `${freedomBase}/freedom-product-03.jpg`,
+    },
     description:
       "A fluid white robe made as a meditation on liberation as an event and freedom as a lived experience.",
     sizes: ["S", "M", "L"],
@@ -57,6 +67,9 @@ export const products = [
     category: "Suits",
     price: 3200,
     image: `${freedomBase}/freedom-product-04.jpg`,
+    colorImages: {
+      White: `${freedomBase}/freedom-product-04.jpg`,
+    },
     description:
       "A ceremonial suit with sculptural volume, built around the tension between inherited history and imagined futures.",
     sizes: ["38", "40", "42", "44"],

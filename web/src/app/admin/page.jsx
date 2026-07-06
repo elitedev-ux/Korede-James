@@ -457,6 +457,8 @@ export default function AdminPage() {
     title: "",
     category: "Outerwear",
     image: "",
+    colors: "White",
+    colorImages: {},
     availability: "Available",
     budget: "$5,000 - $10,000",
     description: "",
@@ -704,6 +706,8 @@ export default function AdminPage() {
       title: newPiece.title.trim(),
       category: newPiece.category,
       image: newPiece.image.trim(),
+      colors: parseColorList(newPiece.colors),
+      colorImages: normalizeColorImages(newPiece.colorImages),
       visibility: "Hidden",
       availability: newPiece.availability,
       budget: newPiece.budget,
@@ -718,6 +722,8 @@ export default function AdminPage() {
       title: "",
       category: "Outerwear",
       image: "",
+      colors: "White",
+      colorImages: {},
       availability: "Available",
       budget: "$5,000 - $10,000",
       description: "",
@@ -735,6 +741,23 @@ export default function AdminPage() {
     event.target.value = "";
   };
 
+  const handlePieceColorImageUpload = async (pieceId, color, event) => {
+    const [file] = event.target.files || [];
+    if (!file) {
+      return;
+    }
+
+    const image = await readFileAsDataUrl(file);
+    const piece = workspace.pieces.find((item) => item.id === pieceId);
+    updatePiece(pieceId, {
+      colorImages: {
+        ...(piece?.colorImages || {}),
+        [color]: image,
+      },
+    });
+    event.target.value = "";
+  };
+
   const handleNewPieceImageUpload = async (event) => {
     const [file] = event.target.files || [];
     if (!file) {
@@ -743,6 +766,23 @@ export default function AdminPage() {
 
     const image = await readFileAsDataUrl(file);
     setNewPiece((currentPiece) => ({ ...currentPiece, image }));
+    event.target.value = "";
+  };
+
+  const handleNewPieceColorImageUpload = async (color, event) => {
+    const [file] = event.target.files || [];
+    if (!file) {
+      return;
+    }
+
+    const image = await readFileAsDataUrl(file);
+    setNewPiece((currentPiece) => ({
+      ...currentPiece,
+      colorImages: {
+        ...currentPiece.colorImages,
+        [color]: image,
+      },
+    }));
     event.target.value = "";
   };
 
@@ -1172,6 +1212,18 @@ export default function AdminPage() {
                         />
                       </label>
                       <label>
+                        Colour Attributes
+                        <input
+                          value={formatColorList(piece.colors)}
+                          onChange={(event) =>
+                            updatePiece(piece.id, {
+                              colors: parseColorList(event.target.value),
+                            })
+                          }
+                          placeholder="White, Red, Black"
+                        />
+                      </label>
+                      <label>
                         Availability
                         <select
                           value={piece.availability}
@@ -1198,6 +1250,40 @@ export default function AdminPage() {
                           }
                         />
                       </label>
+                      <div className="admin-colorway-manager">
+                        <p>Colourway Images</p>
+                        <div className="admin-colorway-grid">
+                          {getPieceColors(piece).map((color) => (
+                            <div className="admin-colorway-card" key={color}>
+                              <div className="admin-colorway-card__image">
+                                {piece.colorImages?.[color] ? (
+                                  <img src={piece.colorImages[color]} alt="" />
+                                ) : piece.image ? (
+                                  <img src={piece.image} alt="" />
+                                ) : (
+                                  <span>No image</span>
+                                )}
+                              </div>
+                              <strong>{color}</strong>
+                              <label className="admin-upload admin-upload--small">
+                                <Upload size={14} />
+                                <span>Upload {color}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(event) =>
+                                    handlePieceColorImageUpload(
+                                      piece.id,
+                                      color,
+                                      event,
+                                    )
+                                  }
+                                />
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -1256,6 +1342,19 @@ export default function AdminPage() {
                     }
                   />
                 </label>
+                <label>
+                  Colour Attributes
+                  <input
+                    value={newPiece.colors}
+                    onChange={(event) =>
+                      setNewPiece({
+                        ...newPiece,
+                        colors: event.target.value,
+                      })
+                    }
+                    placeholder="White, Red, Black"
+                  />
+                </label>
                 <div className="admin-new-image">
                   {newPiece.image ? <img src={newPiece.image} alt="" /> : null}
                   <label className="admin-upload">
@@ -1267,6 +1366,36 @@ export default function AdminPage() {
                       onChange={handleNewPieceImageUpload}
                     />
                   </label>
+                </div>
+                <div className="admin-colorway-manager">
+                  <p>Colourway Images</p>
+                  <div className="admin-colorway-grid">
+                    {parseColorList(newPiece.colors).map((color) => (
+                      <div className="admin-colorway-card" key={color}>
+                        <div className="admin-colorway-card__image">
+                          {newPiece.colorImages[color] ? (
+                            <img src={newPiece.colorImages[color]} alt="" />
+                          ) : newPiece.image ? (
+                            <img src={newPiece.image} alt="" />
+                          ) : (
+                            <span>No image</span>
+                          )}
+                        </div>
+                        <strong>{color}</strong>
+                        <label className="admin-upload admin-upload--small">
+                          <Upload size={14} />
+                          <span>Upload {color}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) =>
+                              handleNewPieceColorImageUpload(color, event)
+                            }
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <label>
                   Availability
@@ -1789,6 +1918,32 @@ function getModuleRows(view, workspace) {
     meta: entry.meta || entry.time,
     notes: entry.notes || "",
   }));
+}
+
+function parseColorList(value) {
+  if (Array.isArray(value)) {
+    return value.map((color) => String(color).trim()).filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(",")
+    .map((color) => color.trim())
+    .filter(Boolean);
+}
+
+function formatColorList(value) {
+  return parseColorList(value).join(", ");
+}
+
+function getPieceColors(piece) {
+  const colors = parseColorList(piece?.colors);
+  const colorImageNames = Object.keys(piece?.colorImages || {});
+  const merged = [...new Set([...colors, ...colorImageNames])].filter(Boolean);
+  return merged.length ? merged : ["White"];
+}
+
+function normalizeColorImages(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
 function applyModulePayload(workspace, view, payload) {
