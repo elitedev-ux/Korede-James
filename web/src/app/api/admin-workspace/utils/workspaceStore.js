@@ -110,7 +110,7 @@ export async function appendOrder(payload) {
     0
   );
   const subtotal = Number(payment.subtotal) || computedSubtotal;
-  const shipping = Number(payment.shipping) || (subtotal > 0 ? 75 : 0);
+  const shipping = Number(payment.shipping) || 0;
   const total = Number(payment.total) || subtotal + shipping;
   const totalLabel = formatCurrency(total);
   const customer = payload.customer || {};
@@ -142,6 +142,7 @@ export async function appendOrder(payload) {
     status: "Inquiry received",
     refundLimit: "Not applicable",
     notes: request.notes,
+    paystackReference: payment.reference || "",
   };
   const nextWorkspace = normalizeWorkspace({
     ...workspace,
@@ -316,7 +317,7 @@ function formatWorkspaceDetails(value) {
 }
 
 function formatCurrency(value) {
-  return `\u00a3${Number(value || 0).toLocaleString()}`;
+  return `$${Number(value || 0).toLocaleString()}`;
 }
 
 function normalizeLookup(value = "") {

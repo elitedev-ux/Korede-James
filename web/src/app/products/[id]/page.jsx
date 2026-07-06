@@ -320,7 +320,7 @@ function PortalStep({ number, title, children }) {
 }
 
 function formatCurrency(value) {
-  return `\u00a3${Number(value || 0).toLocaleString()}`;
+  return `$${Number(value || 0).toLocaleString()}`;
 }
 
 function normalizePaletteOptions(product) {

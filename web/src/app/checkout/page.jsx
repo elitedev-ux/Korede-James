@@ -5,7 +5,6 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
-import { recordAdminOrder } from "../../utils/adminWorkspace";
 import { getCustomerSession } from "../../utils/customerAccount";
 
 export default function CheckoutPage() {
@@ -14,11 +13,12 @@ export default function CheckoutPage() {
   const [customerSession, setCustomerSession] = useState(null);
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
   const subtotal = cart.reduce(
     (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
     0,
   );
-  const shipping = subtotal > 0 ? 75 : 0;
+  const shipping = 0;
   const total = subtotal + shipping;
 
   useEffect(() => {
@@ -37,6 +37,57 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference");
+
+    if (!reference) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsSubmitting(true);
+    setPaymentError("");
+
+    fetch(`/api/paystack/verify?reference=${encodeURIComponent(reference)}`)
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to verify Paystack payment.");
+        }
+        return data;
+      })
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setSubmittedBlueprint(data.orderPayload?.items || cart);
+        setOrderId(data.order?.id || "");
+        clearCart();
+        window.history.replaceState({}, "", "/checkout");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setPaymentError(
+            error instanceof Error
+              ? error.message
+              : "Unable to verify Paystack payment.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsSubmitting(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cart, clearCart]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -45,7 +96,7 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      const order = await recordAdminOrder({
+      const orderPayload = {
         customer: {
           name: [firstName, lastName].filter(Boolean).join(" ") || "Website Client",
           email: String(form.get("email") || "").trim(),
@@ -66,14 +117,27 @@ export default function CheckoutPage() {
           subtotal,
           shipping,
           total,
-          method: String(form.get("paymentMethod") || "Card").trim(),
-          cardLast4: String(form.get("cardNumber") || "").replace(/\D/g, "").slice(-4),
+          method: "Paystack",
         },
+      };
+      const response = await fetch("/api/paystack/initialize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderPayload),
       });
-      setSubmittedBlueprint(cart);
-      setOrderId(order.id);
-      clearCart();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.authorizationUrl) {
+        throw new Error(data.error || "Unable to start Paystack checkout.");
+      }
+
+      window.location.href = data.authorizationUrl;
+    } catch (error) {
+      setPaymentError(
+        error instanceof Error ? error.message : "Unable to start Paystack checkout.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -196,24 +260,10 @@ export default function CheckoutPage() {
               </CheckoutSection>
 
               <CheckoutSection title="Payment Details">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="block md:col-span-2">
-                    <span className="block text-[9px] uppercase tracking-[0.3em] text-gray-400 mb-3">
-                      Payment Method
-                    </span>
-                    <select
-                      name="paymentMethod"
-                      className="w-full bg-white border border-gray-200 px-5 py-4 text-sm focus:outline-none focus:border-black transition-colors"
-                    >
-                      <option>Card</option>
-                      <option>Bank Transfer</option>
-                    </select>
-                  </label>
-                  <Field label="Card Number" name="cardNumber" inputMode="numeric" />
-                  <Field label="Expiry" name="cardExpiry" placeholder="MM / YY" />
-                  <Field label="Security Code" name="cardCvc" inputMode="numeric" />
-                  <Field label="Name on Card" name="cardName" />
-                </div>
+                <p className="text-xs font-light leading-loose text-gray-500">
+                  Secure payment is handled by Paystack. The website does not
+                  collect or store card details.
+                </p>
               </CheckoutSection>
 
               <CheckoutSection title="Submission">
@@ -229,8 +279,13 @@ export default function CheckoutPage() {
                 disabled={isSubmitting}
                 className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all"
               >
-                {isSubmitting ? "Submitting..." : "Submit Commission"}
+                {isSubmitting ? "Opening Paystack..." : "Pay With Paystack"}
               </button>
+              {paymentError ? (
+                <p className="border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+                  {paymentError}
+                </p>
+              ) : null}
             </form>
 
             <aside className="lg:col-span-1">
@@ -255,7 +310,7 @@ export default function CheckoutPage() {
                 <div className="space-y-5 text-xs tracking-widest border-t border-gray-200 pt-6">
                   <SummaryLine label="Registered Value" value={formatCurrency(subtotal)} />
                   <SummaryLine label="Transit" value={formatCurrency(shipping)} />
-                  <SummaryLine label="Payment" value="Card / transfer" />
+                  <SummaryLine label="Payment" value="Paystack" />
                   <SummaryLine label="Total Due" value={formatCurrency(total)} />
                 </div>
 
@@ -312,7 +367,7 @@ function SummaryLine({ label, value }) {
 }
 
 function formatCurrency(value) {
-  return `\u00a3${Number(value || 0).toLocaleString()}`;
+  return `$${Number(value || 0).toLocaleString()}`;
 }
 
 function ArtifactBlueprint({ item }) {

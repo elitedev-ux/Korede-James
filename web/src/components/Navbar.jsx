@@ -503,5 +503,5 @@ export default function Navbar() {
 }
 
 function formatCurrency(value) {
-  return `\u00a3${Number(value || 0).toLocaleString()}`;
+  return `$${Number(value || 0).toLocaleString()}`;
 }

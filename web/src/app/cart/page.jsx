@@ -12,7 +12,7 @@ export default function CartPage() {
     (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
     0,
   );
-  const shipping = subtotal > 0 ? 75 : 0;
+  const shipping = 0;
   const total = subtotal + shipping;
 
   return (
@@ -192,5 +192,5 @@ export default function CartPage() {
 }
 
 function formatCurrency(value) {
-  return `\u00a3${Number(value || 0).toLocaleString()}`;
+  return `$${Number(value || 0).toLocaleString()}`;
 }

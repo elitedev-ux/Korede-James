@@ -1,6 +1,8 @@
 import { readWorkspace } from "../admin-workspace/utils/workspaceStore.js";
 import { ok } from "../utils/supabaseRest.js";
 
+const TEST_PRODUCT_PRICE = 2;
+
 export async function GET() {
   const workspace = await readWorkspace();
   const products = workspace.pieces
@@ -12,7 +14,7 @@ export async function GET() {
       archetype: piece.category || "Atelier Piece",
       silhouette: piece.title,
       category: piece.category || "Atelier",
-      price: parseBudgetValue(piece.budget),
+      price: TEST_PRODUCT_PRICE,
       image: piece.image || Object.values(piece.colorImages || {})[0] || "",
       colorImages: normalizeColorImages(piece.colorImages),
       description: piece.description || "A commissionable piece from the Korede James atelier.",
@@ -43,9 +45,4 @@ function normalizeColors(colors, colorImages) {
 
 function normalizeColorImages(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-}
-
-function parseBudgetValue(value) {
-  const [firstAmount] = String(value || "").match(/\d[\d,]*/g) || [];
-  return Number(String(firstAmount || "0").replace(/,/g, "")) || 0;
 }

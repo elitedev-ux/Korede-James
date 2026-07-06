@@ -117,6 +117,8 @@ const apiRoutes = [
 	route('api/admin-workspace', './api/admin-workspace/resource.js'),
 	route('api/commissions', './api/commissions/resource.js'),
 	route('api/commissions/track', './api/commissions/track/resource.js'),
+	route('api/paystack/initialize', './api/paystack/initialize/resource.js'),
+	route('api/paystack/verify', './api/paystack/verify/resource.js'),
 	route('api/public-products', './api/public-products/resource.js'),
 	route('api/email-test', './api/email-test/resource.js'),
 	route('api/customer-auth/signup', './api/customer-auth/signup/resource.js'),

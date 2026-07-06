@@ -1,4 +1,5 @@
 const freedomBase = "/assets/freedom";
+const testPrice = 2;
 
 export const products = [
   {
@@ -7,7 +8,7 @@ export const products = [
     archetype: "Archetype 01",
     silhouette: "The Independence Jacket",
     category: "Outerwear",
-    price: 1850,
+    price: testPrice,
     image: `${freedomBase}/freedom-product-01.jpg`,
     colorImages: {
       White: `${freedomBase}/freedom-product-01.jpg`,
@@ -26,7 +27,7 @@ export const products = [
     archetype: "Archetype 02",
     silhouette: "The Inheritance Wrap",
     category: "Tailoring",
-    price: 2200,
+    price: testPrice,
     image: `${freedomBase}/freedom-product-02.jpg`,
     colorImages: {
       White: `${freedomBase}/freedom-product-02.jpg`,
@@ -46,7 +47,7 @@ export const products = [
     archetype: "Archetype 03",
     silhouette: "The Liberation Robe",
     category: "Robes",
-    price: 2600,
+    price: testPrice,
     image: `${freedomBase}/freedom-product-03.jpg`,
     colorImages: {
       White: `${freedomBase}/freedom-product-03.jpg`,
@@ -65,7 +66,7 @@ export const products = [
     archetype: "Archetype 04",
     silhouette: "The Memory Suit",
     category: "Suits",
-    price: 3200,
+    price: testPrice,
     image: `${freedomBase}/freedom-product-04.jpg`,
     colorImages: {
       White: `${freedomBase}/freedom-product-04.jpg`,
