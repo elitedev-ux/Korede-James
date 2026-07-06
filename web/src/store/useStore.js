@@ -10,6 +10,7 @@ const useStore = create(
   persist(
     (set) => ({
       cart: [],
+      cartPreviewVersion: 0,
       addToCart: (product, size, color) =>
         set((state) => {
           const existing = state.cart.find(
@@ -37,6 +38,10 @@ const useStore = create(
             cart: [...state.cart, { ...product, size, color, quantity: 1 }],
           };
         }),
+      openCartPreview: () =>
+        set((state) => ({
+          cartPreviewVersion: state.cartPreviewVersion + 1,
+        })),
       removeFromCart: (productId, size, color) =>
         set((state) => ({
           cart: state.cart.filter(

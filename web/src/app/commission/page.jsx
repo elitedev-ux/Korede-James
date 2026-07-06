@@ -11,6 +11,7 @@ export default function CommissionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedId, setSubmittedId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [referenceFiles, setReferenceFiles] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -59,6 +60,9 @@ export default function CommissionPage() {
         source: "Bespoke enquiry",
         notes: [
           formData.measurements ? `Measurements: ${formData.measurements}` : "",
+          referenceFiles.length
+            ? `Reference files: ${referenceFiles.map((file) => file.name).join(", ")}`
+            : "",
           formData.notes,
         ]
           .filter(Boolean)
@@ -69,6 +73,10 @@ export default function CommissionPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleReferenceFiles = (files) => {
+    setReferenceFiles(Array.from(files || []));
   };
 
   return (
@@ -267,7 +275,21 @@ export default function CommissionPage() {
                   <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
                     Reference / Inspiration
                   </label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center bg-white hover:border-black transition-colors cursor-pointer group">
+                  <label
+                    className="block border-2 border-dashed border-gray-200 rounded-lg p-8 text-center bg-white hover:border-black transition-colors cursor-pointer group"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleReferenceFiles(event.dataTransfer.files);
+                    }}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf"
+                      className="sr-only"
+                      onChange={(event) => handleReferenceFiles(event.target.files)}
+                    />
                     <Upload
                       size={24}
                       className="mx-auto text-gray-300 group-hover:text-black mb-4 transition-colors"
@@ -275,7 +297,19 @@ export default function CommissionPage() {
                     <p className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-black transition-colors">
                       Drag files here or click to upload
                     </p>
-                  </div>
+                    {referenceFiles.length ? (
+                      <div className="mt-5 space-y-2 text-left">
+                        {referenceFiles.map((file) => (
+                          <p
+                            className="truncate text-[10px] uppercase tracking-widest text-black"
+                            key={`${file.name}-${file.size}`}
+                          >
+                            {file.name}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </label>
                 </div>
 
                 <div className="space-y-2">

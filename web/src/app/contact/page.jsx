@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle2, Phone, Mail, MapPin, Instagram, Twitter, Send } from "lucide-react";
+import { CheckCircle2, Phone, Mail, MapPin, Instagram, Send } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
@@ -107,18 +107,20 @@ export default function ContactPage() {
               </h4>
               <div className="flex space-x-6">
                 <a
-                  href="#"
+                  href="https://www.instagram.com/koredejames/"
+                  target="_blank"
+                  rel="noreferrer"
                   className="flex items-center space-x-2 text-[10px] uppercase tracking-widest font-bold hover:text-amber-600 transition-colors"
                 >
                   <Instagram size={16} />
                   <span>Instagram</span>
                 </a>
                 <a
-                  href="#"
+                  href="mailto:hello@koredejames.com"
                   className="flex items-center space-x-2 text-[10px] uppercase tracking-widest font-bold hover:text-amber-600 transition-colors"
                 >
-                  <Twitter size={16} />
-                  <span>Twitter</span>
+                  <Mail size={16} />
+                  <span>Email</span>
                 </a>
               </div>
             </div>

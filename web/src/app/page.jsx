@@ -73,11 +73,15 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="home-hero relative h-screen w-full overflow-hidden bg-black">
-        {/* Video background, autoplays once without looping */}
+        {/* Video background, autoplays silently and loops behind the landing hero. */}
         <video
           autoPlay
+          loop
           muted
           playsInline
+          controls={false}
+          disablePictureInPicture
+          controlsList="nodownload noplaybackrate noremoteplayback"
           onEnded={() => setShowHeroContent(true)}
           onError={() => setShowHeroContent(true)}
           onStalled={() => setShowHeroContent(true)}
@@ -299,6 +303,9 @@ export default function HomePage() {
             muted
             loop
             playsInline
+            controls={false}
+            disablePictureInPicture
+            controlsList="nodownload noplaybackrate noremoteplayback"
             preload="metadata"
           >
             <source src={editorialVideo} type="video/mp4" />

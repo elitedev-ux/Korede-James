@@ -22,6 +22,7 @@ export default function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   const cart = useStore((state) => state.cart);
+  const cartPreviewVersion = useStore((state) => state.cartPreviewVersion);
   const removeFromCart = useStore((state) => state.removeFromCart);
   const updateQuantity = useStore((state) => state.updateQuantity);
 
@@ -64,6 +65,19 @@ export default function Navbar() {
       window.scrollTo(0, scrollY);
     };
   }, [isCartOpen, isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!cartPreviewVersion) {
+      return;
+    }
+
+    setIsCartOpen(true);
+    const previewTimer = window.setTimeout(() => {
+      setIsCartOpen(false);
+    }, 2600);
+
+    return () => window.clearTimeout(previewTimer);
+  }, [cartPreviewVersion]);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartTotal = cart.reduce(
@@ -454,7 +468,9 @@ export default function Navbar() {
 
               <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-[10px] uppercase tracking-[0.18em] text-gray-500">
                 <a
-                  href="#"
+                  href="https://www.instagram.com/koredejames/"
+                  target="_blank"
+                  rel="noreferrer"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-2"
                 >

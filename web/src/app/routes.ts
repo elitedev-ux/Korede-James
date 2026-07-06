@@ -114,6 +114,9 @@ if (import.meta.env.DEV) {
 }
 const tree = buildRouteTree(__dirname);
 const apiRoutes = [
+	route('api/admin-workspace', './api/admin-workspace/resource.js'),
+	route('api/commissions', './api/commissions/resource.js'),
+	route('api/commissions/track', './api/commissions/track/resource.js'),
 	route('api/email-test', './api/email-test/resource.js'),
 	route('api/customer-auth/signup', './api/customer-auth/signup/resource.js'),
 	route('api/customer-auth/signin', './api/customer-auth/signin/resource.js'),
