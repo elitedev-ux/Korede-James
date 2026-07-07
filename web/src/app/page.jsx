@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import Navbar from "../components/Navbar";
@@ -13,6 +13,8 @@ const editorialVideo = "/assets/hero2.mp4?v=2";
 export default function HomePage() {
   const [email, setEmail] = useState("");
   const [showHeroContent, setShowHeroContent] = useState(false);
+  const heroVideoRef = useAutoplayingVideo();
+  const editorialVideoRef = useAutoplayingVideo();
 
   useEffect(() => {
     if (showHeroContent) return;
@@ -75,9 +77,11 @@ export default function HomePage() {
       <section className="home-hero relative h-screen w-full overflow-hidden bg-black">
         {/* Video background, autoplays silently and loops behind the landing hero. */}
         <video
+          ref={heroVideoRef}
           autoPlay
           loop
           muted
+          defaultMuted
           playsInline
           controls={false}
           disablePictureInPicture
@@ -298,9 +302,11 @@ export default function HomePage() {
       <section className="home-editorial-pair w-full bg-white">
         <div className="home-editorial-pair__panel home-editorial-pair__panel--video">
           <video
+            ref={editorialVideoRef}
             className="home-editorial-pair__media"
             autoPlay
             muted
+            defaultMuted
             loop
             playsInline
             controls={false}
@@ -433,4 +439,60 @@ export default function HomePage() {
       <Footer />
     </main>
   );
+}
+
+function useAutoplayingVideo() {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return undefined;
+    }
+
+    const playVideo = () => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.controls = false;
+
+      if (video.paused) {
+        video.play().catch(() => {
+          // Mobile browsers can still block autoplay in Low Power/Data Saver mode.
+        });
+      }
+    };
+
+    playVideo();
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          playVideo();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(video);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        playVideo();
+      }
+    };
+
+    video.addEventListener("canplay", playVideo);
+    video.addEventListener("loadedmetadata", playVideo);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      observer.disconnect();
+      video.removeEventListener("canplay", playVideo);
+      video.removeEventListener("loadedmetadata", playVideo);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  return videoRef;
 }
