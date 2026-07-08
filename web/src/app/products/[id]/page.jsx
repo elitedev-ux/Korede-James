@@ -7,57 +7,24 @@ import useStore from "../../../store/useStore";
 
 const paletteSwatches = {
   White: "#f8f6f0",
+  OFFWHITE: "#f8f6f0",
+  BEIGE: "#d7c3a2",
+  BLUE: "#1f3f68",
   Red: "#9f1239",
+  RED: "#9f1239",
   Black: "#111111",
   Ivory: "#f4ead8",
 };
 
 export default function ProductDetailsPage({ params }) {
   const { id } = params;
-  const staticProduct = products.find((p) => p.id === id);
-  const [adminProduct, setAdminProduct] = useState(null);
-  const [isLoadingProduct, setIsLoadingProduct] = useState(!staticProduct);
-  const product = staticProduct || adminProduct;
+  const product = products.find((p) => p.id === id);
   const addToCart = useStore((state) => state.addToCart);
   const openCartPreview = useStore((state) => state.openCartPreview);
   const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
-  const [selectedSize, setSelectedSize] = useState("M");
+  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[1] || "M");
   const [tailoringNotes, setTailoringNotes] = useState("");
   const [archivalNotes, setArchivalNotes] = useState("");
-
-  useEffect(() => {
-    if (staticProduct) {
-      return;
-    }
-
-    let isMounted = true;
-    setIsLoadingProduct(true);
-
-    fetch("/api/public-products")
-      .then((response) => (response.ok ? response.json() : { products: [] }))
-      .then((data) => {
-        if (!isMounted) {
-          return;
-        }
-
-        const nextProduct = (data.products || []).find((item) => item.id === id);
-        setAdminProduct(nextProduct || null);
-      })
-      .catch(() => {
-        if (isMounted) {
-          setAdminProduct(null);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoadingProduct(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, staticProduct]);
 
   useEffect(() => {
     if (!product) {
@@ -70,6 +37,11 @@ export default function ProductDetailsPage({ params }) {
         ? currentColor
         : paletteOptions[0] || "",
     );
+    setSelectedSize((currentSize) =>
+      product.sizes?.includes(currentSize)
+        ? currentSize
+        : product.sizes?.[0] || "",
+    );
   }, [product]);
 
   if (!product) {
@@ -77,7 +49,7 @@ export default function ProductDetailsPage({ params }) {
       <main className="min-h-screen bg-white">
         <Navbar />
         <div className="pt-40 text-center uppercase tracking-widest">
-          {isLoadingProduct ? "Loading artifact" : "Artifact not found"}
+          Artifact not found
         </div>
       </main>
     );
@@ -85,6 +57,7 @@ export default function ProductDetailsPage({ params }) {
 
   const paletteOptions = normalizePaletteOptions(product);
   const selectedProductImage = getColorImage(product, selectedColor);
+  const sizeOptions = product.sizes?.length ? product.sizes : [];
 
   const handleSubmit = () => {
     addToCart(
@@ -152,7 +125,7 @@ export default function ProductDetailsPage({ params }) {
                     Registered value
                   </span>
                   <span className="text-xs uppercase tracking-[0.2em] font-semibold text-right">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(product)}
                   </span>
                 </div>
               </PortalStep>
@@ -219,7 +192,7 @@ export default function ProductDetailsPage({ params }) {
               <PortalStep number="03" title="Proportions">
                 <div className="space-y-8">
                   <div className="flex flex-wrap gap-4">
-                    {["S", "M", "L"].map((size) => (
+                    {sizeOptions.map((size) => (
                       <label
                         key={size}
                         className={`flex items-center gap-3 border px-5 py-3 cursor-pointer transition-colors ${
@@ -319,8 +292,16 @@ function PortalStep({ number, title, children }) {
   );
 }
 
-function formatCurrency(value) {
-  return `₦${Number(value || 0).toLocaleString()}`;
+function formatCurrency(product) {
+  if (product?.priceLabel) {
+    return product.priceLabel;
+  }
+
+  if (!product?.price) {
+    return "";
+  }
+
+  return `N${Number(product.price).toLocaleString()}`;
 }
 
 function normalizePaletteOptions(product) {

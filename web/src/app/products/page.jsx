@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -7,29 +7,8 @@ import { products } from "../../data/fashion-data";
 
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [adminProducts, setAdminProducts] = useState([]);
-  const catalogProducts = useMemo(
-    () => mergeCatalogProducts(products, adminProducts),
-    [adminProducts],
-  );
+  const catalogProducts = products;
   const categories = ["All", ...new Set(catalogProducts.map((product) => product.category))];
-
-  useEffect(() => {
-    let isMounted = true;
-
-    fetch("/api/public-products")
-      .then((response) => (response.ok ? response.json() : { products: [] }))
-      .then((data) => {
-        if (isMounted) {
-          setAdminProducts(Array.isArray(data.products) ? data.products : []);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const visibleProducts = useMemo(() => {
     if (activeCategory === "All") {
@@ -110,12 +89,4 @@ export default function ProductsPage() {
       <Footer />
     </main>
   );
-}
-
-function mergeCatalogProducts(baseProducts, extraProducts) {
-  const seenIds = new Set(baseProducts.map((product) => product.id));
-  return [
-    ...baseProducts,
-    ...extraProducts.filter((product) => product?.id && !seenIds.has(product.id)),
-  ];
 }
