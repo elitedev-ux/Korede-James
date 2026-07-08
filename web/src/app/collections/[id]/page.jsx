@@ -23,9 +23,12 @@ export default function CollectionDetailsPage({ params }) {
     .slice(0, 4);
   const otherCollections = collections.filter((c) => c.id !== collection.id);
   const isFreedomCollection = collection.id === "freedom";
+  const isFluidBeautyCollection = collection.id === "fluid-beauty";
   const galleryLayout = isFreedomCollection
     ? freedomGalleryLayout
-    : buildGalleryLayout(collection.gallery);
+    : isFluidBeautyCollection
+      ? fluidBeautyGalleryLayout
+      : buildGalleryLayout(collection.gallery);
 
   return (
     <main className="min-h-screen bg-white">
@@ -98,7 +101,11 @@ export default function CollectionDetailsPage({ params }) {
         ) : null}
 
         <div>
-          <div className="collection-collage grid grid-cols-2 gap-0 md:gap-[3px]">
+          <div
+            className={`collection-collage grid grid-cols-2 gap-0 md:gap-[3px] ${
+              isFluidBeautyCollection ? "mx-auto max-w-[420px] md:max-w-[560px]" : ""
+            }`}
+          >
             {galleryLayout.map((item, i) => (
               <motion.div
                 key={i}
@@ -235,6 +242,84 @@ const freedomGalleryLayout = [
     src: "/assets/freedom/IMG_3384.jpeg",
     className: "aspect-[2/3]",
     imageClassName: "object-center",
+  },
+];
+
+const fluidBeautyGalleryLayout = [
+  {
+    src: "/assets/kj-25/SMLD1748.jpeg",
+    className: "col-span-2 aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1887.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1869.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1650.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1667.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2013.jpeg",
+    className: "col-span-2 aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2055.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2069.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2230.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2249.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2094.jpeg",
+    className: "col-span-2 aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2102.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2103.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1961.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1975.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
   },
 ];
 
