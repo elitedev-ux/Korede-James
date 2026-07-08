@@ -232,12 +232,12 @@ const fluidBeautyGalleryLayout = [
   {
     src: "/assets/kj-25/SMLD1650.jpeg",
     className: "aspect-[4/5]",
-    imageClassName: "object-[center_18%]",
+    imageClassName: "object-[center_10%] scale-[1.06]",
   },
   {
     src: "/assets/kj-25/SMLD1667.jpeg",
     className: "aspect-[4/5]",
-    imageClassName: "object-[center_18%]",
+    imageClassName: "object-[center_10%] scale-[1.06]",
   },
   {
     src: "/assets/kj-25/SMLD2013.jpeg",
