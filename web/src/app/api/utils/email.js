@@ -107,6 +107,31 @@ export function sendPasswordResetEmail({ email, resetUrl }) {
   });
 }
 
+export function sendNewsletterConfirmationEmail({ email }) {
+  return sendTransactionalEmail({
+    to: email,
+    subject: "Welcome to the Korede James inner circle",
+    preview: "You are now subscribed to Korede James atelier notes.",
+    html: brandedMessage({
+      eyebrow: "Inner Circle",
+      title: "Subscription Confirmed",
+      greeting: "Hello,",
+      body: [
+        "Thank you for joining the Korede James inner circle.",
+        "You will receive collection notes, atelier updates, and private invitations when the studio has something considered to share.",
+      ],
+      details: [
+        ["Subscription", "Active"],
+        ["Frequency", "Occasional atelier notes"],
+      ],
+      action: {
+        label: "Visit Korede James",
+        href: siteOrigin(),
+      },
+    }),
+  });
+}
+
 export function sendCommissionReceivedEmail({ email, client, displayId, artifact }) {
   return sendTransactionalEmail({
     to: email,

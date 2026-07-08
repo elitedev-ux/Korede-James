@@ -12,6 +12,8 @@ const editorialVideo = "/assets/hero2.mp4?v=2";
 
 export default function HomePage() {
   const [email, setEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState({ type: "", message: "" });
+  const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
   const [showHeroContent, setShowHeroContent] = useState(false);
   const heroVideoRef = useAutoplayingVideo();
   const editorialVideoRef = useAutoplayingVideo();
@@ -68,6 +70,48 @@ export default function HomePage() {
       imageClass: "home-editorial__image--foliage-bw",
     },
   ];
+
+  const handleNewsletterSubmit = async (event) => {
+    event.preventDefault();
+    setNewsletterStatus({ type: "", message: "" });
+    setIsNewsletterSubmitting(true);
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          source: "homepage",
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to subscribe right now.");
+      }
+
+      setEmail("");
+      setNewsletterStatus({
+        type: "success",
+        message: data.emailSent
+          ? "You are subscribed. A confirmation email has been sent."
+          : "You are subscribed.",
+      });
+    } catch (error) {
+      setNewsletterStatus({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to subscribe right now.",
+      });
+    } finally {
+      setIsNewsletterSubmitting(false);
+    }
+  };
 
   return (
     <main className="home-page min-h-screen bg-white">
@@ -418,21 +462,38 @@ export default function HomePage() {
             Subscribe to receive early access to new collections,
             behind-the-scenes insights, and exclusive invitations.
           </p>
-          <form className="home-newsletter__form flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <form
+            className="home-newsletter__form flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4"
+            onSubmit={handleNewsletterSubmit}
+          >
             <input
               type="email"
               placeholder="YOUR EMAIL ADDRESS"
+              required
+              autoComplete="email"
               className="flex-1 bg-white border border-gray-200 px-6 py-4 text-[10px] tracking-[0.2em] focus:outline-none focus:border-black"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <button
               type="submit"
+              disabled={isNewsletterSubmitting}
               className="bg-black text-white px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-semibold hover:bg-amber-800 transition-colors"
             >
-              Subscribe
+              {isNewsletterSubmitting ? "Subscribing" : "Subscribe"}
             </button>
           </form>
+          {newsletterStatus.message ? (
+            <p
+              className={`mt-6 text-[10px] uppercase tracking-[0.24em] ${
+                newsletterStatus.type === "error"
+                  ? "text-red-700"
+                  : "text-amber-700"
+              }`}
+            >
+              {newsletterStatus.message}
+            </p>
+          ) : null}
         </div>
       </section>
 
