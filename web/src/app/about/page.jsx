@@ -4,7 +4,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 
-const founderImage = "/assets/about/korede-james-founder.png";
+const founderImage = "/assets/about/korede-james-founder.jpg";
 const visionImage = "/assets/freedom/freedom-gallery-04.jpg";
 
 export default function AboutPage() {
