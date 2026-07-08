@@ -5,13 +5,13 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
+import { useRegion } from "../../context/RegionContext";
+import { formatMoney, getLineItemPrice, sumLineItems } from "../../utils/pricing";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity } = useStore();
-  const subtotal = cart.reduce(
-    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
-    0,
-  );
+  const { currency } = useRegion();
+  const subtotal = sumLineItems(cart, currency);
   const shipping = 0;
   const total = subtotal + shipping;
 
@@ -52,7 +52,10 @@ export default function CartPage() {
                         </p>
                       </div>
                       <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400">
-                        {formatCurrency(item.price * item.quantity)}
+                        {formatMoney(
+                          getLineItemPrice(item, currency) * item.quantity,
+                          currency,
+                        )}
                       </p>
                     </div>
 
@@ -123,11 +126,15 @@ export default function CartPage() {
                 <div className="space-y-6 mb-10">
                   <div className="flex justify-between text-xs tracking-widest">
                     <span className="text-gray-400 uppercase">Subtotal</span>
-                    <span className="font-bold">{formatCurrency(subtotal)}</span>
+                    <span className="font-bold">
+                      {formatMoney(subtotal, currency)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
                     <span className="text-gray-400 uppercase">Transit</span>
-                    <span className="font-bold">{formatCurrency(shipping)}</span>
+                    <span className="font-bold">
+                      {formatMoney(shipping, currency)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
                     <span className="text-gray-400 uppercase">
@@ -140,7 +147,7 @@ export default function CartPage() {
                       Total
                     </span>
                     <span className="text-2xl font-serif">
-                      {formatCurrency(total)}
+                      {formatMoney(total, currency)}
                     </span>
                   </div>
                 </div>
@@ -189,8 +196,4 @@ export default function CartPage() {
       <Footer />
     </main>
   );
-}
-
-function formatCurrency(value) {
-  return `₦${Number(value || 0).toLocaleString()}`;
 }

@@ -1,4 +1,5 @@
 import { fail, ok, readBody } from "../../utils/supabaseRest.js";
+import { DEFAULT_MARKET, getLineItemPrice } from "../../../../utils/pricing.js";
 
 const PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize";
 
@@ -6,7 +7,8 @@ export async function POST(request) {
   try {
     const secretKey = getPaystackSecretKey();
     const body = await readBody(request);
-    const amount = resolvePaymentAmount(body);
+    const currency = resolvePaymentCurrency(body);
+    const amount = resolvePaymentAmount(body, currency);
     const email = String(body.customer?.email || "").trim();
 
     if (!email) {
@@ -26,7 +28,7 @@ export async function POST(request) {
       body: JSON.stringify({
         email,
         amount: toMinorUnits(amount),
-        currency: paystackCurrency(),
+        currency,
         callback_url: `${siteOrigin()}/checkout?payment=paystack`,
         metadata: {
           orderPayload: body,
@@ -67,7 +69,7 @@ function toMinorUnits(amount) {
   return Math.round(Number(amount || 0) * 100);
 }
 
-function resolvePaymentAmount(body) {
+function resolvePaymentAmount(body, currency) {
   const explicitTotal = Number(body?.payment?.total ?? body?.total ?? 0);
 
   if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
@@ -75,14 +77,22 @@ function resolvePaymentAmount(body) {
   }
 
   return (body?.items || []).reduce((sum, item) => {
-    const price = Number(item?.price) || 0;
+    const price = getLineItemPrice(item, currency);
     const quantity = Number(item?.quantity) || 1;
     return sum + price * quantity;
   }, 0);
 }
 
-function paystackCurrency() {
-  return process.env.PAYSTACK_CURRENCY || "NGN";
+function resolvePaymentCurrency(body) {
+  const requestedCurrency = String(
+    body?.payment?.currency || body?.currency || "",
+  ).toUpperCase();
+
+  if (["NGN", "USD"].includes(requestedCurrency)) {
+    return requestedCurrency;
+  }
+
+  return process.env.PAYSTACK_CURRENCY || DEFAULT_MARKET.currency;
 }
 
 function siteOrigin() {

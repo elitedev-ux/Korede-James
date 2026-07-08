@@ -1,3 +1,5 @@
+import { formatMoney, sumLineItems } from "./pricing";
+
 export const ADMIN_WORKSPACE_STORAGE_KEY = "korede-james-admin-workspace-v2";
 export const ADMIN_ACCESS_SECRET_KEY = "korede-james-admin-secret";
 
@@ -188,14 +190,12 @@ function recordAdminOrderLocally({ customer, items, contact, shipping, payment }
     .join(", ");
   const contactSummary = formatWorkspaceDetails(contact);
   const shippingSummary = formatWorkspaceDetails(shipping);
-  const computedSubtotal = items.reduce(
-    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
-    0,
-  );
+  const currency = payment?.currency || "NGN";
+  const computedSubtotal = sumLineItems(items, currency);
   const subtotal = Number(payment?.subtotal) || computedSubtotal;
   const transit = Number(payment?.shipping) || 0;
   const total = Number(payment?.total) || subtotal + transit;
-  const totalLabel = formatCurrency(total);
+  const totalLabel = formatCurrency(total, currency);
   const request = {
     id: `req-${orderId.toLowerCase()}`,
     client: customer.name,
@@ -361,8 +361,8 @@ function formatWorkspaceDetails(value) {
   return Object.values(value).filter(Boolean).join(", ");
 }
 
-function formatCurrency(value) {
-  return `₦${Number(value || 0).toLocaleString()}`;
+function formatCurrency(value, currency = "NGN") {
+  return formatMoney(value, currency);
 }
 
 async function apiRequest(path, options = {}) {

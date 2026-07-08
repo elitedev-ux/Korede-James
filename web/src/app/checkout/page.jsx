@@ -6,18 +6,18 @@ import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
 import { getCustomerSession } from "../../utils/customerAccount";
+import { useRegion } from "../../context/RegionContext";
+import { formatMoney, sumLineItems } from "../../utils/pricing";
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
+  const { currency } = useRegion();
   const [orderId, setOrderId] = useState("");
   const [customerSession, setCustomerSession] = useState(null);
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState("");
-  const subtotal = cart.reduce(
-    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
-    0,
-  );
+  const subtotal = sumLineItems(cart, currency);
   const shipping = 0;
   const total = subtotal + shipping;
 
@@ -118,6 +118,7 @@ export default function CheckoutPage() {
           shipping,
           total,
           method: "Paystack",
+          currency,
         },
       };
       const response = await fetch("/api/paystack/initialize", {
@@ -308,10 +309,10 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-5 text-xs tracking-widest border-t border-gray-200 pt-6">
-                  <SummaryLine label="Registered Value" value={formatCurrency(subtotal)} />
-                  <SummaryLine label="Transit" value={formatCurrency(shipping)} />
+                  <SummaryLine label="Registered Value" value={formatMoney(subtotal, currency)} />
+                  <SummaryLine label="Transit" value={formatMoney(shipping, currency)} />
                   <SummaryLine label="Payment" value="Paystack" />
-                  <SummaryLine label="Total Due" value={formatCurrency(total)} />
+                  <SummaryLine label="Total Due" value={formatMoney(total, currency)} />
                 </div>
 
                 <p className="mt-8 text-[9px] uppercase tracking-widest text-gray-400 leading-loose">
@@ -364,10 +365,6 @@ function SummaryLine({ label, value }) {
       <span className="font-bold">{value}</span>
     </div>
   );
-}
-
-function formatCurrency(value) {
-  return `₦${Number(value || 0).toLocaleString()}`;
 }
 
 function ArtifactBlueprint({ item }) {

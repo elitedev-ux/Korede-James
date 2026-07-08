@@ -14,12 +14,15 @@ import {
   User,
 } from "lucide-react";
 import useStore from "../store/useStore";
+import { useRegion } from "../context/RegionContext";
+import { formatMoney, getLineItemPrice, sumLineItems } from "../utils/pricing";
 import "./Navbar.css";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const { currency, regionLabel, markets, market, setMarket } = useRegion();
 
   const cart = useStore((state) => state.cart);
   const cartPreviewVersion = useStore((state) => state.cartPreviewVersion);
@@ -80,10 +83,7 @@ export default function Navbar() {
   }, [cartPreviewVersion]);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const cartTotal = cart.reduce(
-    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
-    0,
-  );
+  const cartTotal = sumLineItems(cart, currency);
 
   const navLinks = [
     { name: "Portfolio", href: "/collections" },
@@ -325,7 +325,10 @@ export default function Navbar() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gray-400">
-                              {formatCurrency(item.price * item.quantity)}
+                              {formatMoney(
+                                getLineItemPrice(item, currency) * item.quantity,
+                                currency,
+                              )}
                             </span>
                             <button
                               onClick={() =>
@@ -351,7 +354,7 @@ export default function Navbar() {
                       Total
                     </span>
                     <span className="text-lg font-serif">
-                      {formatCurrency(cartTotal)}
+                      {formatMoney(cartTotal, currency)}
                     </span>
                   </div>
                   <p className="text-[9px] text-gray-400 uppercase tracking-widest">
@@ -485,10 +488,21 @@ export default function Navbar() {
                   <Headphones size={13} strokeWidth={1.5} />
                   Support Care
                 </a>
-                <span className="flex items-center gap-2">
+                <label className="flex items-center gap-2">
                   <MapPin size={13} strokeWidth={1.5} />
-                  Nigeria
-                </span>
+                  <select
+                    value={market.code}
+                    onChange={(event) => setMarket(event.target.value)}
+                    className="bg-transparent text-[10px] uppercase tracking-[0.18em] text-gray-500 outline-none"
+                    aria-label="Select region"
+                  >
+                    {markets.map((option) => (
+                      <option key={option.code} value={option.code}>
+                        {option.code === "INT" ? regionLabel : option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <span className="flex items-center gap-2">
                   <Globe size={13} strokeWidth={1.5} />
                   English
@@ -500,8 +514,4 @@ export default function Navbar() {
       </AnimatePresence>
     </>
   );
-}
-
-function formatCurrency(value) {
-  return `₦${Number(value || 0).toLocaleString()}`;
 }

@@ -1,5 +1,6 @@
 import { readWorkspace } from "../admin-workspace/utils/workspaceStore.js";
 import { ok } from "../utils/supabaseRest.js";
+import { createPrices } from "../../../utils/pricing.js";
 
 const TEST_PRODUCT_PRICE = 2000;
 
@@ -15,6 +16,7 @@ export async function GET() {
       silhouette: piece.title,
       category: piece.category || "Atelier",
       price: TEST_PRODUCT_PRICE,
+      prices: createPrices({ NGN: TEST_PRODUCT_PRICE }),
       image: piece.image || Object.values(piece.colorImages || {})[0] || "",
       colorImages: normalizeColorImages(piece.colorImages),
       description: piece.description || "A commissionable piece from the Korede James atelier.",

@@ -1,3 +1,5 @@
+import { createPrices } from "../utils/pricing";
+
 const lineSheetBase = "/assets/linesheet";
 const kj25Base = "/assets/kj-25";
 
@@ -12,6 +14,7 @@ function lineSheetProduct({
 }) {
   const slug = sku.toLowerCase();
   const price = parseLineSheetPrice(wholesalePrice);
+  const prices = createPrices({ NGN: price });
 
   return {
     id: slug,
@@ -22,6 +25,7 @@ function lineSheetProduct({
     silhouette: category,
     category,
     price,
+    prices,
     priceLabel: wholesalePrice,
     image: `${lineSheetBase}/${slug}.jpeg`,
     colorImages: {

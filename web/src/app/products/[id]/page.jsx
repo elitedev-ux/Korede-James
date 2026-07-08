@@ -4,6 +4,8 @@ import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import { products } from "../../../data/fashion-data";
 import useStore from "../../../store/useStore";
+import { useRegion } from "../../../context/RegionContext";
+import { formatProductPrice } from "../../../utils/pricing";
 
 const paletteSwatches = {
   White: "#f8f6f0",
@@ -19,6 +21,7 @@ const paletteSwatches = {
 export default function ProductDetailsPage({ params }) {
   const { id } = params;
   const product = products.find((p) => p.id === id);
+  const { currency } = useRegion();
   const addToCart = useStore((state) => state.addToCart);
   const openCartPreview = useStore((state) => state.openCartPreview);
   const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
@@ -125,7 +128,7 @@ export default function ProductDetailsPage({ params }) {
                     Registered value
                   </span>
                   <span className="text-xs uppercase tracking-[0.2em] font-semibold text-right">
-                    {formatCurrency(product)}
+                    {formatProductPrice(product, currency)}
                   </span>
                 </div>
               </PortalStep>
@@ -290,18 +293,6 @@ function PortalStep({ number, title, children }) {
       {children}
     </section>
   );
-}
-
-function formatCurrency(product) {
-  if (product?.priceLabel) {
-    return product.priceLabel;
-  }
-
-  if (!product?.price) {
-    return "";
-  }
-
-  return `N${Number(product.price).toLocaleString()}`;
 }
 
 function normalizePaletteOptions(product) {

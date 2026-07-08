@@ -1,4 +1,5 @@
 import { supabaseRequest } from "../../utils/supabaseRest.js";
+import { formatMoney, sumLineItems } from "../../../../utils/pricing.js";
 
 const WORKSPACE_ID = process.env.ADMIN_WORKSPACE_ID || "main";
 
@@ -107,14 +108,12 @@ export async function appendOrder(payload) {
   const contactSummary = formatWorkspaceDetails(payload.contact);
   const shippingSummary = formatWorkspaceDetails(payload.shipping);
   const payment = payload.payment || {};
-  const computedSubtotal = items.reduce(
-    (acc, item) => acc + (Number(item.price) || 0) * (item.quantity || 1),
-    0
-  );
+  const currency = payment.currency || "NGN";
+  const computedSubtotal = sumLineItems(items, currency);
   const subtotal = Number(payment.subtotal) || computedSubtotal;
   const shipping = Number(payment.shipping) || 0;
   const total = Number(payment.total) || subtotal + shipping;
-  const totalLabel = formatCurrency(total);
+  const totalLabel = formatCurrency(total, currency);
   const customer = payload.customer || {};
   const request = {
     id: `req-${orderId.toLowerCase()}`,
@@ -318,8 +317,8 @@ function formatWorkspaceDetails(value) {
   return Object.values(value).filter(Boolean).join(", ");
 }
 
-function formatCurrency(value) {
-  return `₦${Number(value || 0).toLocaleString()}`;
+function formatCurrency(value, currency = "NGN") {
+  return formatMoney(value, currency);
 }
 
 function normalizeLookup(value = "") {
