@@ -246,9 +246,27 @@ export const products = [
 
 export const collections = [
   {
+    id: "freedom",
+    year: "2026",
+    title: "SS",
+    description: "Line Sheet -  2026",
+    coverImage: "/assets/freedom/freedom-cover.jpg",
+    gallery: [
+      "/assets/freedom/freedom-gallery-01.jpg",
+      "/assets/freedom/freedom-gallery-02.jpg",
+      "/assets/freedom/freedom-gallery-03.jpg",
+      "/assets/freedom/freedom-gallery-04.jpg",
+      "/assets/freedom/freedom-gallery-05.jpg",
+      "/assets/freedom/freedom-gallery-06.jpg",
+      "/assets/freedom/freedom-gallery-07.jpg",
+      "/assets/freedom/freedom-detail-01.jpg",
+      "/assets/freedom/freedom-detail-02.jpg",
+    ],
+  },
+  {
     id: "fluid-beauty",
     year: "2025",
-    title: "Fluid Beauty",
+    title: "Morden Heritage",
     description:
       "The collection explores beauty not as appearance, but as a way of being. Through The blend of sculptural tailoring and draping, fluid silhouettes, and natural textiles, the collection examines the relationship between softness and strength, movement and structure, tradition and modernity.",
     coverImage: `${kj25Base}/SMLD2041.jpeg`,
@@ -280,24 +298,6 @@ export const collections = [
       `${kj25Base}/SMLD2249.jpeg`,
       `${kj25Base}/SMLD2310.jpeg`,
       `${kj25Base}/SMLD2314.jpeg`,
-    ],
-  },
-  {
-    id: "freedom",
-    year: "2026",
-    title: "SS",
-    description: "Line Sheet -  2026",
-    coverImage: "/assets/freedom/freedom-cover.jpg",
-    gallery: [
-      "/assets/freedom/freedom-gallery-01.jpg",
-      "/assets/freedom/freedom-gallery-02.jpg",
-      "/assets/freedom/freedom-gallery-03.jpg",
-      "/assets/freedom/freedom-gallery-04.jpg",
-      "/assets/freedom/freedom-gallery-05.jpg",
-      "/assets/freedom/freedom-gallery-06.jpg",
-      "/assets/freedom/freedom-gallery-07.jpg",
-      "/assets/freedom/freedom-detail-01.jpg",
-      "/assets/freedom/freedom-detail-02.jpg",
     ],
   },
 ];
