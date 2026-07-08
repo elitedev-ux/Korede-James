@@ -103,7 +103,7 @@ export default function CollectionDetailsPage({ params }) {
         <div>
           <div
             className={`collection-collage grid grid-cols-2 gap-0 md:gap-[3px] ${
-              isFluidBeautyCollection ? "mx-auto max-w-[420px] md:max-w-[560px]" : ""
+              isFluidBeautyCollection ? "mx-auto max-w-4xl" : ""
             }`}
           >
             {galleryLayout.map((item, i) => (
@@ -130,27 +130,25 @@ export default function CollectionDetailsPage({ params }) {
         </div>
       </section>
 
-      {isFreedomCollection || collectionProducts.length > 0 ? (
-        <section className="py-32 px-6 bg-white border-t border-gray-100">
-          <div className="max-w-7xl mx-auto">
-            <SectionTitle
-              title="Pieces from the Collection"
-              align="left"
-            />
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
-              {collectionProducts.length > 0 ? (
-                collectionProducts.map((p) => (
-                  <WearableCard key={p.id} product={p} />
-                ))
-              ) : (
-                <p className="text-gray-400 uppercase tracking-widest text-[10px]">
-                  Coming soon to the digital store.
-                </p>
-              )}
-            </div>
+      <section className="py-32 px-6 bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto">
+          <SectionTitle
+            title="Pieces from the Collection"
+            align="left"
+          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
+            {collectionProducts.length > 0 ? (
+              collectionProducts.map((p) => (
+                <WearableCard key={p.id} product={p} />
+              ))
+            ) : (
+              <p className="text-gray-400 uppercase tracking-widest text-[10px]">
+                Coming soon to the digital store.
+              </p>
+            )}
           </div>
-        </section>
-      ) : null}
+        </div>
+      </section>
 
       {otherCollections.length > 0 && (
         <section className="py-32 px-6">
