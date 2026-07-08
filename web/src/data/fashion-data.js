@@ -159,7 +159,7 @@ export const products = [
     style: "WOMENSWEAR",
     category: "PANTS",
     color: "OFFWHITE",
-    wholesalePrice: "",
+    wholesalePrice: "N2,000.00",
     productInformation:
       "High-waist wrap-panel pants with wide legs and side tie detail.",
   }),
