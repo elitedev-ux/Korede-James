@@ -13,7 +13,7 @@ export default function CollectionsPage() {
 
       <section className="pt-40 pb-32 px-6">
         <div className="max-w-7xl mx-auto">
-          <SectionTitle title="Freedom" subtitle="2025 Collection" />
+          <SectionTitle title="Collections" subtitle="Archive" />
 
           <div className="space-y-32">
             {collections.map((collection, index) => (

@@ -77,7 +77,7 @@ export default function CollectionDetailsPage({ params }) {
         <div className="mb-5 grid grid-cols-2 md:grid-cols-4 border-y border-gray-100">
           <MetaItem
             label="Launch Date"
-            value={isFreedomCollection ? "2025" : collection.year}
+            value={collection.year}
           />
           <MetaItem label="Chapter" value={collection.title} />
           <MetaItem
@@ -91,7 +91,7 @@ export default function CollectionDetailsPage({ params }) {
           <MetaItem label="Archive" value={collection.year} />
         </div>
 
-        {!isFreedomCollection ? (
+        {collection.description ? (
           <p className="mb-12 max-w-3xl text-sm md:text-base font-light leading-loose tracking-wide text-gray-500">
             {collection.description}
           </p>

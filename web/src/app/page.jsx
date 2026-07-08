@@ -390,16 +390,19 @@ export default function HomePage() {
           <div>
             <SectionTitle
               title="Freedom"
-              subtitle="The 2025 Collection"
+              subtitle="The 2026 Collection"
             />
             <p className="text-gray-600 font-light leading-relaxed mb-8">
-              Freedom is a meditation on Nigeria's independence in 1960, a
+              Freedom is a meditation on Nigeria's independence in 1960. A
               return to a moment that promised the birth of a nation.
             </p>
             <p className="text-gray-600 font-light leading-relaxed mb-12">
-              Through traditional Yoruba silhouettes and sartorial language, the
-              collection asks what it means to carry the past while imagining the
-              future.
+              Through the lens of a modern Nigerian, the work reflects on the
+              distance between liberation as an event and freedom as a lived
+              experience. Employing traditional Yoruba silhouettes and sartorial
+              language, it engages history not as something distant, but as a
+              living inheritance, asking what it means to carry the weight of
+              the past while imagining the future.
             </p>
             <a
               href="/collections/freedom"

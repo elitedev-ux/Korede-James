@@ -248,8 +248,9 @@ export const collections = [
   {
     id: "freedom",
     year: "2026",
-    title: "SS",
-    description: "Line Sheet -  2026",
+    title: "Freedom",
+    description:
+      "Freedom is a meditation on Nigeria's independence in 1960. A return to a moment that promised the birth of a nation. Through the lens of a modern Nigerian, the work reflects on the distance between liberation as an event and freedom as a lived experience. Employing traditional Yoruba silhouettes and sartorial language, it engages history not as something distant, but as a living inheritance, asking what it means to carry the weight of the past while imagining the future.",
     coverImage: "/assets/freedom/freedom-cover.jpg",
     gallery: [
       "/assets/freedom/freedom-gallery-01.jpg",
@@ -266,7 +267,7 @@ export const collections = [
   {
     id: "fluid-beauty",
     year: "2025",
-    title: "Morden Heritage",
+    title: "Fluid Beauty",
     description:
       "The collection explores beauty not as appearance, but as a way of being. Through The blend of sculptural tailoring and draping, fluid silhouettes, and natural textiles, the collection examines the relationship between softness and strength, movement and structure, tradition and modernity.",
     coverImage: `${kj25Base}/SMLD2041.jpeg`,
