@@ -22,7 +22,10 @@ export default function CollectionDetailsPage({ params }) {
     .filter((p) => p.collection.includes(collection.year))
     .slice(0, 4);
   const otherCollections = collections.filter((c) => c.id !== collection.id);
-  const galleryLayout = buildGalleryLayout(collection.gallery);
+  const isFreedomCollection = collection.id === "freedom";
+  const galleryLayout = isFreedomCollection
+    ? freedomGalleryLayout
+    : buildGalleryLayout(collection.gallery);
 
   return (
     <main className="min-h-screen bg-white">
@@ -37,7 +40,11 @@ export default function CollectionDetailsPage({ params }) {
           src={collection.coverImage}
           alt={collection.title}
           className="w-full h-full object-cover"
-          style={{ objectPosition: collection.heroPosition || "center 50%" }}
+          style={{
+            objectPosition: isFreedomCollection
+              ? "center 70%"
+              : collection.heroPosition || "center 50%",
+          }}
         />
         <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-6">
           <motion.p
@@ -68,15 +75,27 @@ export default function CollectionDetailsPage({ params }) {
         </a>
 
         <div className="mb-5 grid grid-cols-2 md:grid-cols-4 border-y border-gray-100">
-          <MetaItem label="Launch Date" value={collection.year} />
+          <MetaItem
+            label="Launch Date"
+            value={isFreedomCollection ? "2025" : collection.year}
+          />
           <MetaItem label="Chapter" value={collection.title} />
-          <MetaItem label="Images" value={`${galleryLayout.length} Frames`} />
+          <MetaItem
+            label={isFreedomCollection ? "Pieces" : "Images"}
+            value={
+              isFreedomCollection
+                ? `${collectionProducts.length} Looks`
+                : `${galleryLayout.length} Frames`
+            }
+          />
           <MetaItem label="Archive" value={collection.year} />
         </div>
 
-        <p className="mb-12 max-w-3xl text-sm md:text-base font-light leading-loose tracking-wide text-gray-500">
-          {collection.description}
-        </p>
+        {!isFreedomCollection ? (
+          <p className="mb-12 max-w-3xl text-sm md:text-base font-light leading-loose tracking-wide text-gray-500">
+            {collection.description}
+          </p>
+        ) : null}
 
         <div>
           <div className="collection-collage grid grid-cols-2 gap-0 md:gap-[3px]">
@@ -104,7 +123,7 @@ export default function CollectionDetailsPage({ params }) {
         </div>
       </section>
 
-      {collectionProducts.length > 0 ? (
+      {isFreedomCollection || collectionProducts.length > 0 ? (
         <section className="py-32 px-6 bg-white border-t border-gray-100">
           <div className="max-w-7xl mx-auto">
             <SectionTitle
@@ -112,9 +131,15 @@ export default function CollectionDetailsPage({ params }) {
               align="left"
             />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
-              {collectionProducts.map((p) => (
-                <WearableCard key={p.id} product={p} />
-              ))}
+              {collectionProducts.length > 0 ? (
+                collectionProducts.map((p) => (
+                  <WearableCard key={p.id} product={p} />
+                ))
+              ) : (
+                <p className="text-gray-400 uppercase tracking-widest text-[10px]">
+                  Coming soon to the digital store.
+                </p>
+              )}
             </div>
           </div>
         </section>
@@ -154,6 +179,64 @@ export default function CollectionDetailsPage({ params }) {
     </main>
   );
 }
+
+const freedomGalleryLayout = [
+  {
+    src: "/assets/freedom/edit-window-red-legs-upright.jpg",
+    className: "col-span-2 aspect-[4682/3344]",
+    imageClassName: "object-[center_center]",
+  },
+  {
+    src: "/assets/freedom/IMG_4143.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-top",
+  },
+  {
+    src: "/assets/freedom/edit-green-portrait.jpg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_36%]",
+  },
+  {
+    src: "/assets/freedom/edit-room-bw.jpg",
+    className: "col-span-2 aspect-[16/9]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/edit-negative-window.jpg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_52%]",
+  },
+  {
+    src: "/assets/freedom/edit-foliage-bw.jpg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_42%]",
+  },
+  {
+    src: "/assets/freedom/edit-red-seated-upright.jpg",
+    className: "col-span-2 aspect-[4572/3039]",
+    imageClassName: "object-[center_center]",
+  },
+  {
+    src: "/assets/freedom/IMG_3694.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/IMG_4139.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/IMG_3688.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/IMG_3384.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+];
 
 function buildGalleryLayout(gallery = []) {
   const pattern = [

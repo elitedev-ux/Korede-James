@@ -13,7 +13,7 @@ export default function CollectionsPage() {
 
       <section className="pt-40 pb-32 px-6">
         <div className="max-w-7xl mx-auto">
-          <SectionTitle title="Collections" subtitle="Archive" />
+          <SectionTitle title="Freedom" subtitle="2025 Collection" />
 
           <div className="space-y-32">
             {collections.map((collection, index) => (
@@ -39,9 +39,21 @@ export default function CollectionsPage() {
                   {/* Collection Preview */}
                   <div className="mt-4 aspect-[3344/4682] bg-[#eef0e9] overflow-hidden">
                     <img
-                      src={collection.previewImage || collection.gallery?.[0] || collection.coverImage}
-                      alt={`${collection.title} collection preview`}
-                      className="w-full h-full object-cover object-top"
+                      src={
+                        collection.id === "freedom"
+                          ? "/assets/freedom/freedom-preview-rectangular.jpg"
+                          : collection.previewImage || collection.gallery?.[0] || collection.coverImage
+                      }
+                      alt={
+                        collection.id === "freedom"
+                          ? "Freedom collection preview"
+                          : `${collection.title} collection preview`
+                      }
+                      className={
+                        collection.id === "freedom"
+                          ? "w-full h-full object-cover object-[72%_top]"
+                          : "w-full h-full object-cover object-top"
+                      }
                     />
                   </div>
                 </div>
@@ -71,6 +83,17 @@ export default function CollectionsPage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Philosophy Callout */}
+      <section className="py-40 bg-[#fafafa] px-6 text-center">
+        <div className="max-w-2xl mx-auto">
+          <SectionTitle title="Living Inheritance" subtitle="Our Ethos" />
+          <p className="text-gray-400 font-serif italic text-xl mb-12">
+            "History is not distant; it is a living inheritance."
+          </p>
+          <div className="w-px h-24 bg-gray-200 mx-auto" />
         </div>
       </section>
 
