@@ -10,7 +10,7 @@ function lineSheetProduct({
   productInformation,
 }) {
   const slug = sku.toLowerCase();
-  const price = Number(String(wholesalePrice).replace(/[^0-9]/g, "")) || 0;
+  const price = parseLineSheetPrice(wholesalePrice);
 
   return {
     id: slug,
@@ -33,6 +33,27 @@ function lineSheetProduct({
     care: "",
     collection: "Line Sheet - 2026",
   };
+}
+
+function parseLineSheetPrice(value) {
+  const rawValue = String(value || "").replace(/[^0-9.,]/g, "");
+
+  if (!rawValue) {
+    return 0;
+  }
+
+  if (rawValue.includes(",") && rawValue.includes(".")) {
+    return Math.round(Number.parseFloat(rawValue.replace(/,/g, ""))) || 0;
+  }
+
+  if (rawValue.includes(".")) {
+    const [, decimalPart = ""] = rawValue.split(".");
+    return decimalPart.length === 3
+      ? Number(rawValue.replace(/\./g, "")) || 0
+      : Math.round(Number.parseFloat(rawValue)) || 0;
+  }
+
+  return Number(rawValue.replace(/,/g, "")) || 0;
 }
 
 export const products = [
