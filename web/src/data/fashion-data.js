@@ -1,4 +1,5 @@
 const lineSheetBase = "/assets/linesheet";
+const kj25Base = "/assets/kj-25";
 
 function lineSheetProduct({
   sku,
@@ -244,6 +245,43 @@ export const products = [
 ];
 
 export const collections = [
+  {
+    id: "fluid-beauty",
+    year: "2025",
+    title: "Fluid Beauty",
+    description:
+      "The collection explores beauty not as appearance, but as a way of being. Through The blend of sculptural tailoring and draping, fluid silhouettes, and natural textiles, the collection examines the relationship between softness and strength, movement and structure, tradition and modernity.",
+    coverImage: `${kj25Base}/SMLD2041.jpeg`,
+    previewImage: `${kj25Base}/SMLD1650.jpeg`,
+    heroPosition: "center 30%",
+    gallery: [
+      `${kj25Base}/SMLD1650.jpeg`,
+      `${kj25Base}/SMLD1667.jpeg`,
+      `${kj25Base}/SMLD1748.jpeg`,
+      `${kj25Base}/SMLD1869.jpeg`,
+      `${kj25Base}/SMLD1872.jpeg`,
+      `${kj25Base}/SMLD1873.jpeg`,
+      `${kj25Base}/SMLD1887.jpeg`,
+      `${kj25Base}/SMLD1903.jpeg`,
+      `${kj25Base}/SMLD1923.jpeg`,
+      `${kj25Base}/SMLD1961.jpeg`,
+      `${kj25Base}/SMLD1975.jpeg`,
+      `${kj25Base}/SMLD1996.jpeg`,
+      `${kj25Base}/SMLD2013.jpeg`,
+      `${kj25Base}/SMLD2041.jpeg`,
+      `${kj25Base}/SMLD2055.jpeg`,
+      `${kj25Base}/SMLD2069.jpeg`,
+      `${kj25Base}/SMLD2094.jpeg`,
+      `${kj25Base}/SMLD2102.jpeg`,
+      `${kj25Base}/SMLD2103.jpeg`,
+      `${kj25Base}/SMLD2171.jpeg`,
+      `${kj25Base}/SMLD2211.jpeg`,
+      `${kj25Base}/SMLD2230.jpeg`,
+      `${kj25Base}/SMLD2249.jpeg`,
+      `${kj25Base}/SMLD2310.jpeg`,
+      `${kj25Base}/SMLD2314.jpeg`,
+    ],
+  },
   {
     id: "freedom",
     year: "2026",
