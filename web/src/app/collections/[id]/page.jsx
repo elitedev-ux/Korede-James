@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import SectionTitle from "../../../components/SectionTitle";
-import { collections, products } from "../../../data/fashion-data";
+import { collections } from "../../../data/fashion-data";
 
 export default function CollectionDetailsPage({ params }) {
   const { id } = params;
@@ -18,9 +18,6 @@ export default function CollectionDetailsPage({ params }) {
     );
   }
 
-  const collectionProducts = products
-    .filter((p) => p.collection.includes(collection.year))
-    .slice(0, 4);
   const otherCollections = collections.filter((c) => c.id !== collection.id);
   const isFreedomCollection = collection.id === "freedom";
   const isFluidBeautyCollection = collection.id === "fluid-beauty";
@@ -83,14 +80,7 @@ export default function CollectionDetailsPage({ params }) {
             value={collection.year}
           />
           <MetaItem label="Chapter" value={collection.title} />
-          <MetaItem
-            label={isFreedomCollection ? "Pieces" : "Images"}
-            value={
-              isFreedomCollection
-                ? `${collectionProducts.length} Looks`
-                : `${galleryLayout.length} Frames`
-            }
-          />
+          <MetaItem label="Images" value={`${galleryLayout.length} Frames`} />
           <MetaItem label="Archive" value={collection.year} />
         </div>
 
@@ -103,7 +93,7 @@ export default function CollectionDetailsPage({ params }) {
         <div>
           <div
             className={`collection-collage grid grid-cols-2 gap-0 md:gap-[3px] ${
-              isFluidBeautyCollection ? "mx-auto max-w-4xl" : ""
+              isFluidBeautyCollection ? "mx-auto w-full" : ""
             }`}
           >
             {galleryLayout.map((item, i) => (
@@ -126,26 +116,6 @@ export default function CollectionDetailsPage({ params }) {
                 />
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-32 px-6 bg-white border-t border-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <SectionTitle
-            title="Pieces from the Collection"
-            align="left"
-          />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
-            {collectionProducts.length > 0 ? (
-              collectionProducts.map((p) => (
-                <WearableCard key={p.id} product={p} />
-              ))
-            ) : (
-              <p className="text-gray-400 uppercase tracking-widest text-[10px]">
-                Coming soon to the digital store.
-              </p>
-            )}
           </div>
         </div>
       </section>
@@ -347,23 +317,5 @@ function MetaItem({ label, value }) {
         {value}
       </p>
     </div>
-  );
-}
-
-function WearableCard({ product }) {
-  return (
-    <a
-      href={`/products/${product.id}`}
-      aria-label={`Open portal for ${product.name}`}
-      className="group block"
-    >
-      <div className="aspect-[4/5] overflow-hidden bg-white">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
-        />
-      </div>
-    </a>
   );
 }
