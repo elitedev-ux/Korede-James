@@ -38,6 +38,7 @@ values (
     "materials": [],
     "content": [],
     "promotions": [],
+    "newsletter": [],
     "settings": [],
     "audit": []
   }'::jsonb

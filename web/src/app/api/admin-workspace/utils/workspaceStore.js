@@ -21,6 +21,7 @@ export function createEmptyWorkspace() {
     materials: [],
     content: [],
     promotions: [],
+    newsletter: [],
     settings: [],
     audit: [],
   };
@@ -43,6 +44,7 @@ export function normalizeWorkspace(workspace) {
     materials: Array.isArray(value.materials) ? value.materials : [],
     content: Array.isArray(value.content) ? value.content : [],
     promotions: Array.isArray(value.promotions) ? value.promotions : [],
+    newsletter: Array.isArray(value.newsletter) ? value.newsletter : [],
     settings: Array.isArray(value.settings) ? value.settings : [],
     audit: Array.isArray(value.audit) ? value.audit : [],
   };

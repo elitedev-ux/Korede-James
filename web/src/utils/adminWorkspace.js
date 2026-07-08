@@ -13,6 +13,7 @@ export function createEmptyAdminWorkspace() {
     materials: [],
     content: [],
     promotions: [],
+    newsletter: [],
     settings: [],
     audit: [],
   };
@@ -68,6 +69,24 @@ export async function saveAdminWorkspace(workspace) {
   } catch {
     return normalizeAdminWorkspace(workspace);
   }
+}
+
+export async function fetchNewsletterSubscribers() {
+  const data = await apiRequest("/api/newsletter", {
+    headers: adminHeaders(),
+  });
+
+  return Array.isArray(data.subscribers) ? data.subscribers : [];
+}
+
+export async function updateNewsletterSubscriber(subscriber) {
+  const data = await apiRequest("/api/newsletter", {
+    method: "PATCH",
+    headers: adminHeaders(),
+    body: JSON.stringify(subscriber),
+  });
+
+  return data.subscriber;
 }
 
 export async function recordAdminInquiry(payload) {
@@ -280,6 +299,7 @@ function normalizeAdminWorkspace(workspace) {
     materials: workspace.materials || [],
     content: workspace.content || [],
     promotions: workspace.promotions || [],
+    newsletter: workspace.newsletter || [],
     settings: workspace.settings || [],
     audit: workspace.audit || [],
   };

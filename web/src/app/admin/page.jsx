@@ -10,6 +10,7 @@ import {
   LineChart,
   LockKeyhole,
   LogOut,
+  Mail,
   Megaphone,
   Package,
   Plus,
@@ -27,8 +28,10 @@ import {
   ADMIN_ACCESS_SECRET_KEY,
   ADMIN_WORKSPACE_STORAGE_KEY,
   createEmptyAdminWorkspace,
+  fetchNewsletterSubscribers,
   fetchAdminWorkspace,
   saveAdminWorkspace,
+  updateNewsletterSubscriber,
 } from "../../utils/adminWorkspace";
 import "./page.css";
 
@@ -191,6 +194,15 @@ const adminModules = [
     support: "No access",
   },
   {
+    id: "newsletter",
+    label: "Newsletter",
+    icon: Mail,
+    owner: "View subscribers, manage status, export audience list, and review sources",
+    editor: "View subscribers, export audience list, and prepare audience segments",
+    studio: "No access",
+    support: "No access",
+  },
+  {
     id: "analytics",
     label: "Analytics",
     icon: LineChart,
@@ -342,6 +354,16 @@ const moduleSummaries = {
       support: ["Marketing"],
     },
   },
+  newsletter: {
+    title: "Newsletter Audience",
+    metric: "Subscriber list",
+    actions: ["Refresh List", "Export CSV", "Create Segment", "Source Review"],
+    lockedFor: {
+      editor: ["Subscriber Status Changes"],
+      studio: ["Newsletter Audience"],
+      support: ["Newsletter Audience"],
+    },
+  },
   analytics: {
     title: "Analytics",
     metric: "Owner reporting",
@@ -421,6 +443,7 @@ function normalizeWorkspace(workspace) {
     materials: workspace.materials || defaultWorkspace.materials,
     content: workspace.content || defaultWorkspace.content,
     promotions: workspace.promotions || defaultWorkspace.promotions,
+    newsletter: workspace.newsletter || defaultWorkspace.newsletter,
     settings: workspace.settings || defaultWorkspace.settings,
     audit: workspace.audit || defaultWorkspace.audit,
   };
@@ -452,6 +475,8 @@ export default function AdminPage() {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [saveState, setSaveState] = useState("Saved");
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState([]);
+  const [newsletterError, setNewsletterError] = useState("");
   const saveTimerRef = useRef(null);
   const [newPiece, setNewPiece] = useState({
     title: "",
@@ -477,6 +502,7 @@ export default function AdminPage() {
       setCurrentRole(storedRole);
       setUnlocked(true);
       fetchAdminWorkspace().then(setWorkspace);
+      loadNewsletterSubscribers();
     }
   }, []);
 
@@ -488,10 +514,33 @@ export default function AdminPage() {
     };
   }, []);
 
+  const loadNewsletterSubscribers = async () => {
+    try {
+      const subscribers = await fetchNewsletterSubscribers();
+      setNewsletterSubscribers(subscribers);
+      setNewsletterError("");
+      return subscribers;
+    } catch (error) {
+      setNewsletterError(
+        error instanceof Error
+          ? error.message
+          : "Newsletter subscribers could not be loaded."
+      );
+      return [];
+    }
+  };
+
   const selectedRequest =
     workspace.requests.find((request) => request.id === selectedRequestId) ||
     workspace.requests[0];
   const activeRoleProfile = roleProfiles[currentRole];
+  const workspaceWithNewsletter = useMemo(
+    () => ({
+      ...workspace,
+      newsletter: newsletterSubscribers,
+    }),
+    [workspace, newsletterSubscribers]
+  );
   const canManageRoles = sessionRole === "owner";
   const statusOptions = getRequestStatusOptions(currentRole, selectedRequest?.status);
   const stageOptions = getRequestStageOptions(currentRole, selectedRequest?.stage);
@@ -661,7 +710,56 @@ export default function AdminPage() {
     ],
   });
 
-  const handleModuleSave = (view, payload) => {
+  const handleModuleSave = async (view, payload) => {
+    if (view === "newsletter") {
+      if (payload.mode === "action") {
+        if (payload.action === "Refresh List") {
+          setSaveState("Saving...");
+          await loadNewsletterSubscribers();
+          commitWorkspace(
+            appendAudit(workspace, "Refreshed Newsletter Audience")
+          );
+          return;
+        }
+
+        commitWorkspace(
+          appendAudit(
+            workspace,
+            `${payload.action} in ${viewTitle(view)}: ${payload.notes || payload.title}`
+          )
+        );
+        return;
+      }
+
+      setSaveState("Saving...");
+      try {
+        const updatedSubscriber = await updateNewsletterSubscriber({
+          email: payload.title,
+          status: normalizeNewsletterStatus(payload.meta),
+          source: payload.subtitle,
+        });
+        setNewsletterSubscribers((subscribers) =>
+          subscribers.map((subscriber) =>
+            subscriber.email === updatedSubscriber.email ? updatedSubscriber : subscriber
+          )
+        );
+        commitWorkspace(
+          appendAudit(
+            workspace,
+            `Updated newsletter subscriber ${updatedSubscriber.email}`
+          )
+        );
+      } catch (error) {
+        setNewsletterError(
+          error instanceof Error
+            ? error.message
+            : "Newsletter subscriber could not be updated."
+        );
+        setSaveState("Newsletter save failed");
+      }
+      return;
+    }
+
     const nextWorkspace = applyModulePayload(workspace, view, payload);
     const auditAction =
       payload.mode === "action"
@@ -807,6 +905,7 @@ export default function AdminPage() {
     setUnlocked(true);
     setAccessError("");
     fetchAdminWorkspace().then(setWorkspace);
+    loadNewsletterSubscribers();
   };
 
   const handleLogout = () => {
@@ -1441,8 +1540,9 @@ export default function AdminPage() {
           <ModulePanel
             view={activeView}
             role={currentRole}
-            workspace={workspace}
+            workspace={workspaceWithNewsletter}
             onSave={handleModuleSave}
+            notice={activeView === "newsletter" ? newsletterError : ""}
           />
         ) : null}
 
@@ -1582,6 +1682,7 @@ function viewTitle(view) {
     pieces: "Portfolio",
     content: "Atelier content",
     marketing: "Marketing",
+    newsletter: "Newsletter",
     analytics: "Analytics",
     settings: "Settings",
     team: "User management",
@@ -1615,13 +1716,14 @@ function RequestRows({ requests, selectedRequestId, onSelect }) {
   );
 }
 
-function ModulePanel({ view, role, workspace, onSave }) {
+function ModulePanel({ view, role, workspace, onSave, notice }) {
   const module = adminModules.find((item) => item.id === view);
   const summary = moduleSummaries[view];
   const access = module?.[role] || "No access";
   const isLocked = access === "No access";
   const lockedItems = summary?.lockedFor?.[role] || [];
   const rows = getModuleRows(view, workspace);
+  const hasEditableRows = !["analytics", "audit"].includes(view);
   const [draft, setDraft] = useState(null);
 
   if (!module || !summary) {
@@ -1629,14 +1731,24 @@ function ModulePanel({ view, role, workspace, onSave }) {
   }
 
   const openAction = (action) => {
-    setDraft({
-      mode: "action",
-      action,
-      title: action,
-      subtitle: summary.title,
-      meta: roleProfiles[role].label,
-      notes: "",
-    });
+    if (view === "newsletter" && action === "Export CSV") {
+      downloadRowsAsCsv("korede-james-newsletter.csv", rows);
+      return;
+    }
+
+    if (view === "newsletter" && action === "Refresh List") {
+      onSave(view, {
+        mode: "action",
+        action,
+        title: action,
+        subtitle: summary.title,
+        meta: roleProfiles[role].label,
+        notes: "Refresh subscriber list from Supabase.",
+      });
+      return;
+    }
+
+    setDraft(getModuleActionDraft(view, action, summary, role));
   };
 
   const openRow = (row) => {
@@ -1705,21 +1817,33 @@ function ModulePanel({ view, role, workspace, onSave }) {
           </div>
         ) : null}
 
+        {notice ? <p className="admin-empty">{notice}</p> : null}
+
         <div className="admin-data-list">
-          {rows.map((row) => (
-            <button
-              className="admin-data-row admin-data-row--button"
-              key={row.id || row.title}
-              type="button"
-              onClick={() => openRow(row)}
-            >
+          {rows.map((row) =>
+            hasEditableRows ? (
+              <button
+                className="admin-data-row admin-data-row--button"
+                key={row.id || row.title}
+                type="button"
+                onClick={() => openRow(row)}
+              >
+                <div>
+                  <strong>{row.title}</strong>
+                  <span>{row.subtitle}</span>
+                </div>
+                <em>{row.meta}</em>
+              </button>
+            ) : (
+              <div className="admin-data-row" key={row.id || row.title}>
               <div>
                 <strong>{row.title}</strong>
                 <span>{row.subtitle}</span>
               </div>
               <em>{row.meta}</em>
-            </button>
-          ))}
+              </div>
+            )
+          )}
         </div>
 
         {draft ? (
@@ -1836,6 +1960,82 @@ function AccessCodeList() {
   );
 }
 
+function getModuleActionDraft(view, action, summary, role) {
+  const actionDefaults = {
+    contracts: {
+      "Create Contract": ["New client agreement", "Draft contract terms"],
+      "Attach Agreement": ["Agreement attachment", "Link signed terms or usage rights"],
+      "Usage Rights": ["Usage rights review", "Client permission and display terms"],
+      Terms: ["Terms update", "Scope, timeline, and delivery terms"],
+    },
+    payments: {
+      "Record Deposit": ["Client deposit", "Enter client / amount"],
+      Refund: ["Refund review", "Log reason and Owner approval if above 5%"],
+      Cancel: ["Cancellation review", "Log reason, status, and next step"],
+      "View History": ["Payment history note", "Log reviewed payment record"],
+    },
+    communication: {
+      Reply: ["Client reply", "Summarize the response sent"],
+      "Log Note": ["Support note", "Private communication note"],
+      "Revision Request": ["Revision request", "Requested change and next step"],
+      "Thread History": ["Thread review", "Conversation summary"],
+    },
+    measurements: {
+      "View Record": ["Measurement review", "Assigned client fitting record"],
+      "Log Fitting": ["Fitting note", "Fitting feedback and next adjustment"],
+      "Edit Measurement": ["Measurement update", "Measurement changed and reason"],
+      "Revision Note": ["Revision note", "Body data or fitting revision"],
+    },
+    materials: {
+      "Log Fabric": ["Fabric log", "Fabric name, yardage, and commission"],
+      "Track Supplier": ["Supplier note", "Supplier, delivery status, and contact"],
+      "Cost Materials": ["Material cost note", "Owner-only costing summary"],
+      Inventory: ["Inventory update", "Stock movement or usage"],
+    },
+    content: {
+      Pages: ["Page draft", "Page name and requested change"],
+      "Media Library": ["Media upload note", "Asset name and placement"],
+      "Process Photos": ["Process photo set", "Commission and image notes"],
+      Blog: ["Atelier note", "Draft topic and publishing status"],
+    },
+    marketing: {
+      "Promo Code": ["Promotion draft", "Code, date range, and approval note"],
+      "Featured Commission": ["Featured commission", "Commission to feature and reason"],
+      "Draft Campaign": ["Campaign draft", "Audience, channel, and timing"],
+      Publish: ["Publish request", "Owner approval and publish note"],
+    },
+    newsletter: {
+      "Create Segment": ["Audience segment", "Segment rule and campaign use"],
+      "Source Review": ["Source review", "Review subscriber source quality"],
+    },
+    settings: {
+      "Payment Gateway": ["Payment setting", "Gateway setting note"],
+      "Tax Config": ["Tax setting", "Tax rule note"],
+      Integrations: ["Integration note", "Integration name and status"],
+      "API Keys": ["API key review", "Owner-only credential note"],
+    },
+    audit: {
+      "Status Updates": ["Status update review", "Audit trail reviewed"],
+      Refunds: ["Refund audit", "Refund action reviewed"],
+      "Content Edits": ["Content edit audit", "Content changes reviewed"],
+      "Measurement Edits": ["Measurement edit audit", "Measurement changes reviewed"],
+    },
+  };
+  const [title, subtitle] = actionDefaults[view]?.[action] || [
+    action,
+    summary.title,
+  ];
+
+  return {
+    mode: "action",
+    action,
+    title,
+    subtitle,
+    meta: roleProfiles[role].label,
+    notes: "",
+  };
+}
+
 function getModuleRows(view, workspace) {
   if (view === "contracts") {
     return workspace.contracts;
@@ -1889,6 +2089,18 @@ function getModuleRows(view, workspace) {
     }));
   }
 
+  if (view === "newsletter") {
+    return workspace.newsletter.map((subscriber) => ({
+      id: subscriber.id || subscriber.email,
+      title: subscriber.email,
+      subtitle: subscriber.source || "homepage",
+      meta: subscriber.status || "active",
+      notes: subscriber.subscribed_at
+        ? `Subscribed ${formatAdminDate(subscriber.subscribed_at)}`
+        : "",
+    }));
+  }
+
   if (view === "analytics") {
     const openRequests = workspace.requests.filter(
       (request) => !["Completed / delivered", "Archived"].includes(request.status)
@@ -1918,6 +2130,50 @@ function getModuleRows(view, workspace) {
     meta: entry.meta || entry.time,
     notes: entry.notes || "",
   }));
+}
+
+function downloadRowsAsCsv(filename, rows) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const header = ["Title", "Details", "Status", "Notes"];
+  const csv = [header, ...rows.map((row) => [row.title, row.subtitle, row.meta, row.notes])]
+    .map((line) => line.map(escapeCsvValue).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.URL.revokeObjectURL(url);
+}
+
+function escapeCsvValue(value) {
+  return `"${String(value || "").replace(/"/g, '""')}"`;
+}
+
+function normalizeNewsletterStatus(status) {
+  const normalized = String(status || "active").trim().toLowerCase();
+  return ["active", "paused", "unsubscribed"].includes(normalized)
+    ? normalized
+    : "active";
+}
+
+function formatAdminDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "recently";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function parseColorList(value) {
@@ -1964,6 +2220,10 @@ function appendModuleAction(workspace, view, payload) {
   };
 
   if (view === "payments") {
+    if (payload.action !== "Record Deposit") {
+      return workspace;
+    }
+
     return {
       ...workspace,
       orders: [
@@ -1981,19 +2241,7 @@ function appendModuleAction(workspace, view, payload) {
   }
 
   if (view === "communication") {
-    return {
-      ...workspace,
-      customers: workspace.customers.map((customer, index) =>
-        index === 0
-          ? {
-              ...customer,
-              note: payload.notes || payload.subtitle,
-              notes: payload.notes,
-              orders: customer.orders,
-            }
-          : customer
-      ),
-    };
+    return workspace;
   }
 
   if (view === "content") {
@@ -2026,6 +2274,10 @@ function appendModuleAction(workspace, view, payload) {
         ...workspace.promotions,
       ],
     };
+  }
+
+  if (view === "newsletter") {
+    return workspace;
   }
 
   const collection = moduleCollectionKey(view);
@@ -2105,6 +2357,10 @@ function updateModuleRecord(workspace, view, payload) {
           : promotion
       ),
     };
+  }
+
+  if (view === "newsletter") {
+    return workspace;
   }
 
   const collection = moduleCollectionKey(view);

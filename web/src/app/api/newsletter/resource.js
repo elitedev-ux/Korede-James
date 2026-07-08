@@ -1,12 +1,13 @@
-import { POST } from "./route.js";
+import { GET, PATCH, POST } from "./route.js";
 
 export function action({ request }) {
+  if (request.method === "PATCH") {
+    return PATCH(request);
+  }
+
   return POST(request);
 }
 
-export function loader() {
-  return Response.json(
-    { error: "Method not allowed." },
-    { status: 405, headers: { Allow: "POST" } },
-  );
+export function loader({ request }) {
+  return GET(request);
 }
