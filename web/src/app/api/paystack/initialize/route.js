@@ -7,8 +7,9 @@ export async function POST(request) {
   try {
     const secretKey = getPaystackSecretKey();
     const body = await readBody(request);
-    const currency = resolvePaymentCurrency(body);
-    const amount = resolvePaymentAmount(body, currency);
+    const displayCurrency = resolveDisplayCurrency(body);
+    const paymentCurrency = resolvePaystackCurrency();
+    const amount = resolvePaymentAmount(body, paymentCurrency);
     const email = String(body.customer?.email || "").trim();
 
     if (!email) {
@@ -28,10 +29,20 @@ export async function POST(request) {
       body: JSON.stringify({
         email,
         amount: toMinorUnits(amount),
-        currency,
+        currency: paymentCurrency,
         callback_url: `${siteOrigin()}/checkout?payment=paystack`,
         metadata: {
-          orderPayload: body,
+          orderPayload: {
+            ...body,
+            payment: {
+              ...(body.payment || {}),
+              displayCurrency,
+              chargedCurrency: paymentCurrency,
+              currency: paymentCurrency,
+              subtotal: sumItems(body?.items, paymentCurrency),
+              total: amount,
+            },
+          },
           source: "korede-james-checkout",
         },
       }),
@@ -70,20 +81,30 @@ function toMinorUnits(amount) {
 }
 
 function resolvePaymentAmount(body, currency) {
+  const itemTotal = sumItems(body?.items, currency);
+
+  if (itemTotal > 0) {
+    return itemTotal;
+  }
+
   const explicitTotal = Number(body?.payment?.total ?? body?.total ?? 0);
 
   if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
     return explicitTotal;
   }
 
-  return (body?.items || []).reduce((sum, item) => {
+  return 0;
+}
+
+function sumItems(items = [], currency) {
+  return items.reduce((sum, item) => {
     const price = getLineItemPrice(item, currency);
     const quantity = Number(item?.quantity) || 1;
     return sum + price * quantity;
   }, 0);
 }
 
-function resolvePaymentCurrency(body) {
+function resolveDisplayCurrency(body) {
   const requestedCurrency = String(
     body?.payment?.currency || body?.currency || "",
   ).toUpperCase();
@@ -92,7 +113,12 @@ function resolvePaymentCurrency(body) {
     return requestedCurrency;
   }
 
-  return process.env.PAYSTACK_CURRENCY || DEFAULT_MARKET.currency;
+  return DEFAULT_MARKET.currency;
+}
+
+function resolvePaystackCurrency() {
+  const currency = String(process.env.PAYSTACK_CURRENCY || "NGN").toUpperCase();
+  return ["NGN", "USD"].includes(currency) ? currency : "NGN";
 }
 
 function siteOrigin() {
