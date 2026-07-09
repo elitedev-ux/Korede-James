@@ -31,6 +31,8 @@ export default function CollectionsPage() {
                     <img
                       src={collection.coverImage}
                       alt={collection.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
@@ -49,6 +51,8 @@ export default function CollectionsPage() {
                           ? "Freedom collection preview"
                           : `${collection.title} collection preview`
                       }
+                      loading="lazy"
+                      decoding="async"
                       className={
                         collection.id === "freedom"
                           ? "w-full h-full object-cover object-[72%_top]"

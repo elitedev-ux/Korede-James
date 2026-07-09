@@ -6,10 +6,36 @@ export function fail(message, status = 400) {
   return json({ error: message }, { status });
 }
 
-export async function readBody(request) {
+const MAX_JSON_BODY_BYTES = 1024 * 1024;
+
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy":
+    "camera=(), microphone=(), geolocation=(), usb=(), bluetooth=(), payment=(self)",
+};
+
+export async function readBody(request, { maxBytes = MAX_JSON_BODY_BYTES } = {}) {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+
+  if (contentLength > maxBytes) {
+    throw new Error("Request body is too large.");
+  }
+
   try {
-    return await request.json();
-  } catch {
+    const text = await request.text();
+
+    if (new TextEncoder().encode(text).length > maxBytes) {
+      throw new Error("Request body is too large.");
+    }
+
+    return text ? JSON.parse(text) : {};
+  } catch (error) {
+    if (error instanceof Error && error.message === "Request body is too large.") {
+      throw error;
+    }
+
     return {};
   }
 }
@@ -40,6 +66,7 @@ function json(data, init = {}) {
   return Response.json(data, {
     ...init,
     headers: {
+      ...SECURITY_HEADERS,
       "Cache-Control": "no-store",
       ...(init.headers || {}),
     },

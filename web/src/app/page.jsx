@@ -246,6 +246,8 @@ export default function HomePage() {
               <img
                 src={tile.src}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className={`home-editorial__image ${tile.imageClass} transition-transform duration-700 group-hover:scale-105`}
               />
             </motion.div>
@@ -263,6 +265,8 @@ export default function HomePage() {
             <img
               src="/assets/freedom/freedom-detail-01.jpg"
               alt=""
+              loading="lazy"
+              decoding="async"
               className="home-editorial__image home-editorial__image--archive transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
@@ -276,6 +280,8 @@ export default function HomePage() {
             <img
               src={galleryImages[3]}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="home-editorial__image home-editorial__image--jacket transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
@@ -289,6 +295,8 @@ export default function HomePage() {
             <img
               src={galleryImages[1]}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="home-editorial__image home-editorial__image--portrait transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
@@ -306,6 +314,8 @@ export default function HomePage() {
             <img
               src="/assets/freedom/freedom-preview-rectangular.jpg"
               alt=""
+              loading="lazy"
+              decoding="async"
               className="home-editorial__image home-editorial__image--preview"
             />
           </motion.div>
@@ -320,6 +330,8 @@ export default function HomePage() {
               <img
                 src={galleryImages[2]}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="home-editorial__image home-editorial__image--red-horizontal transition-transform duration-700 group-hover:scale-105"
               />
             </motion.div>
@@ -333,6 +345,8 @@ export default function HomePage() {
               <img
                 src={galleryImages[4]}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="home-editorial__image home-editorial__image--jacket-close transition-transform duration-700 group-hover:scale-105"
               />
             </motion.div>
@@ -371,6 +385,8 @@ export default function HomePage() {
           <img
             src="/assets/freedom/edit-pink-shutter.jpg"
             alt="Freedom collection"
+            loading="lazy"
+            decoding="async"
             className="home-editorial-pair__media home-editorial-pair__image home-editorial-pair__image--pink-shutter"
           />
           <div className="home-story__quote home-editorial-pair__quote absolute bg-white p-12 hidden md:block shadow-sm">
@@ -435,6 +451,8 @@ export default function HomePage() {
               <img
                 src={collection.coverImage}
                 alt={collection.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors" />

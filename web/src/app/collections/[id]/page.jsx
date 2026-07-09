@@ -39,6 +39,9 @@ export default function CollectionDetailsPage({ params }) {
           transition={{ duration: 2 }}
           src={collection.coverImage}
           alt={collection.title}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           className="w-full h-full object-cover"
           style={{
             objectPosition: isFreedomCollection
@@ -108,6 +111,8 @@ export default function CollectionDetailsPage({ params }) {
                 <motion.img
                   src={item.src}
                   alt=""
+                  loading={i < 2 ? "eager" : "lazy"}
+                  decoding="async"
                   className={`w-full h-full object-cover ${item.imageClassName}`}
                   initial={{ scale: 1.04 }}
                   whileInView={{ scale: 1 }}
@@ -134,6 +139,9 @@ export default function CollectionDetailsPage({ params }) {
                   <div className="aspect-video overflow-hidden mb-6 bg-gray-100">
                     <img
                       src={c.coverImage}
+                      alt={c.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>
