@@ -35,6 +35,7 @@ import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
 import '../__create/design-mode';
 import type { Route } from './+types/root';
 import { RegionProvider } from '../context/RegionContext.jsx';
+import CookieConsent from '../components/CookieConsent.jsx';
 
 export const links = () => [];
 
@@ -724,6 +725,7 @@ export default function App() {
     <SessionProvider>
       <RegionProvider>
         <Outlet />
+        <CookieConsent />
       </RegionProvider>
     </SessionProvider>
   );
