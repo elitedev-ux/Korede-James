@@ -498,7 +498,7 @@ export default function Navbar() {
                   >
                     {markets.map((option) => (
                       <option key={option.code} value={option.code}>
-                        {option.code === "INT" ? regionLabel : option.label}
+                        {option.label}
                       </option>
                     ))}
                   </select>
