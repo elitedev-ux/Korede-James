@@ -142,17 +142,14 @@ export default function HomePage() {
           <source src={heroVideo} type="video/mp4" />
         </video>
         {heroVideoPlayback.isAutoplayBlocked ? (
-          <button
-            type="button"
-            className="home-video-fallback home-video-fallback--hero"
-            onClick={heroVideoPlayback.play}
-          >
-            Play Film
-          </button>
+          <AutoplayMotionFallback
+            images={[galleryImages[0], galleryImages[1], galleryImages[5]]}
+            className="home-motion-fallback--hero"
+          />
         ) : null}
 
         {/* Always-on cinematic dark overlay */}
-        <div className="absolute inset-0 bg-black/45" />
+        <div className="home-hero__shade absolute inset-0 bg-black/45" />
 
         {/* Overlay content, revealed after a short intro delay */}
         <AnimatePresence>
@@ -389,13 +386,10 @@ export default function HomePage() {
             <source src={editorialVideo} type="video/mp4" />
           </video>
           {editorialVideoPlayback.isAutoplayBlocked ? (
-            <button
-              type="button"
-              className="home-video-fallback"
-              onClick={editorialVideoPlayback.play}
-            >
-              Play Film
-            </button>
+            <AutoplayMotionFallback
+              images={[galleryImages[6], galleryImages[4], galleryImages[3]]}
+              className="home-motion-fallback--editorial"
+            />
           ) : null}
         </div>
         <motion.div
@@ -543,6 +537,24 @@ export default function HomePage() {
 
       <Footer />
     </main>
+  );
+}
+
+function AutoplayMotionFallback({ images, className = "" }) {
+  return (
+    <div className={`home-motion-fallback ${className}`} aria-hidden="true">
+      {images.map((image, index) => (
+        <img
+          key={`${image}-${index}`}
+          src={image}
+          alt=""
+          loading={index === 0 ? "eager" : "lazy"}
+          decoding="async"
+          className="home-motion-fallback__image"
+          style={{ animationDelay: `${index * 3}s` }}
+        />
+      ))}
+    </div>
   );
 }
 
