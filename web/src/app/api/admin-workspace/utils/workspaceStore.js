@@ -110,6 +110,7 @@ export async function appendOrder(payload) {
   const shippingSummary = formatWorkspaceDetails(payload.shipping);
   const payment = payload.payment || {};
   const currency = payment.currency || "NGN";
+  const paymentStatus = payment.status || (payment.paidAt ? "paid" : "pending");
   const computedSubtotal = sumLineItems(items, currency);
   const subtotal = Number(payment.subtotal) || computedSubtotal;
   const shipping = Number(payment.shipping) || 0;
@@ -122,8 +123,8 @@ export async function appendOrder(payload) {
     email: customer.email || "No email provided",
     artifact: itemSummary || "Collection order",
     budget: totalLabel,
-    status: "Inquiry received",
-    stage: "Inquiry received",
+    status: paymentStatus === "paid" ? "Accepted / deposit paid" : "Inquiry received",
+    stage: paymentStatus === "paid" ? "Accepted / deposit paid" : "Inquiry received",
     due: "To be scheduled",
     updated: "Just now",
     phone: customer.phone || "",
@@ -132,7 +133,7 @@ export async function appendOrder(payload) {
       contactSummary ? `Contact: ${contactSummary}` : "",
       shippingSummary ? `Delivery: ${shippingSummary}` : "",
       itemSummary ? `Pieces: ${itemSummary}` : "",
-      `Payment: ${totalLabel} via ${payment.method || "Card"}${payment.cardLast4 ? ` ending ${payment.cardLast4}` : ""}.`,
+      `Payment: ${totalLabel} via ${payment.method || "Card"}${payment.cardLast4 ? ` ending ${payment.cardLast4}` : ""}${paymentStatus === "paid" ? " confirmed" : " pending confirmation"}.`,
     ]
       .filter(Boolean)
       .join("\n"),
@@ -141,10 +142,12 @@ export async function appendOrder(payload) {
     id: orderId,
     customer: request.client,
     total: totalLabel,
-    status: "Inquiry received",
+    status: paymentStatus === "paid" ? "Accepted / deposit paid" : "Awaiting payment confirmation",
     refundLimit: "Not applicable",
     notes: request.notes,
     paystackReference: payment.reference || "",
+    paymentStatus,
+    paymentConfirmedAt: payment.paidAt || "",
   };
   const nextWorkspace = normalizeWorkspace({
     ...workspace,
@@ -156,13 +159,85 @@ export async function appendOrder(payload) {
       note: `Submitted ${items.length} collection piece${items.length === 1 ? "" : "s"}.`,
     }),
     audit: [
-      createAuditEntry(`Received paid collection order ${orderId}`),
+      createAuditEntry(
+        paymentStatus === "paid"
+          ? `Received paid collection order ${orderId}`
+          : `Opened Paystack checkout for collection order ${orderId}`,
+      ),
       ...workspace.audit,
     ],
   });
 
   await writeWorkspace(nextWorkspace);
   return { order, request, workspace: nextWorkspace };
+}
+
+export async function confirmOrderPayment(reference, payment = {}) {
+  const workspace = await readWorkspace();
+  const normalizedReference = String(reference || "");
+  const existingOrder = workspace.orders.find(
+    (order) => String(order.paystackReference || "") === normalizedReference,
+  );
+
+  if (!existingOrder) {
+    return null;
+  }
+
+  const wasAlreadyPaid = existingOrder.paymentStatus === "paid";
+  const paidAt = payment.paidAt || new Date().toISOString();
+  const nextOrder = {
+    ...existingOrder,
+    status: "Accepted / deposit paid",
+    paymentStatus: "paid",
+    paymentConfirmedAt: existingOrder.paymentConfirmedAt || paidAt,
+    total: payment.total || existingOrder.total,
+    notes: appendUniqueLine(
+      existingOrder.notes,
+      `Payment confirmed via ${payment.method || "Paystack"}${normalizedReference ? ` (${normalizedReference})` : ""}.`,
+    ),
+  };
+  const requestId = normalizeLookup(`req-${existingOrder.id}`);
+  const nextRequests = workspace.requests.map((request) => {
+    if (normalizeLookup(request.id) !== requestId) {
+      return request;
+    }
+
+    return {
+      ...request,
+      status: "Accepted / deposit paid",
+      stage: "Accepted / deposit paid",
+      updated: "Just now",
+      budget: payment.total || request.budget,
+      notes: appendUniqueLine(
+        request.notes,
+        `Payment confirmed via ${payment.method || "Paystack"}${normalizedReference ? ` (${normalizedReference})` : ""}.`,
+      ),
+    };
+  });
+  const nextWorkspace = normalizeWorkspace({
+    ...workspace,
+    orders: workspace.orders.map((order) =>
+      String(order.paystackReference || "") === normalizedReference ? nextOrder : order,
+    ),
+    requests: nextRequests,
+    audit: wasAlreadyPaid
+      ? workspace.audit
+      : [
+          createAuditEntry(`Confirmed Paystack payment for ${existingOrder.id}`),
+          ...workspace.audit,
+        ],
+  });
+
+  await writeWorkspace(nextWorkspace);
+
+  return {
+    order: nextOrder,
+    request:
+      nextWorkspace.requests.find((request) => normalizeLookup(request.id) === requestId) ||
+      null,
+    workspace: nextWorkspace,
+    alreadyPaid: wasAlreadyPaid,
+  };
 }
 
 export async function findTrackableCommission({ commissionId, email }) {
@@ -385,4 +460,15 @@ function formatCurrency(value, currency = "NGN") {
 
 function normalizeLookup(value = "") {
   return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function appendUniqueLine(notes = "", line = "") {
+  const current = String(notes || "");
+  const nextLine = String(line || "").trim();
+
+  if (!nextLine || current.includes(nextLine)) {
+    return current;
+  }
+
+  return [current, nextLine].filter(Boolean).join("\n");
 }

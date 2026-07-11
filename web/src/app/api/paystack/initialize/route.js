@@ -1,5 +1,6 @@
 import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js";
 import { DEFAULT_MARKET, getLineItemPrice } from "../../../../utils/pricing.js";
+import { appendOrder } from "../../admin-workspace/utils/workspaceStore.js";
 
 const PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize";
 
@@ -54,10 +55,27 @@ export async function POST(request) {
       return fail(data?.message || "Unable to initialize Paystack payment.", 400);
     }
 
+    const reference = data.data?.reference;
+    const pendingOrder = await appendOrder({
+      ...body,
+      payment: {
+        ...(body.payment || {}),
+        displayCurrency,
+        chargedCurrency: paymentCurrency,
+        currency: paymentCurrency,
+        subtotal: sumItems(body?.items, paymentCurrency),
+        total: amount,
+        method: "Paystack",
+        reference,
+        status: "pending",
+      },
+    });
+
     return ok({
       authorizationUrl: data.data?.authorization_url,
       accessCode: data.data?.access_code,
-      reference: data.data?.reference,
+      reference,
+      order: pendingOrder.order,
     });
   } catch (error) {
     const message =

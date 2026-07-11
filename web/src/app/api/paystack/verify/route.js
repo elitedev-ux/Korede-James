@@ -1,5 +1,6 @@
 import {
   appendOrder,
+  confirmOrderPayment,
   readWorkspace,
 } from "../../admin-workspace/utils/workspaceStore.js";
 import {
@@ -22,7 +23,7 @@ export async function GET(request) {
     }
 
     const existingOrder = await findExistingOrder(reference);
-    if (existingOrder) {
+    if (existingOrder?.paymentStatus === "paid") {
       return ok({ order: existingOrder, alreadyRecorded: true });
     }
 
@@ -46,35 +47,48 @@ export async function GET(request) {
     }
 
     const orderPayload = transaction?.metadata?.orderPayload;
-    if (!orderPayload) {
+    if (!orderPayload && !existingOrder) {
       return fail("Payment metadata is missing the order details.", 400);
     }
 
     const payment = {
-      ...(orderPayload.payment || {}),
+      ...(orderPayload?.payment || {}),
       method: "Paystack",
       reference,
       currency: transaction.currency || paystackCurrency(),
       paidAt: transaction.paid_at,
+      status: "paid",
     };
-    const result = await appendOrder({
-      ...orderPayload,
-      payment,
-    });
+    const result =
+      existingOrder
+        ? await confirmOrderPayment(reference, {
+            ...payment,
+            total: existingOrder.total,
+          })
+        : await appendOrder({
+            ...orderPayload,
+            payment,
+          });
 
-    await sendCommissionReceivedEmail({
-      email: result.request.email,
-      client: result.request.client,
-      displayId: result.order.id,
-      artifact: result.request.artifact,
-    });
-    await sendPaymentReceivedEmail({
-      email: result.request.email,
-      client: result.request.client,
-      displayId: result.order.id,
-      total: result.order.total,
-      method: "Paystack",
-    });
+    if (!result?.order || !result?.request) {
+      return fail("Unable to record verified payment.", 500);
+    }
+
+    if (!result.alreadyPaid) {
+      await sendCommissionReceivedEmail({
+        email: result.request.email,
+        client: result.request.client,
+        displayId: result.order.id,
+        artifact: result.request.artifact,
+      });
+      await sendPaymentReceivedEmail({
+        email: result.request.email,
+        client: result.request.client,
+        displayId: result.order.id,
+        total: result.order.total,
+        method: "Paystack",
+      });
+    }
 
     return ok({
       order: result.order,

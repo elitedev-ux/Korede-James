@@ -39,7 +39,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const reference = params.get("reference");
+    const reference = params.get("reference") || params.get("trxref");
 
     if (!reference) {
       return;
@@ -63,7 +63,8 @@ export default function CheckoutPage() {
         }
 
         setSubmittedBlueprint(data.orderPayload?.items || cart);
-        setOrderId(data.order?.id || "");
+        setOrderId(data.order?.id || window.sessionStorage.getItem("kj_pending_order_id") || "");
+        window.sessionStorage.removeItem("kj_pending_order_id");
         clearCart();
         window.history.replaceState({}, "", "/checkout");
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -132,6 +133,10 @@ export default function CheckoutPage() {
 
       if (!response.ok || !data.authorizationUrl) {
         throw new Error(data.error || "Unable to start Paystack checkout.");
+      }
+
+      if (data.order?.id) {
+        window.sessionStorage.setItem("kj_pending_order_id", data.order.id);
       }
 
       window.location.href = data.authorizationUrl;
