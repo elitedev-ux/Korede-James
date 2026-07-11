@@ -132,7 +132,9 @@ export default function HomePage() {
           webkit-playsinline="true"
           controls={false}
           disablePictureInPicture
+          disableRemotePlayback
           controlsList="nodownload noplaybackrate noremoteplayback"
+          x-webkit-airplay="deny"
           preload="auto"
           onEnded={() => setShowHeroContent(true)}
           onError={() => setShowHeroContent(true)}
@@ -141,12 +143,6 @@ export default function HomePage() {
         >
           <source src={heroVideo} type="video/mp4" />
         </video>
-        {heroVideoPlayback.isAutoplayBlocked ? (
-          <AutoplayMotionFallback
-            images={[galleryImages[0], galleryImages[1], galleryImages[5]]}
-            className="home-motion-fallback--hero"
-          />
-        ) : null}
 
         {/* Always-on cinematic dark overlay */}
         <div className="home-hero__shade absolute inset-0 bg-black/45" />
@@ -380,17 +376,13 @@ export default function HomePage() {
             webkit-playsinline="true"
             controls={false}
             disablePictureInPicture
+            disableRemotePlayback
             controlsList="nodownload noplaybackrate noremoteplayback"
+            x-webkit-airplay="deny"
             preload="auto"
           >
             <source src={editorialVideo} type="video/mp4" />
           </video>
-          {editorialVideoPlayback.isAutoplayBlocked ? (
-            <AutoplayMotionFallback
-              images={[galleryImages[6], galleryImages[4], galleryImages[3]]}
-              className="home-motion-fallback--editorial"
-            />
-          ) : null}
         </div>
         <motion.div
           initial={{ opacity: 0, x: 24 }}
@@ -540,27 +532,8 @@ export default function HomePage() {
   );
 }
 
-function AutoplayMotionFallback({ images, className = "" }) {
-  return (
-    <div className={`home-motion-fallback ${className}`} aria-hidden="true">
-      {images.map((image, index) => (
-        <img
-          key={`${image}-${index}`}
-          src={image}
-          alt=""
-          loading={index === 0 ? "eager" : "lazy"}
-          decoding="async"
-          className="home-motion-fallback__image"
-          style={{ animationDelay: `${index * 3}s` }}
-        />
-      ))}
-    </div>
-  );
-}
-
 function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
   const videoRef = useRef(null);
-  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
 
   const play = () => {
     const video = videoRef.current;
@@ -580,11 +553,9 @@ function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
     return video
       .play()
       .then(() => {
-        setIsAutoplayBlocked(false);
         return true;
       })
       .catch(() => {
-        setIsAutoplayBlocked(true);
         onAutoplayBlocked?.();
         return false;
       });
@@ -643,5 +614,5 @@ function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
     };
   }, [onAutoplayBlocked]);
 
-  return { ref: videoRef, isAutoplayBlocked, play };
+  return { ref: videoRef, play };
 }
