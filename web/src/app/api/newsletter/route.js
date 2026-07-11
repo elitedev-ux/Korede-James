@@ -1,10 +1,17 @@
 import { sendNewsletterConfirmationEmail } from "../utils/email.js";
-import { fail, ok, readBody, supabaseRequest } from "../utils/supabaseRest.js";
+import {
+  assertRateLimit,
+  fail,
+  ok,
+  readBody,
+  supabaseRequest,
+} from "../utils/supabaseRest.js";
 import { requireAdmin } from "../admin-workspace/utils/workspaceStore.js";
 
 export async function GET(request) {
   try {
-    requireAdmin(request);
+    assertRateLimit(request, "newsletter-admin-read", { limit: 120 });
+    requireNewsletterAdmin(request);
     const subscribers = await supabaseRequest(
       "newsletter_subscribers?select=id,email,status,source,subscribed_at,updated_at&order=subscribed_at.desc&limit=500",
     );
@@ -17,9 +24,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body = await readBody(request);
+    assertRateLimit(request, "newsletter-subscribe", { limit: 8 });
+    const body = await readBody(request, { maxBytes: 8 * 1024 });
     const email = validateEmail(body.email);
-    const source = String(body.source || "homepage").trim() || "homepage";
+    const source = cleanText(body.source || "homepage", 60) || "homepage";
 
     const rows = await supabaseRequest(
       "newsletter_subscribers?on_conflict=email",
@@ -51,11 +59,12 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    requireAdmin(request);
-    const body = await readBody(request);
+    assertRateLimit(request, "newsletter-admin-write", { limit: 60 });
+    requireNewsletterAdmin(request);
+    const body = await readBody(request, { maxBytes: 8 * 1024 });
     const email = validateEmail(body.email);
     const status = validateStatus(body.status);
-    const source = String(body.source || "homepage").trim() || "homepage";
+    const source = cleanText(body.source || "homepage", 60) || "homepage";
     const rows = await supabaseRequest(
       `newsletter_subscribers?email=eq.${encodeURIComponent(email)}`,
       {
@@ -98,6 +107,10 @@ function validateStatus(value) {
   return status;
 }
 
+function cleanText(value, maxLength) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
 function handleNewsletterError(error, fallbackMessage) {
   const message = error instanceof Error ? error.message : fallbackMessage;
 
@@ -108,10 +121,21 @@ function handleNewsletterError(error, fallbackMessage) {
     );
   }
 
-  if (message === "Admin access is required.") {
-    return fail(message, 401);
+  if (message === "Admin access is required." || message === "Owner or editor access is required.") {
+    return fail(message, message === "Admin access is required." ? 401 : 403);
   }
 
   const status = message.includes("Supabase is not configured") ? 503 : 400;
-  return fail(message || fallbackMessage, status);
+  return fail(
+    message || fallbackMessage,
+    error instanceof Error && "status" in error ? error.status : status,
+  );
+}
+
+function requireNewsletterAdmin(request) {
+  const role = requireAdmin(request);
+  if (!["owner", "editor"].includes(role)) {
+    throw new Error("Owner or editor access is required.");
+  }
+  return role;
 }

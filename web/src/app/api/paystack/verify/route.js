@@ -6,17 +6,18 @@ import {
   sendCommissionReceivedEmail,
   sendPaymentReceivedEmail,
 } from "../../utils/email.js";
-import { fail, ok } from "../../utils/supabaseRest.js";
+import { assertRateLimit, fail, ok } from "../../utils/supabaseRest.js";
 
 const PAYSTACK_VERIFY_URL = "https://api.paystack.co/transaction/verify";
 
 export async function GET(request) {
   try {
+    assertRateLimit(request, "paystack-verify", { limit: 30 });
     const secretKey = getPaystackSecretKey();
     const url = new URL(request.url);
     const reference = url.searchParams.get("reference");
 
-    if (!reference) {
+    if (!reference || !/^[a-zA-Z0-9._=-]{4,120}$/.test(reference)) {
       return fail("Paystack reference is required.", 400);
     }
 
@@ -81,9 +82,11 @@ export async function GET(request) {
       orderPayload,
     });
   } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to verify payment.";
     return fail(
-      error instanceof Error ? error.message : "Unable to verify payment.",
-      500,
+      message,
+      error instanceof Error && "status" in error ? error.status : 500,
     );
   }
 }

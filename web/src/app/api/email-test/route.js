@@ -1,11 +1,15 @@
 import { requireAdmin } from "../admin-workspace/utils/workspaceStore.js";
 import { sendTransactionalEmail } from "../utils/email.js";
-import { fail, ok, readBody } from "../utils/supabaseRest.js";
+import { assertRateLimit, fail, ok, readBody } from "../utils/supabaseRest.js";
 
 export async function POST(request) {
   try {
-    requireAdmin(request);
-    const body = await readBody(request);
+    assertRateLimit(request, "email-test", { limit: 5 });
+    const role = requireAdmin(request);
+    if (role !== "owner") {
+      return fail("Owner access is required.", 403);
+    }
+    const body = await readBody(request, { maxBytes: 8 * 1024 });
     const to = body.to;
 
     if (!to) {
@@ -25,6 +29,12 @@ export async function POST(request) {
     return ok({ success: result.sent, result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to send test email.";
-    return fail(message, message.includes("Admin access") ? 401 : 400);
+    const status =
+      error instanceof Error && "status" in error
+        ? error.status
+        : message.includes("Admin access")
+          ? 401
+          : 400;
+    return fail(message, status);
   }
 }

@@ -1,7 +1,8 @@
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 export async function sendTransactionalEmail({ to, subject, preview, html }) {
-  if (!isValidEmail(to)) {
+  const recipient = normalizeEmail(to);
+  if (!isValidEmail(recipient)) {
     return { sent: false, reason: "invalid-recipient" };
   }
 
@@ -24,9 +25,12 @@ export async function sendTransactionalEmail({ to, subject, preview, html }) {
       },
       body: JSON.stringify({
         from,
-        to: [to],
-        subject,
-        html: emailLayout({ preview, html }),
+        to: [recipient],
+        subject: cleanHeaderText(subject || "Korede James", 140),
+        html: emailLayout({
+          preview: cleanHeaderText(preview || "", 180),
+          html,
+        }),
       }),
     });
 
@@ -401,7 +405,16 @@ function escapeHtml(value = "") {
 }
 
 function isValidEmail(value = "") {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+  const email = normalizeEmail(value);
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function normalizeEmail(value = "") {
+  return String(value).trim().toLowerCase();
+}
+
+function cleanHeaderText(value = "", maxLength = 140) {
+  return String(value).replace(/[\r\n]+/g, " ").trim().slice(0, maxLength);
 }
 
 function normalizeLookup(value = "") {

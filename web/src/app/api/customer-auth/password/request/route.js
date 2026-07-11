@@ -1,4 +1,5 @@
 import {
+  assertRateLimit,
   buildResetUrl,
   fail,
   ok,
@@ -10,7 +11,8 @@ import {
 
 export async function POST(request) {
   try {
-    const body = await readBody(request);
+    assertRateLimit(request, "customer-password-request", { limit: 5 });
+    const body = await readBody(request, { maxBytes: 8 * 1024 });
     const email = validateEmail(body.email);
     const reset = await setCustomerResetToken(email);
     let devResetUrl = null;
@@ -26,11 +28,16 @@ export async function POST(request) {
     return ok({
       success: true,
       message: "If an account exists for that email, a reset link will be sent.",
-      devResetUrl,
+      devResetUrl: process.env.NODE_ENV === "production" ? null : devResetUrl,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to request reset.";
-    const status = message.includes("Supabase is not configured") ? 503 : 400;
+    const status =
+      error instanceof Error && "status" in error
+        ? error.status
+        : message.includes("Supabase is not configured")
+          ? 503
+          : 400;
     return fail(message, status);
   }
 }

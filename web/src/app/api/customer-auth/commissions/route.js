@@ -1,8 +1,10 @@
 import { readWorkspace } from "../../admin-workspace/utils/workspaceStore.js";
 import { fail, ok, readCustomerSession } from "../utils/customerAuth.js";
+import { assertRateLimit } from "../../utils/supabaseRest.js";
 
 export async function GET(request) {
   try {
+    assertRateLimit(request, "customer-commissions", { limit: 60 });
     const customer = readCustomerSession(request);
 
     if (!customer?.email) {
@@ -36,7 +38,12 @@ export async function GET(request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to load commissions.";
-    const status = message.includes("Supabase is not configured") ? 503 : 400;
+    const status =
+      error instanceof Error && "status" in error
+        ? error.status
+        : message.includes("Supabase is not configured")
+          ? 503
+          : 400;
     return fail(message, status);
   }
 }

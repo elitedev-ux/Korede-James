@@ -7,6 +7,7 @@ import {
 } from "node:crypto";
 import {
   fail,
+  assertRateLimit,
   ok,
   readBody,
   supabaseRequest,
@@ -21,10 +22,13 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
-export { fail, ok, readBody, sendPasswordResetEmail };
+export { assertRateLimit, fail, ok, readBody, sendPasswordResetEmail };
 
 export function validateEmail(email) {
   const normalized = normalizeEmail(email);
+  if (normalized.length > 254) {
+    throw new Error("Enter a valid email address.");
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
     throw new Error("Enter a valid email address.");
   }
@@ -35,6 +39,9 @@ export function validatePassword(password) {
   const value = String(password || "");
   if (value.length < 8) {
     throw new Error("Password must be at least 8 characters.");
+  }
+  if (value.length > 128) {
+    throw new Error("Password must be 128 characters or fewer.");
   }
   return value;
 }
@@ -82,6 +89,9 @@ export async function createCustomer({ firstName, lastName, email, password }) {
 
   if (!cleanFirstName || !cleanLastName) {
     throw new Error("Enter your first and last name.");
+  }
+  if (cleanFirstName.length > 80 || cleanLastName.length > 80) {
+    throw new Error("Names must be 80 characters or fewer.");
   }
 
   const existing = await findCustomerByEmail(normalizedEmail);
@@ -138,7 +148,11 @@ export async function setCustomerResetToken(email) {
 }
 
 export async function updatePasswordWithToken(token, password) {
-  const account = await findCustomerByResetToken(String(token || ""));
+  const resetToken = String(token || "");
+  if (!/^[a-zA-Z0-9_-]{20,160}$/.test(resetToken)) {
+    throw new Error("Reset link is invalid or expired.");
+  }
+  const account = await findCustomerByResetToken(resetToken);
   if (!account) {
     throw new Error("Reset link is invalid or expired.");
   }
@@ -171,7 +185,7 @@ export function clearSessionResponse() {
     { success: true },
     {
       headers: {
-        "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
+        "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Priority=High`,
       },
     }
   );
@@ -274,13 +288,17 @@ function verifySession(value) {
 }
 
 function serializeCookie(name, value, request) {
-  const isSecure = new URL(request.url).protocol === "https:";
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "";
+  const isSecure =
+    forwardedProto.split(",")[0]?.trim() === "https" ||
+    new URL(request.url).protocol === "https:";
   return [
     `${name}=${value}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Lax",
     `Max-Age=${SESSION_MAX_AGE}`,
+    "Priority=High",
     isSecure ? "Secure" : "",
   ]
     .filter(Boolean)

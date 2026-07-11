@@ -395,8 +395,7 @@ function adminHeaders() {
   }
 
   const code =
-    window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY) ||
-    window.localStorage.getItem(ADMIN_ACCESS_SECRET_KEY);
+    window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY);
 
   return code ? { "x-kj-admin-code": code } : {};
 }

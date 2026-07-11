@@ -6,11 +6,12 @@ import {
   sendCommissionReceivedEmail,
   sendPaymentReceivedEmail,
 } from "../utils/email.js";
-import { fail, ok, readBody } from "../utils/supabaseRest.js";
+import { assertRateLimit, fail, ok, readBody } from "../utils/supabaseRest.js";
 
 export async function POST(request) {
   try {
-    const body = await readBody(request);
+    assertRateLimit(request, "commission-submit", { limit: 10 });
+    const body = await readBody(request, { maxBytes: 64 * 1024 });
     const type = body.type || "inquiry";
 
     if (type === "order") {
@@ -42,7 +43,12 @@ export async function POST(request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to record commission.";
-    const status = message.includes("Supabase is not configured") ? 503 : 400;
+    const status =
+      error instanceof Error && "status" in error
+        ? error.status
+        : message.includes("Supabase is not configured")
+          ? 503
+          : 400;
     return fail(message, status);
   }
 }

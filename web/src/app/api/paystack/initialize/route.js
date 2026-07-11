@@ -1,12 +1,13 @@
-import { fail, ok, readBody } from "../../utils/supabaseRest.js";
+import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js";
 import { DEFAULT_MARKET, getLineItemPrice } from "../../../../utils/pricing.js";
 
 const PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize";
 
 export async function POST(request) {
   try {
+    assertRateLimit(request, "paystack-initialize", { limit: 20 });
     const secretKey = getPaystackSecretKey();
-    const body = await readBody(request);
+    const body = await readBody(request, { maxBytes: 64 * 1024 });
     const displayCurrency = resolveDisplayCurrency(body);
     const paymentCurrency = resolvePaystackCurrency();
     const amount = resolvePaymentAmount(body, paymentCurrency);
@@ -59,9 +60,11 @@ export async function POST(request) {
       reference: data.data?.reference,
     });
   } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to initialize payment.";
     return fail(
-      error instanceof Error ? error.message : "Unable to initialize payment.",
-      500,
+      message,
+      error instanceof Error && "status" in error ? error.status : 500,
     );
   }
 }

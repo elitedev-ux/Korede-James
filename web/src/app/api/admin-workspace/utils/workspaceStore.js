@@ -1,9 +1,10 @@
+import { timingSafeEqual } from "node:crypto";
 import { supabaseRequest } from "../../utils/supabaseRest.js";
 import { formatMoney, sumLineItems } from "../../../../utils/pricing.js";
 
 const WORKSPACE_ID = process.env.ADMIN_WORKSPACE_ID || "main";
 
-const rolePasswords = {
+const legacyRolePasswords = {
   Iamtheadmin: "owner",
   Iamtheeditor: "editor",
   Iamthestudio: "studio",
@@ -206,13 +207,74 @@ export async function findTrackableCommission({ commissionId, email }) {
 
 export function requireAdmin(request) {
   const suppliedCode = request.headers.get("x-kj-admin-code") || "";
-  const role = rolePasswords[suppliedCode];
+  const role = findRoleForAccessCode(suppliedCode);
 
   if (!role) {
     throw new AdminAuthError();
   }
 
   return role;
+}
+
+function findRoleForAccessCode(suppliedCode) {
+  const code = String(suppliedCode || "").trim();
+  if (!code || code.length > 160) {
+    return null;
+  }
+
+  const configuredCodes = readConfiguredRoleCodes();
+  const entries = Object.entries(
+    Object.keys(configuredCodes).length ? configuredCodes : legacyRolePasswords,
+  );
+
+  for (const [expectedCode, role] of entries) {
+    if (safeEquals(code, expectedCode) && isKnownRole(role)) {
+      return role;
+    }
+  }
+
+  return null;
+}
+
+function readConfiguredRoleCodes() {
+  const fromJson = process.env.ADMIN_ROLE_CODES || "";
+  const fromIndividual = {
+    [process.env.ADMIN_OWNER_CODE || ""]: "owner",
+    [process.env.ADMIN_EDITOR_CODE || ""]: "editor",
+    [process.env.ADMIN_STUDIO_CODE || ""]: "studio",
+    [process.env.ADMIN_SUPPORT_CODE || ""]: "support",
+  };
+
+  try {
+    const parsed = fromJson ? JSON.parse(fromJson) : {};
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return removeEmptyCodes({ ...fromIndividual, ...parsed });
+    }
+  } catch {
+    // Fall through to individual environment variables.
+  }
+
+  return removeEmptyCodes(fromIndividual);
+}
+
+function removeEmptyCodes(codes) {
+  return Object.fromEntries(
+    Object.entries(codes).filter(([code, role]) => code && isKnownRole(role)),
+  );
+}
+
+function isKnownRole(role) {
+  return ["owner", "editor", "studio", "support"].includes(role);
+}
+
+function safeEquals(left, right) {
+  const leftBuffer = Buffer.from(String(left));
+  const rightBuffer = Buffer.from(String(right));
+
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    timingSafeEqual(leftBuffer, rightBuffer)
+  );
 }
 
 export class AdminAuthError extends Error {

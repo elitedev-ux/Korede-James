@@ -38,12 +38,6 @@ import "./page.css";
 const STORAGE_KEY = ADMIN_WORKSPACE_STORAGE_KEY;
 const ACCESS_KEY = "korede-james-admin-unlocked";
 const ACCESS_ROLE_KEY = "korede-james-admin-role";
-const rolePasswords = {
-  Iamtheadmin: "owner",
-  Iamtheeditor: "editor",
-  Iamthestudio: "studio",
-  Iamthesupport: "support",
-};
 
 const requestStatuses = [
   "Inquiry received",
@@ -65,13 +59,6 @@ const commissionStages = [
   "Revisions requested",
   "Completed / delivered",
   "Archived",
-];
-
-const roleAccessCodes = [
-  { role: "owner", label: "Owner / Admin", code: "Iamtheadmin" },
-  { role: "editor", label: "Editor", code: "Iamtheeditor" },
-  { role: "studio", label: "Studio", code: "Iamthestudio" },
-  { role: "support", label: "Support", code: "Iamthesupport" },
 ];
 
 const requestStatusByRole = {
@@ -496,8 +483,11 @@ export default function AdminPage() {
 
   useEffect(() => {
     setWorkspace(readWorkspace());
-    const storedRole = window.localStorage.getItem(ACCESS_ROLE_KEY);
-    if (window.localStorage.getItem(ACCESS_KEY) === "true" && roleProfiles[storedRole]) {
+    const storedRole = window.sessionStorage.getItem(ACCESS_ROLE_KEY);
+    const hasSessionCode = Boolean(
+      window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY),
+    );
+    if (hasSessionCode && roleProfiles[storedRole]) {
       setSessionRole(storedRole);
       setCurrentRole(storedRole);
       setUnlocked(true);
@@ -884,34 +874,49 @@ export default function AdminPage() {
     event.target.value = "";
   };
 
-  const handleUnlock = (event) => {
+  const handleUnlock = async (event) => {
     event.preventDefault();
-    const matchedEntry = Object.entries(rolePasswords).find(
-      ([password]) => password.toLowerCase() === accessCode.trim().toLowerCase()
-    );
-
-    if (!matchedEntry) {
+    const code = accessCode.trim();
+    if (!code) {
       setAccessError("Invalid access code.");
       return;
     }
 
-    const [, matchedRole] = matchedEntry;
-    window.localStorage.setItem(ACCESS_KEY, "true");
-    window.localStorage.setItem(ACCESS_ROLE_KEY, matchedRole);
-    window.localStorage.setItem(ADMIN_ACCESS_SECRET_KEY, accessCode.trim());
-    window.sessionStorage.setItem(ADMIN_ACCESS_SECRET_KEY, accessCode.trim());
-    setSessionRole(matchedRole);
-    setCurrentRole(matchedRole);
-    setUnlocked(true);
-    setAccessError("");
-    fetchAdminWorkspace().then(setWorkspace);
-    loadNewsletterSubscribers();
+    try {
+      window.sessionStorage.setItem(ADMIN_ACCESS_SECRET_KEY, code);
+      const response = await fetch("/api/admin-workspace", {
+        headers: {
+          "x-kj-admin-code": code,
+        },
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !roleProfiles[data.role]) {
+        throw new Error(data.error || "Invalid access code.");
+      }
+
+      window.sessionStorage.setItem(ACCESS_KEY, "true");
+      window.sessionStorage.setItem(ACCESS_ROLE_KEY, data.role);
+      setSessionRole(data.role);
+      setCurrentRole(data.role);
+      setWorkspace(normalizeWorkspace(data.workspace || {}));
+      setUnlocked(true);
+      setAccessError("");
+      loadNewsletterSubscribers();
+    } catch (error) {
+      window.sessionStorage.removeItem(ACCESS_KEY);
+      window.sessionStorage.removeItem(ACCESS_ROLE_KEY);
+      window.sessionStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
+      setAccessError(error instanceof Error ? error.message : "Invalid access code.");
+    }
   };
 
   const handleLogout = () => {
     window.localStorage.removeItem(ACCESS_KEY);
     window.localStorage.removeItem(ACCESS_ROLE_KEY);
     window.localStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
+    window.sessionStorage.removeItem(ACCESS_KEY);
+    window.sessionStorage.removeItem(ACCESS_ROLE_KEY);
     window.sessionStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
     setUnlocked(false);
     setSessionRole("owner");
@@ -1571,7 +1576,6 @@ export default function AdminPage() {
                 ))}
               </div>
               <PermissionMatrix role={currentRole} />
-              <AccessCodeList />
             </article>
 
             <article className="admin-panel">
@@ -1936,26 +1940,6 @@ function PermissionMatrix({ role }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function AccessCodeList() {
-  return (
-    <div className="admin-access-code-list">
-      <div>
-        <p className="admin-kicker">Access Codes</p>
-        <h4>Role passwords</h4>
-      </div>
-      <div className="admin-code-grid">
-        {roleAccessCodes.map((item) => (
-          <div className="admin-code-card" key={item.role}>
-            <LockKeyhole size={15} />
-            <span>{item.label}</span>
-            <strong>{item.code}</strong>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
