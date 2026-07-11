@@ -9,6 +9,8 @@ import "./page.css";
 
 const heroVideo = "/assets/Hero%201.mp4?v=2";
 const editorialVideo = "/assets/hero2.mp4?v=2";
+const heroLowPowerVideo = "/assets/hero-low-power.webp?v=1";
+const editorialLowPowerVideo = "/assets/editorial-low-power.webp?v=1";
 
 export default function HomePage() {
   const [email, setEmail] = useState("");
@@ -143,6 +145,12 @@ export default function HomePage() {
         >
           <source src={heroVideo} type="video/mp4" />
         </video>
+        {heroVideoPlayback.isAutoplayBlocked ? (
+          <ConvertedVideoFallback
+            src={heroLowPowerVideo}
+            className="home-converted-video--hero"
+          />
+        ) : null}
 
         {/* Always-on cinematic dark overlay */}
         <div className="home-hero__shade absolute inset-0 bg-black/45" />
@@ -383,6 +391,12 @@ export default function HomePage() {
           >
             <source src={editorialVideo} type="video/mp4" />
           </video>
+          {editorialVideoPlayback.isAutoplayBlocked ? (
+            <ConvertedVideoFallback
+              src={editorialLowPowerVideo}
+              className="home-converted-video--editorial"
+            />
+          ) : null}
         </div>
         <motion.div
           initial={{ opacity: 0, x: 24 }}
@@ -532,8 +546,22 @@ export default function HomePage() {
   );
 }
 
+function ConvertedVideoFallback({ src, className = "" }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      loading="eager"
+      decoding="async"
+      className={`home-converted-video ${className}`}
+    />
+  );
+}
+
 function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
   const videoRef = useRef(null);
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
 
   const play = () => {
     const video = videoRef.current;
@@ -553,9 +581,11 @@ function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
     return video
       .play()
       .then(() => {
+        setIsAutoplayBlocked(false);
         return true;
       })
       .catch(() => {
+        setIsAutoplayBlocked(true);
         onAutoplayBlocked?.();
         return false;
       });
@@ -614,5 +644,5 @@ function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
     };
   }, [onAutoplayBlocked]);
 
-  return { ref: videoRef, play };
+  return { ref: videoRef, isAutoplayBlocked, play };
 }
