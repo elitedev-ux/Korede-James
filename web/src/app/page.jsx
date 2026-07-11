@@ -15,8 +15,10 @@ export default function HomePage() {
   const [newsletterStatus, setNewsletterStatus] = useState({ type: "", message: "" });
   const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
   const [showHeroContent, setShowHeroContent] = useState(false);
-  const heroVideoRef = useAutoplayingVideo();
-  const editorialVideoRef = useAutoplayingVideo();
+  const heroVideoPlayback = useAutoplayingVideo({
+    onAutoplayBlocked: () => setShowHeroContent(true),
+  });
+  const editorialVideoPlayback = useAutoplayingVideo();
 
   useEffect(() => {
     if (showHeroContent) return;
@@ -121,15 +123,17 @@ export default function HomePage() {
       <section className="home-hero relative h-screen w-full overflow-hidden bg-black">
         {/* Video background, autoplays silently and loops behind the landing hero. */}
         <video
-          ref={heroVideoRef}
+          ref={heroVideoPlayback.ref}
           autoPlay
           loop
           muted
           defaultMuted
           playsInline
+          webkit-playsinline="true"
           controls={false}
           disablePictureInPicture
           controlsList="nodownload noplaybackrate noremoteplayback"
+          preload="auto"
           onEnded={() => setShowHeroContent(true)}
           onError={() => setShowHeroContent(true)}
           onStalled={() => setShowHeroContent(true)}
@@ -137,6 +141,15 @@ export default function HomePage() {
         >
           <source src={heroVideo} type="video/mp4" />
         </video>
+        {heroVideoPlayback.isAutoplayBlocked ? (
+          <button
+            type="button"
+            className="home-video-fallback home-video-fallback--hero"
+            onClick={heroVideoPlayback.play}
+          >
+            Play Film
+          </button>
+        ) : null}
 
         {/* Always-on cinematic dark overlay */}
         <div className="absolute inset-0 bg-black/45" />
@@ -360,20 +373,30 @@ export default function HomePage() {
       <section className="home-editorial-pair w-full bg-white">
         <div className="home-editorial-pair__panel home-editorial-pair__panel--video">
           <video
-            ref={editorialVideoRef}
+            ref={editorialVideoPlayback.ref}
             className="home-editorial-pair__media"
             autoPlay
             muted
             defaultMuted
             loop
             playsInline
+            webkit-playsinline="true"
             controls={false}
             disablePictureInPicture
             controlsList="nodownload noplaybackrate noremoteplayback"
-            preload="metadata"
+            preload="auto"
           >
             <source src={editorialVideo} type="video/mp4" />
           </video>
+          {editorialVideoPlayback.isAutoplayBlocked ? (
+            <button
+              type="button"
+              className="home-video-fallback"
+              onClick={editorialVideoPlayback.play}
+            >
+              Play Film
+            </button>
+          ) : null}
         </div>
         <motion.div
           initial={{ opacity: 0, x: 24 }}
@@ -523,8 +546,37 @@ export default function HomePage() {
   );
 }
 
-function useAutoplayingVideo() {
+function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
   const videoRef = useRef(null);
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
+
+  const play = () => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return Promise.resolve(false);
+    }
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    video.playsInline = true;
+    video.controls = false;
+
+    return video
+      .play()
+      .then(() => {
+        setIsAutoplayBlocked(false);
+        return true;
+      })
+      .catch(() => {
+        setIsAutoplayBlocked(true);
+        onAutoplayBlocked?.();
+        return false;
+      });
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -534,15 +586,8 @@ function useAutoplayingVideo() {
     }
 
     const playVideo = () => {
-      video.muted = true;
-      video.defaultMuted = true;
-      video.playsInline = true;
-      video.controls = false;
-
       if (video.paused) {
-        video.play().catch(() => {
-          // Mobile browsers can still block autoplay in Low Power/Data Saver mode.
-        });
+        play();
       }
     };
 
@@ -564,17 +609,27 @@ function useAutoplayingVideo() {
       }
     };
 
+    const handleUserGesture = () => {
+      playVideo();
+    };
+
     video.addEventListener("canplay", playVideo);
     video.addEventListener("loadedmetadata", playVideo);
+    window.addEventListener("pointerdown", handleUserGesture, { passive: true });
+    window.addEventListener("touchstart", handleUserGesture, { passive: true });
+    window.addEventListener("click", handleUserGesture, { passive: true });
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       observer.disconnect();
       video.removeEventListener("canplay", playVideo);
       video.removeEventListener("loadedmetadata", playVideo);
+      window.removeEventListener("pointerdown", handleUserGesture);
+      window.removeEventListener("touchstart", handleUserGesture);
+      window.removeEventListener("click", handleUserGesture);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [onAutoplayBlocked]);
 
-  return videoRef;
+  return { ref: videoRef, isAutoplayBlocked, play };
 }
