@@ -155,10 +155,10 @@ const adminModules = [
   },
   {
     id: "pieces",
-    label: "Portfolio",
+    label: "Products",
     icon: Package,
-    owner: "Approve, feature completed work, and manage display order",
-    editor: "Full portfolio/media access; can mark completed commissions as ready to feature",
+    owner: "Add, edit, remove, price, publish, and manage product images and colourways",
+    editor: "Add, edit, remove, price, and manage product images and colourways",
     studio: "No access",
     support: "No access",
   },
@@ -235,8 +235,8 @@ const roleProfiles = {
   },
   editor: {
     label: "Editor",
-    summary: "Atelier, portfolio, content, media library, process photos, and featured work drafts.",
-    tone: "Content Access",
+    summary: "Product management, atelier content, media library, process photos, and featured work drafts.",
+    tone: "Product Access",
   },
   studio: {
     label: "Studio",
@@ -312,11 +312,11 @@ const moduleSummaries = {
     },
   },
   pieces: {
-    title: "Portfolio",
-    metric: "Completed work",
-    actions: ["Feature Work", "Display Order", "Client Permission", "Media"],
+    title: "Product Management",
+    metric: "Catalogue records",
+    actions: ["Add Product", "Edit Product", "Remove Product", "Colourway Images"],
     lockedFor: {
-      editor: ["Publish Featured Work"],
+      editor: [],
       studio: ["Portfolio Publishing"],
       support: ["Portfolio Publishing"],
     },
@@ -683,6 +683,14 @@ export default function AdminPage() {
     const nextWorkspace = {
       ...workspace,
       team: workspace.team.filter((member) => member.id !== memberId),
+    };
+    commitWorkspace(nextWorkspace);
+  };
+
+  const removePiece = (pieceId) => {
+    const nextWorkspace = {
+      ...workspace,
+      pieces: workspace.pieces.filter((piece) => piece.id !== pieceId),
     };
     commitWorkspace(nextWorkspace);
   };
@@ -1263,8 +1271,8 @@ export default function AdminPage() {
             <article className="admin-panel admin-panel--wide">
               <div className="admin-panel__heading">
                 <div>
-                  <p className="admin-kicker">Portfolio</p>
-                  <h3>Featured work</h3>
+                  <p className="admin-kicker">Products</p>
+                  <h3>Product catalogue</h3>
                 </div>
               </div>
 
@@ -1313,6 +1321,18 @@ export default function AdminPage() {
                               category: event.target.value,
                             })
                           }
+                        />
+                      </label>
+                      <label>
+                        Registered Value
+                        <input
+                          value={piece.budget || ""}
+                          onChange={(event) =>
+                            updatePiece(piece.id, {
+                              budget: event.target.value,
+                            })
+                          }
+                          placeholder="N2,000.00"
                         />
                       </label>
                       <label>
@@ -1389,29 +1409,40 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="admin-visibility"
-                      onClick={() =>
-                        updatePiece(piece.id, {
-                          visibility:
-                            piece.visibility === "Visible"
-                              ? "Hidden"
-                              : "Visible",
-                        })
-                      }
-                    >
-                      {piece.visibility === "Visible" ? (
-                        <Eye size={15} />
-                      ) : (
-                        <EyeOff size={15} />
-                      )}
-                      <span>{piece.visibility}</span>
-                    </button>
+                    <div className="admin-piece-actions">
+                      <button
+                        type="button"
+                        className="admin-visibility"
+                        onClick={() =>
+                          updatePiece(piece.id, {
+                            visibility:
+                              piece.visibility === "Visible"
+                                ? "Hidden"
+                                : "Visible",
+                          })
+                        }
+                      >
+                        {piece.visibility === "Visible" ? (
+                          <Eye size={15} />
+                        ) : (
+                          <EyeOff size={15} />
+                        )}
+                        <span>{piece.visibility}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-delete-button admin-delete-button--piece"
+                        aria-label={`Remove ${piece.title}`}
+                        onClick={() => removePiece(piece.id)}
+                      >
+                        <Trash2 size={14} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
                   </div>
                   ))
                 ) : (
-                  <p className="admin-empty">No portfolio entries yet.</p>
+                  <p className="admin-empty">No products yet.</p>
                 )}
               </div>
             </article>
@@ -1419,8 +1450,8 @@ export default function AdminPage() {
             <article className="admin-panel">
               <div className="admin-panel__heading">
                 <div>
-                  <p className="admin-kicker">New Entry</p>
-                  <h3>Add work</h3>
+                  <p className="admin-kicker">New Product</p>
+                  <h3>Add product</h3>
                 </div>
               </div>
               <form className="admin-add-form" onSubmit={handleAddPiece}>
@@ -1444,6 +1475,19 @@ export default function AdminPage() {
                         category: event.target.value,
                       })
                     }
+                  />
+                </label>
+                <label>
+                  Registered Value
+                  <input
+                    value={newPiece.budget}
+                    onChange={(event) =>
+                      setNewPiece({
+                        ...newPiece,
+                        budget: event.target.value,
+                      })
+                    }
+                    placeholder="N2,000.00"
                   />
                 </label>
                 <label>
@@ -1533,7 +1577,7 @@ export default function AdminPage() {
                 </label>
                 <button type="submit">
                   <Plus size={15} />
-                  <span>Add Work</span>
+                  <span>Add Product</span>
                 </button>
               </form>
             </article>

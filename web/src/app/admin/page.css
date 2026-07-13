@@ -775,6 +775,11 @@
   color: var(--admin-ink);
 }
 
+.admin-piece-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .admin-upload input {
   display: none;
 }
@@ -1137,6 +1142,17 @@
   cursor: pointer;
 }
 
+.admin-delete-button--piece {
+  grid-template-columns: auto auto;
+  gap: 8px;
+  width: 100%;
+  color: #7b2424;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .admin-access {
   display: grid;
   place-items: center;
@@ -1236,6 +1252,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .admin-piece-actions,
   .admin-visibility {
     grid-column: 1 / -1;
   }
