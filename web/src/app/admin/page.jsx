@@ -475,6 +475,7 @@ export default function AdminPage() {
     defaultWorkspace.requests[0]?.id || ""
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
   const [saveState, setSaveState] = useState("Saved");
   const [newsletterSubscribers, setNewsletterSubscribers] = useState([]);
   const [newsletterError, setNewsletterError] = useState("");
@@ -505,6 +506,7 @@ export default function AdminPage() {
     if (hasSessionCode && roleProfiles[storedRole]) {
       setSessionRole(storedRole);
       setCurrentRole(storedRole);
+      setActiveView(storedRole === "editor" ? "pieces" : "overview");
       setUnlocked(true);
       fetchAdminWorkspace().then((remoteWorkspace) => {
         const seededCatalogue = ensureProductCatalogue(remoteWorkspace);
@@ -574,6 +576,27 @@ export default function AdminPage() {
     );
   }, [searchTerm, workspace.requests]);
 
+  const filteredPieces = useMemo(() => {
+    const term = productSearchTerm.trim().toLowerCase();
+    if (!term) {
+      return workspace.pieces;
+    }
+
+    return workspace.pieces.filter((piece) =>
+      [
+        piece.title,
+        piece.sku,
+        piece.category,
+        piece.collection,
+        piece.availability,
+        formatColorList(piece.colors),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [productSearchTerm, workspace.pieces]);
+
   useEffect(() => {
     if (activeView === "overview") {
       return;
@@ -604,8 +627,8 @@ export default function AdminPage() {
           detail: "Awaiting review",
           icon: FileText,
         },
-        { label: "Portfolio Items", value: visiblePieces, detail: "Ready to feature", icon: Package },
-        { label: "Media Library", value: workspace.pieces.length, detail: "Uploaded pieces", icon: Upload },
+        { label: "Visible Products", value: visiblePieces, detail: "Live catalogue", icon: Package },
+        { label: "All Products", value: workspace.pieces.length, detail: "Ready to edit", icon: Upload },
       ];
     }
 
@@ -1179,9 +1202,17 @@ export default function AdminPage() {
               <article className="admin-panel">
                 <div className="admin-panel__heading">
                   <div>
-                    <p className="admin-kicker">Portfolio</p>
-                    <h3>Availability</h3>
+                    <p className="admin-kicker">Products</p>
+                    <h3>Catalogue</h3>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView("pieces")}
+                    className="admin-icon-button"
+                  >
+                    <Package size={15} />
+                    <span>Manage</span>
+                  </button>
                 </div>
                 <div className="admin-mini-list">
                   {workspace.pieces.length ? (
@@ -1197,7 +1228,7 @@ export default function AdminPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="admin-empty">No portfolio work added yet.</p>
+                    <p className="admin-empty">No products loaded yet.</p>
                   )}
                 </div>
               </article>
@@ -1369,9 +1400,18 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <label className="admin-search">
+                <Search size={15} />
+                <input
+                  value={productSearchTerm}
+                  onChange={(event) => setProductSearchTerm(event.target.value)}
+                  placeholder="Search product, SKU, category, colour"
+                />
+              </label>
+
               <div className="admin-piece-table">
-                {workspace.pieces.length ? (
-                  workspace.pieces.map((piece) => (
+                {filteredPieces.length ? (
+                  filteredPieces.map((piece) => (
                     <div className="admin-piece-row" key={piece.id}>
                     <div className="admin-piece-media">
                       {piece.image ? <img src={piece.image} alt="" /> : null}
@@ -1535,7 +1575,11 @@ export default function AdminPage() {
                   </div>
                   ))
                 ) : (
-                  <p className="admin-empty">No products yet.</p>
+                  <p className="admin-empty">
+                    {workspace.pieces.length
+                      ? "No products match that search."
+                      : "No products loaded yet."}
+                  </p>
                 )}
               </div>
             </article>
