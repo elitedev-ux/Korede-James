@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowLeft,
   BarChart3,
   CheckCircle2,
   Clock,
   FileText,
-  Eye,
-  EyeOff,
   History,
   LineChart,
   LockKeyhole,
@@ -13,6 +12,7 @@ import {
   Mail,
   Megaphone,
   Package,
+  Pencil,
   Plus,
   Search,
   Settings,
@@ -398,11 +398,69 @@ const crossRoleRequirements = [
 
 const defaultWorkspace = createEmptyAdminWorkspace();
 
+const emptyProductForm = {
+  title: "",
+  sku: "",
+  category: "Outerwear",
+  collection: "",
+  image: "",
+  colors: "White",
+  colorImages: {},
+  sizes: "S, M, L, XL",
+  availability: "Available",
+  visibility: "Visible",
+  ngnPrice: "2000",
+  usdPrice: "2",
+  description: "",
+  fabric: "",
+  care: "",
+};
+
 function createId(prefix) {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return `${prefix}-${crypto.randomUUID()}`;
   }
   return `${prefix}-${Date.now()}`;
+}
+
+function createProductForm(piece = {}) {
+  return {
+    ...emptyProductForm,
+    ...piece,
+    colors: formatColorList(piece.colors) || emptyProductForm.colors,
+    sizes: formatColorList(piece.sizes) || emptyProductForm.sizes,
+    colorImages: normalizeColorImages(piece.colorImages),
+    ngnPrice: String(
+      piece.prices?.NGN || parsePriceAmount(piece.budget) || emptyProductForm.ngnPrice,
+    ),
+    usdPrice: String(piece.prices?.USD ?? emptyProductForm.usdPrice),
+  };
+}
+
+function productFormToPiece(form, id) {
+  const ngnPrice = parsePriceAmount(form.ngnPrice) || 2000;
+  const usdPrice = parsePriceAmount(form.usdPrice) || 2;
+
+  return {
+    ...form,
+    id,
+    title: form.title.trim(),
+    sku: form.sku.trim() || id,
+    category: form.category.trim() || "Atelier",
+    collection: form.collection.trim(),
+    image: form.image.trim(),
+    colors: parseColorList(form.colors),
+    sizes: parseColorList(form.sizes),
+    colorImages: normalizeColorImages(form.colorImages),
+    prices: { NGN: ngnPrice, USD: usdPrice },
+    budget: `N${ngnPrice.toLocaleString("en-US")}`,
+    description: form.description.trim(),
+    fabric: form.fabric.trim(),
+    care: form.care.trim(),
+    source: form.source || "admin",
+    ngnPrice: undefined,
+    usdPrice: undefined,
+  };
 }
 
 function readWorkspace() {
@@ -465,6 +523,191 @@ function readFileAsDataUrl(file) {
   });
 }
 
+function ProductEditorForm({
+  product,
+  onChange,
+  onImageUpload,
+  onColorImageUpload,
+  onSubmit,
+  submitLabel,
+}) {
+  const colors = parseColorList(product.colors);
+
+  return (
+    <form className="admin-product-form" onSubmit={onSubmit}>
+      <div className="admin-product-form__media">
+        <div className="admin-product-form__preview">
+          {product.image ? (
+            <img src={product.image} alt={product.title || "Product preview"} />
+          ) : (
+            <Package size={30} />
+          )}
+        </div>
+        <label className="admin-upload">
+          <Upload size={15} />
+          <span>{product.image ? "Replace Main Image" : "Upload Main Image"}</span>
+          <input type="file" accept="image/*" onChange={onImageUpload} />
+        </label>
+        <p className="admin-product-form__hint">
+          Use a portrait product image with a clean background.
+        </p>
+      </div>
+
+      <div className="admin-product-form__fields">
+        <label>
+          Product name
+          <input
+            required
+            value={product.title}
+            onChange={(event) => onChange("title", event.target.value)}
+            placeholder="Product name"
+          />
+        </label>
+        <label>
+          SKU
+          <input
+            value={product.sku || ""}
+            onChange={(event) => onChange("sku", event.target.value)}
+            placeholder="KJ-SS26-001"
+          />
+        </label>
+        <label>
+          Category
+          <input
+            value={product.category}
+            onChange={(event) => onChange("category", event.target.value)}
+            placeholder="Outerwear"
+          />
+        </label>
+        <label>
+          Collection
+          <input
+            value={product.collection || ""}
+            onChange={(event) => onChange("collection", event.target.value)}
+            placeholder="Freedom 2026"
+          />
+        </label>
+        <label>
+          Nigerian price (NGN)
+          <input
+            inputMode="numeric"
+            value={product.ngnPrice}
+            onChange={(event) => onChange("ngnPrice", event.target.value)}
+            placeholder="2000"
+          />
+        </label>
+        <label>
+          International price (USD)
+          <input
+            inputMode="numeric"
+            value={product.usdPrice}
+            onChange={(event) => onChange("usdPrice", event.target.value)}
+            placeholder="2"
+          />
+        </label>
+        <label>
+          Colour attributes
+          <input
+            value={product.colors}
+            onChange={(event) => onChange("colors", event.target.value)}
+            placeholder="White, Red, Black"
+          />
+        </label>
+        <label>
+          Available sizes
+          <input
+            value={product.sizes}
+            onChange={(event) => onChange("sizes", event.target.value)}
+            placeholder="S, M, L, XL"
+          />
+        </label>
+        <label>
+          Availability
+          <select
+            value={product.availability}
+            onChange={(event) => onChange("availability", event.target.value)}
+          >
+            <option>Available</option>
+            <option>Commissioned</option>
+            <option>Archived</option>
+          </select>
+        </label>
+        <label>
+          Store visibility
+          <select
+            value={product.visibility || "Visible"}
+            onChange={(event) => onChange("visibility", event.target.value)}
+          >
+            <option>Visible</option>
+            <option>Hidden</option>
+          </select>
+        </label>
+        <label className="admin-product-form__full">
+          Description
+          <textarea
+            rows={5}
+            value={product.description || ""}
+            onChange={(event) => onChange("description", event.target.value)}
+            placeholder="Product description"
+          />
+        </label>
+        <label className="admin-product-form__full">
+          Fabric and composition
+          <textarea
+            rows={3}
+            value={product.fabric || ""}
+            onChange={(event) => onChange("fabric", event.target.value)}
+            placeholder="Fabric details"
+          />
+        </label>
+        <label className="admin-product-form__full">
+          Care instructions
+          <textarea
+            rows={3}
+            value={product.care || ""}
+            onChange={(event) => onChange("care", event.target.value)}
+            placeholder="Care instructions"
+          />
+        </label>
+      </div>
+
+      <div className="admin-colorway-manager admin-product-form__colourways">
+        <p>Colourway images</p>
+        <div className="admin-colorway-grid">
+          {(colors.length ? colors : ["White"]).map((color) => (
+            <div className="admin-colorway-card" key={color}>
+              <div className="admin-colorway-card__image">
+                {product.colorImages?.[color] ? (
+                  <img src={product.colorImages[color]} alt={`${color} colourway`} />
+                ) : product.image ? (
+                  <img src={product.image} alt={`${color} colourway`} />
+                ) : (
+                  <span>No image</span>
+                )}
+              </div>
+              <strong>{color}</strong>
+              <label className="admin-upload admin-upload--small">
+                <Upload size={14} />
+                <span>Upload {color}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => onColorImageUpload(color, event)}
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button className="admin-product-form__submit" type="submit">
+        <CheckCircle2 size={15} />
+        <span>{submitLabel}</span>
+      </button>
+    </form>
+  );
+}
+
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [accessCode, setAccessCode] = useState("");
@@ -478,20 +721,14 @@ export default function AdminPage() {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [productMode, setProductMode] = useState("menu");
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [editingProduct, setEditingProduct] = useState(null);
   const [saveState, setSaveState] = useState("Saved");
   const [newsletterSubscribers, setNewsletterSubscribers] = useState([]);
   const [newsletterError, setNewsletterError] = useState("");
   const saveTimerRef = useRef(null);
-  const [newPiece, setNewPiece] = useState({
-    title: "",
-    category: "Outerwear",
-    image: "",
-    colors: "White",
-    colorImages: {},
-    availability: "Available",
-    budget: "N2,000",
-    description: "",
-  });
+  const [newPiece, setNewPiece] = useState(emptyProductForm);
   const [newTeamMember, setNewTeamMember] = useState({
     name: "",
     email: "",
@@ -700,16 +937,6 @@ export default function AdminPage() {
         request.id === requestId
           ? { ...request, ...patch, updated: "Just now" }
           : request
-      ),
-    };
-    commitWorkspace(nextWorkspace);
-  };
-
-  const updatePiece = (pieceId, patch) => {
-    const nextWorkspace = {
-      ...workspace,
-      pieces: workspace.pieces.map((piece) =>
-        piece.id === pieceId ? { ...piece, ...patch } : piece
       ),
     };
     commitWorkspace(nextWorkspace);
@@ -934,60 +1161,66 @@ export default function AdminPage() {
       return;
     }
 
-    const nextPiece = {
-      id: createId("piece"),
-      title: newPiece.title.trim(),
-      category: newPiece.category,
-      image: newPiece.image.trim(),
-      colors: parseColorList(newPiece.colors),
-      colorImages: normalizeColorImages(newPiece.colorImages),
-      visibility: "Visible",
-      availability: newPiece.availability,
-      budget: newPiece.budget,
-      description: newPiece.description.trim(),
-    };
+    const pieceId = createId("piece");
+    const nextPiece = productFormToPiece(newPiece, pieceId);
 
     commitWorkspace({
       ...workspace,
       pieces: [nextPiece, ...workspace.pieces],
     });
-    setNewPiece({
-      title: "",
-      category: "Outerwear",
-      image: "",
-      colors: "White",
-      colorImages: {},
-      availability: "Available",
-      budget: "N2,000",
-      description: "",
-    });
+    setNewPiece(emptyProductForm);
+    setSelectedProductId(pieceId);
+    setEditingProduct(createProductForm(nextPiece));
+    setProductMode("edit");
   };
 
-  const handlePieceImageUpload = async (pieceId, event) => {
+  const openProductEditor = (piece) => {
+    setSelectedProductId(piece.id);
+    setEditingProduct(createProductForm(piece));
+    setProductMode("edit");
+  };
+
+  const handleSaveEditedProduct = (event) => {
+    event.preventDefault();
+    if (!editingProduct?.title?.trim() || !selectedProductId) {
+      return;
+    }
+
+    const savedPiece = productFormToPiece(editingProduct, selectedProductId);
+    commitWorkspace({
+      ...workspace,
+      pieces: workspace.pieces.map((piece) =>
+        piece.id === selectedProductId ? savedPiece : piece,
+      ),
+    });
+    setEditingProduct(createProductForm(savedPiece));
+  };
+
+  const handlePieceImageUpload = async (event) => {
     const [file] = event.target.files || [];
     if (!file) {
       return;
     }
 
     const image = await readFileAsDataUrl(file);
-    updatePiece(pieceId, { image });
+    setEditingProduct((product) => ({ ...product, image }));
     event.target.value = "";
   };
 
-  const handlePieceColorImageUpload = async (pieceId, color, event) => {
+  const handlePieceColorImageUpload = async (color, event) => {
     const [file] = event.target.files || [];
     if (!file) {
       return;
     }
 
     const image = await readFileAsDataUrl(file);
-    const piece = workspace.pieces.find((item) => item.id === pieceId);
-    updatePiece(pieceId, {
+    setEditingProduct((product) => ({
+      ...product,
       colorImages: {
-        ...(piece?.colorImages || {}),
+        ...(product?.colorImages || {}),
         [color]: image,
       },
-    });
+    }));
     event.target.value = "";
   };
 
@@ -1124,7 +1357,14 @@ export default function AdminPage() {
             return (
               <button
                 className={activeView === module.id ? "is-active" : ""}
-                onClick={() => setActiveView(module.id)}
+                onClick={() => {
+                  setActiveView(module.id);
+                  if (module.id === "pieces") {
+                    setProductMode("menu");
+                    setSelectedProductId("");
+                    setEditingProduct(null);
+                  }
+                }}
                 type="button"
                 key={module.id}
               >
@@ -1228,7 +1468,10 @@ export default function AdminPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setActiveView("pieces")}
+                    onClick={() => {
+                      setActiveView("pieces");
+                      setProductMode("menu");
+                    }}
                     className="admin-icon-button"
                   >
                     <Package size={15} />
@@ -1413,188 +1656,120 @@ export default function AdminPage() {
 
         {activeView === "pieces" ? (
           <section className="admin-pieces">
-            <article className="admin-panel admin-panel--wide">
-              <div className="admin-panel__heading">
-                <div>
-                  <p className="admin-kicker">Products</p>
-                  <h3>Product catalogue</h3>
-                </div>
-              </div>
-
-              <label className="admin-search">
-                <Search size={15} />
-                <input
-                  value={productSearchTerm}
-                  onChange={(event) => setProductSearchTerm(event.target.value)}
-                  placeholder="Search product, SKU, category, colour"
-                />
-              </label>
-
-              <div className="admin-piece-table">
-                {filteredPieces.length ? (
-                  filteredPieces.map((piece) => (
-                    <div className="admin-piece-row" key={piece.id}>
-                    <div className="admin-piece-media">
-                      {piece.image ? <img src={piece.image} alt="" /> : null}
-                      <label className="admin-upload admin-upload--small">
-                        <Upload size={14} />
-                        <span>Upload</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(event) =>
-                            handlePieceImageUpload(piece.id, event)
-                          }
-                        />
-                      </label>
-                    </div>
-                    <div className="admin-piece-fields">
-                      <div className="admin-piece-row__title">
-                        <strong>{piece.title}</strong>
-                        <span className={availabilityClassName(piece.availability)}>
-                          {piece.availability}
-                        </span>
-                      </div>
-                      <label>
-                        Title
-                        <input
-                          value={piece.title}
-                          onChange={(event) =>
-                            updatePiece(piece.id, {
-                              title: event.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Category
-                        <input
-                          value={piece.category}
-                          onChange={(event) =>
-                            updatePiece(piece.id, {
-                              category: event.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Registered Value
-                        <input
-                          value={piece.budget || ""}
-                          onChange={(event) =>
-                            updatePiece(piece.id, {
-                              budget: event.target.value,
-                            })
-                          }
-                          placeholder="N2,000.00"
-                        />
-                      </label>
-                      <label>
-                        Colour Attributes
-                        <input
-                          value={formatColorList(piece.colors)}
-                          onChange={(event) =>
-                            updatePiece(piece.id, {
-                              colors: parseColorList(event.target.value),
-                            })
-                          }
-                          placeholder="White, Red, Black"
-                        />
-                      </label>
-                      <label>
-                        Availability
-                        <select
-                          value={piece.availability}
-                          onChange={(event) =>
-                            updatePiece(piece.id, {
-                              availability: event.target.value,
-                            })
-                          }
-                        >
-                          <option>Available</option>
-                          <option>Commissioned</option>
-                          <option>Archived</option>
-                        </select>
-                      </label>
-                      <label className="admin-piece-description">
-                        Description
-                        <textarea
-                          rows={3}
-                          value={piece.description || ""}
-                          onChange={(event) =>
-                            updatePiece(piece.id, {
-                              description: event.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <div className="admin-colorway-manager">
-                        <p>Colourway Images</p>
-                        <div className="admin-colorway-grid">
-                          {getPieceColors(piece).map((color) => (
-                            <div className="admin-colorway-card" key={color}>
-                              <div className="admin-colorway-card__image">
-                                {piece.colorImages?.[color] ? (
-                                  <img src={piece.colorImages[color]} alt="" />
-                                ) : piece.image ? (
-                                  <img src={piece.image} alt="" />
-                                ) : (
-                                  <span>No image</span>
-                                )}
-                              </div>
-                              <strong>{color}</strong>
-                              <label className="admin-upload admin-upload--small">
-                                <Upload size={14} />
-                                <span>Upload {color}</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(event) =>
-                                    handlePieceColorImageUpload(
-                                      piece.id,
-                                      color,
-                                      event,
-                                    )
-                                  }
-                                />
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="admin-piece-actions">
-                      <button
-                        type="button"
-                        className="admin-visibility"
-                        onClick={() =>
-                          updatePiece(piece.id, {
-                            visibility:
-                              piece.visibility === "Visible"
-                                ? "Hidden"
-                                : "Visible",
-                          })
-                        }
-                      >
-                        {piece.visibility === "Visible" ? (
-                          <Eye size={15} />
-                        ) : (
-                          <EyeOff size={15} />
-                        )}
-                        <span>{piece.visibility}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-delete-button admin-delete-button--piece"
-                        aria-label={`Remove ${piece.title}`}
-                        onClick={() => removePiece(piece.id)}
-                      >
-                        <Trash2 size={14} />
-                        <span>Remove</span>
-                      </button>
-                    </div>
+            {productMode === "menu" ? (
+              <article className="admin-panel admin-panel--wide admin-product-home">
+                <div className="admin-panel__heading">
+                  <div>
+                    <p className="admin-kicker">Product Management</p>
+                    <h3>What would you like to do?</h3>
                   </div>
-                  ))
+                  <span className="admin-product-count">
+                    {workspace.pieces.length} products
+                  </span>
+                </div>
+                <div className="admin-product-paths">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewPiece(emptyProductForm);
+                      setProductMode("create");
+                    }}
+                  >
+                    <Plus size={22} />
+                    <span>01</span>
+                    <strong>Create New Product</strong>
+                    <small>Add product details, pricing, images, sizes and colourways.</small>
+                  </button>
+                  <button type="button" onClick={() => setProductMode("catalogue")}>
+                    <Pencil size={22} />
+                    <span>02</span>
+                    <strong>Edit Products</strong>
+                    <small>Browse the catalogue and select one product to update.</small>
+                  </button>
+                </div>
+              </article>
+            ) : null}
+
+            {productMode === "create" ? (
+              <article className="admin-panel admin-panel--wide">
+                <div className="admin-panel__heading admin-product-heading">
+                  <div>
+                    <p className="admin-kicker">New Product</p>
+                    <h3>Create product</h3>
+                  </div>
+                  <button
+                    className="admin-product-back"
+                    type="button"
+                    onClick={() => setProductMode("menu")}
+                  >
+                    <ArrowLeft size={15} />
+                    <span>Products</span>
+                  </button>
+                </div>
+                <ProductEditorForm
+                  product={newPiece}
+                  onChange={(field, value) =>
+                    setNewPiece((product) => ({ ...product, [field]: value }))
+                  }
+                  onImageUpload={handleNewPieceImageUpload}
+                  onColorImageUpload={handleNewPieceColorImageUpload}
+                  onSubmit={handleAddPiece}
+                  submitLabel="Create Product"
+                />
+              </article>
+            ) : null}
+
+            {productMode === "catalogue" ? (
+              <article className="admin-panel admin-panel--wide">
+                <div className="admin-panel__heading admin-product-heading">
+                  <div>
+                    <p className="admin-kicker">Edit Products</p>
+                    <h3>Select a product</h3>
+                  </div>
+                  <button
+                    className="admin-product-back"
+                    type="button"
+                    onClick={() => setProductMode("menu")}
+                  >
+                    <ArrowLeft size={15} />
+                    <span>Products</span>
+                  </button>
+                </div>
+                <label className="admin-search admin-product-search">
+                  <Search size={15} />
+                  <input
+                    value={productSearchTerm}
+                    onChange={(event) => setProductSearchTerm(event.target.value)}
+                    placeholder="Search product, SKU, category, colour"
+                  />
+                </label>
+                {filteredPieces.length ? (
+                  <div className="admin-product-catalogue">
+                    {filteredPieces.map((piece) => (
+                      <button
+                        type="button"
+                        className="admin-product-card"
+                        key={piece.id}
+                        onClick={() => openProductEditor(piece)}
+                      >
+                        <div className="admin-product-card__image">
+                          {piece.image ? (
+                            <img src={piece.image} alt={piece.title} />
+                          ) : (
+                            <Package size={26} />
+                          )}
+                          <span className={availabilityClassName(piece.availability)}>
+                            {piece.availability}
+                          </span>
+                        </div>
+                        <div className="admin-product-card__details">
+                          <span>{piece.sku || piece.category}</span>
+                          <strong>{piece.title}</strong>
+                          <small>{piece.collection || piece.category}</small>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 ) : (
                   <p className="admin-empty">
                     {workspace.pieces.length
@@ -1602,143 +1777,59 @@ export default function AdminPage() {
                       : "No products loaded yet."}
                   </p>
                 )}
-              </div>
-            </article>
+              </article>
+            ) : null}
 
-            <article className="admin-panel">
-              <div className="admin-panel__heading">
-                <div>
-                  <p className="admin-kicker">New Product</p>
-                  <h3>Add product</h3>
-                </div>
-              </div>
-              <form className="admin-add-form" onSubmit={handleAddPiece}>
-                <label>
-                  Title
-                  <input
-                    value={newPiece.title}
-                    onChange={(event) =>
-                      setNewPiece({ ...newPiece, title: event.target.value })
-                    }
-                    placeholder="Work title"
-                  />
-                </label>
-                <label>
-                  Category
-                  <input
-                    value={newPiece.category}
-                    onChange={(event) =>
-                      setNewPiece({
-                        ...newPiece,
-                        category: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Registered Value
-                  <input
-                    value={newPiece.budget}
-                    onChange={(event) =>
-                      setNewPiece({
-                        ...newPiece,
-                        budget: event.target.value,
-                      })
-                    }
-                    placeholder="N2,000.00"
-                  />
-                </label>
-                <label>
-                  Colour Attributes
-                  <input
-                    value={newPiece.colors}
-                    onChange={(event) =>
-                      setNewPiece({
-                        ...newPiece,
-                        colors: event.target.value,
-                      })
-                    }
-                    placeholder="White, Red, Black"
-                  />
-                </label>
-                <div className="admin-new-image">
-                  {newPiece.image ? <img src={newPiece.image} alt="" /> : null}
-                  <label className="admin-upload">
-                    <Upload size={16} />
-                    <span>Upload Image</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleNewPieceImageUpload}
-                    />
-                  </label>
-                </div>
-                <div className="admin-colorway-manager">
-                  <p>Colourway Images</p>
-                  <div className="admin-colorway-grid">
-                    {parseColorList(newPiece.colors).map((color) => (
-                      <div className="admin-colorway-card" key={color}>
-                        <div className="admin-colorway-card__image">
-                          {newPiece.colorImages[color] ? (
-                            <img src={newPiece.colorImages[color]} alt="" />
-                          ) : newPiece.image ? (
-                            <img src={newPiece.image} alt="" />
-                          ) : (
-                            <span>No image</span>
-                          )}
-                        </div>
-                        <strong>{color}</strong>
-                        <label className="admin-upload admin-upload--small">
-                          <Upload size={14} />
-                          <span>Upload {color}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) =>
-                              handleNewPieceColorImageUpload(color, event)
-                            }
-                          />
-                        </label>
-                      </div>
-                    ))}
+            {productMode === "edit" && editingProduct ? (
+              <article className="admin-panel admin-panel--wide">
+                <div className="admin-panel__heading admin-product-heading">
+                  <div>
+                    <p className="admin-kicker">Edit Product</p>
+                    <h3>{editingProduct.title}</h3>
                   </div>
-                </div>
-                <label>
-                  Availability
-                  <select
-                    value={newPiece.availability}
-                    onChange={(event) =>
-                      setNewPiece({
-                        ...newPiece,
-                        availability: event.target.value,
-                      })
-                    }
+                  <button
+                    className="admin-product-back"
+                    type="button"
+                    onClick={() => {
+                      setProductMode("catalogue");
+                      setSelectedProductId("");
+                      setEditingProduct(null);
+                    }}
                   >
-                    <option>Available</option>
-                    <option>Commissioned</option>
-                    <option>Archived</option>
-                  </select>
-                </label>
-                <label>
-                  Description
-                  <textarea
-                    rows={4}
-                    value={newPiece.description}
-                    onChange={(event) =>
-                      setNewPiece({
-                        ...newPiece,
-                        description: event.target.value,
-                      })
-                    }
-                    placeholder="Short private description for the piece"
-                  />
-                </label>
-                <button type="submit">
-                  <Plus size={15} />
-                  <span>Add Product</span>
-                </button>
-              </form>
-            </article>
+                    <ArrowLeft size={15} />
+                    <span>All Products</span>
+                  </button>
+                </div>
+                <ProductEditorForm
+                  product={editingProduct}
+                  onChange={(field, value) =>
+                    setEditingProduct((product) => ({ ...product, [field]: value }))
+                  }
+                  onImageUpload={handlePieceImageUpload}
+                  onColorImageUpload={handlePieceColorImageUpload}
+                  onSubmit={handleSaveEditedProduct}
+                  submitLabel="Save Product"
+                />
+                <div className="admin-product-danger">
+                  <div>
+                    <strong>Remove product</strong>
+                    <span>This removes the product from the public catalogue.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      removePiece(selectedProductId);
+                      setProductMode("catalogue");
+                      setSelectedProductId("");
+                      setEditingProduct(null);
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    <span>Remove Product</span>
+                  </button>
+                </div>
+              </article>
+            ) : null}
           </section>
         ) : null}
 
@@ -2449,11 +2540,9 @@ function formatColorList(value) {
   return parseColorList(value).join(", ");
 }
 
-function getPieceColors(piece) {
-  const colors = parseColorList(piece?.colors);
-  const colorImageNames = Object.keys(piece?.colorImages || {});
-  const merged = [...new Set([...colors, ...colorImageNames])].filter(Boolean);
-  return merged.length ? merged : ["White"];
+function parsePriceAmount(value) {
+  const amount = Number(String(value ?? "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(amount) ? Math.max(0, Math.round(amount)) : 0;
 }
 
 function normalizeColorImages(value) {
