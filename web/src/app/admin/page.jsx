@@ -511,7 +511,7 @@ function ensureProductCatalogue(workspace) {
 }
 
 async function persistWorkspace(workspace) {
-  return saveAdminWorkspace(workspace);
+  return saveAdminWorkspace(workspace, { strict: true });
 }
 
 function readFileAsDataUrl(file) {
@@ -523,6 +523,45 @@ function readFileAsDataUrl(file) {
   });
 }
 
+async function readOptimizedImageAsDataUrl(file) {
+  const fallbackDataUrl = await readFileAsDataUrl(file);
+
+  if (
+    typeof document === "undefined" ||
+    typeof Image === "undefined" ||
+    !file.type?.startsWith("image/")
+  ) {
+    return fallbackDataUrl;
+  }
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = fallbackDataUrl;
+    });
+    const maxDimension = 1200;
+    const largestSide = Math.max(image.width, image.height);
+    const scale = largestSide > maxDimension ? maxDimension / largestSide : 1;
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return fallbackDataUrl;
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", 0.78);
+  } catch {
+    return fallbackDataUrl;
+  }
+}
+
 function ProductEditorForm({
   product,
   onChange,
@@ -530,8 +569,18 @@ function ProductEditorForm({
   onColorImageUpload,
   onSubmit,
   submitLabel,
+  saveStatus = "idle",
+  saveError = "",
 }) {
   const colors = parseColorList(product.colors);
+  const isSaving = saveStatus === "saving";
+  const buttonLabel =
+    saveStatus === "saving"
+      ? "Saving Product"
+      : saveStatus === "saved"
+        ? "Product Saved"
+        : submitLabel;
+  const ButtonIcon = saveStatus === "saving" ? Clock : CheckCircle2;
 
   return (
     <form className="admin-product-form" onSubmit={onSubmit}>
@@ -700,10 +749,19 @@ function ProductEditorForm({
         </div>
       </div>
 
-      <button className="admin-product-form__submit" type="submit">
-        <CheckCircle2 size={15} />
-        <span>{submitLabel}</span>
-      </button>
+      <div className="admin-product-form__actions">
+        {saveError ? (
+          <p className="admin-product-form__error">{saveError}</p>
+        ) : null}
+        <button
+          className={`admin-product-form__submit is-${saveStatus}`}
+          type="submit"
+          disabled={isSaving}
+        >
+          <ButtonIcon size={15} />
+          <span>{buttonLabel}</span>
+        </button>
+      </div>
     </form>
   );
 }
@@ -724,6 +782,8 @@ export default function AdminPage() {
   const [productMode, setProductMode] = useState("menu");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [editingProduct, setEditingProduct] = useState(null);
+  const [productSaveStatus, setProductSaveStatus] = useState("idle");
+  const [productSaveError, setProductSaveError] = useState("");
   const [saveState, setSaveState] = useState("Saved");
   const [newsletterSubscribers, setNewsletterSubscribers] = useState([]);
   const [newsletterError, setNewsletterError] = useState("");
@@ -914,7 +974,10 @@ export default function AdminPage() {
     ];
   }, [currentRole, workspace]);
 
-  const commitWorkspace = (nextWorkspace) => {
+  const commitWorkspace = (
+    nextWorkspace,
+    { onSuccess, onError, throwOnError = false } = {},
+  ) => {
     setWorkspace(nextWorkspace);
     setSaveState("Saving...");
 
@@ -922,12 +985,25 @@ export default function AdminPage() {
       window.clearTimeout(saveTimerRef.current);
     }
 
-    persistWorkspace(nextWorkspace).then((savedWorkspace) => {
-      setWorkspace(savedWorkspace);
-      saveTimerRef.current = window.setTimeout(() => {
+    return persistWorkspace(nextWorkspace)
+      .then((savedWorkspace) => {
+        setWorkspace(savedWorkspace);
         setSaveState("Saved just now");
-      }, 500);
-    });
+        onSuccess?.(savedWorkspace);
+        return savedWorkspace;
+      })
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : "Workspace could not be saved.";
+        setSaveState("Save failed");
+        onError?.(message);
+
+        if (throwOnError) {
+          throw error;
+        }
+
+        return null;
+      });
   };
 
   const updateRequest = (requestId, patch) => {
@@ -1155,7 +1231,7 @@ export default function AdminPage() {
     });
   };
 
-  const handleAddPiece = (event) => {
+  const handleAddPiece = async (event) => {
     event.preventDefault();
     if (!newPiece.title.trim()) {
       return;
@@ -1163,37 +1239,70 @@ export default function AdminPage() {
 
     const pieceId = createId("piece");
     const nextPiece = productFormToPiece(newPiece, pieceId);
-
-    commitWorkspace({
+    const nextWorkspace = {
       ...workspace,
       pieces: [nextPiece, ...workspace.pieces],
-    });
-    setNewPiece(emptyProductForm);
-    setSelectedProductId(pieceId);
-    setEditingProduct(createProductForm(nextPiece));
-    setProductMode("edit");
+    };
+
+    setProductSaveStatus("saving");
+    setProductSaveError("");
+
+    try {
+      await commitWorkspace(nextWorkspace, { throwOnError: true });
+      setNewPiece(emptyProductForm);
+      setSelectedProductId(pieceId);
+      setEditingProduct(createProductForm(nextPiece));
+      setProductMode("edit");
+      setProductSaveStatus("saved");
+      window.setTimeout(() => setProductSaveStatus("idle"), 1400);
+    } catch (error) {
+      setProductSaveStatus("error");
+      setProductSaveError(
+        error instanceof Error
+          ? error.message
+          : "Product could not be created. Please try again.",
+      );
+    }
   };
 
   const openProductEditor = (piece) => {
     setSelectedProductId(piece.id);
     setEditingProduct(createProductForm(piece));
+    setProductSaveStatus("idle");
+    setProductSaveError("");
     setProductMode("edit");
   };
 
-  const handleSaveEditedProduct = (event) => {
+  const handleSaveEditedProduct = async (event) => {
     event.preventDefault();
     if (!editingProduct?.title?.trim() || !selectedProductId) {
       return;
     }
 
     const savedPiece = productFormToPiece(editingProduct, selectedProductId);
-    commitWorkspace({
+    const nextWorkspace = {
       ...workspace,
       pieces: workspace.pieces.map((piece) =>
         piece.id === selectedProductId ? savedPiece : piece,
       ),
-    });
-    setEditingProduct(createProductForm(savedPiece));
+    };
+
+    setProductSaveStatus("saving");
+    setProductSaveError("");
+
+    try {
+      await commitWorkspace(nextWorkspace, { throwOnError: true });
+      setEditingProduct(createProductForm(savedPiece));
+      setProductSaveStatus("saved");
+      window.setTimeout(() => setProductSaveStatus("idle"), 1400);
+    } catch (error) {
+      setProductSaveStatus("error");
+      setProductSaveError(
+        error instanceof Error
+          ? error.message
+          : "Product could not be saved. Please try again.",
+      );
+    }
   };
 
   const handlePieceImageUpload = async (event) => {
@@ -1202,7 +1311,7 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readFileAsDataUrl(file);
+    const image = await readOptimizedImageAsDataUrl(file);
     setEditingProduct((product) => ({ ...product, image }));
     event.target.value = "";
   };
@@ -1213,7 +1322,7 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readFileAsDataUrl(file);
+    const image = await readOptimizedImageAsDataUrl(file);
     setEditingProduct((product) => ({
       ...product,
       colorImages: {
@@ -1230,7 +1339,7 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readFileAsDataUrl(file);
+    const image = await readOptimizedImageAsDataUrl(file);
     setNewPiece((currentPiece) => ({ ...currentPiece, image }));
     event.target.value = "";
   };
@@ -1241,7 +1350,7 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readFileAsDataUrl(file);
+    const image = await readOptimizedImageAsDataUrl(file);
     setNewPiece((currentPiece) => ({
       ...currentPiece,
       colorImages: {
@@ -1672,6 +1781,10 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => {
                       setNewPiece(emptyProductForm);
+                      setSelectedProductId("");
+                      setEditingProduct(null);
+                      setProductSaveStatus("idle");
+                      setProductSaveError("");
                       setProductMode("create");
                     }}
                   >
@@ -1680,7 +1793,14 @@ export default function AdminPage() {
                     <strong>Create New Product</strong>
                     <small>Add product details, pricing, images, sizes and colourways.</small>
                   </button>
-                  <button type="button" onClick={() => setProductMode("catalogue")}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProductSaveStatus("idle");
+                      setProductSaveError("");
+                      setProductMode("catalogue");
+                    }}
+                  >
                     <Pencil size={22} />
                     <span>02</span>
                     <strong>Edit Products</strong>
@@ -1700,7 +1820,11 @@ export default function AdminPage() {
                   <button
                     className="admin-product-back"
                     type="button"
-                    onClick={() => setProductMode("menu")}
+                    onClick={() => {
+                      setProductMode("menu");
+                      setProductSaveStatus("idle");
+                      setProductSaveError("");
+                    }}
                   >
                     <ArrowLeft size={15} />
                     <span>Products</span>
@@ -1715,6 +1839,8 @@ export default function AdminPage() {
                   onColorImageUpload={handleNewPieceColorImageUpload}
                   onSubmit={handleAddPiece}
                   submitLabel="Create Product"
+                  saveStatus={productSaveStatus}
+                  saveError={productSaveError}
                 />
               </article>
             ) : null}
@@ -1729,7 +1855,11 @@ export default function AdminPage() {
                   <button
                     className="admin-product-back"
                     type="button"
-                    onClick={() => setProductMode("menu")}
+                    onClick={() => {
+                      setProductMode("menu");
+                      setProductSaveStatus("idle");
+                      setProductSaveError("");
+                    }}
                   >
                     <ArrowLeft size={15} />
                     <span>Products</span>
@@ -1794,6 +1924,8 @@ export default function AdminPage() {
                       setProductMode("catalogue");
                       setSelectedProductId("");
                       setEditingProduct(null);
+                      setProductSaveStatus("idle");
+                      setProductSaveError("");
                     }}
                   >
                     <ArrowLeft size={15} />
@@ -1809,6 +1941,8 @@ export default function AdminPage() {
                   onColorImageUpload={handlePieceColorImageUpload}
                   onSubmit={handleSaveEditedProduct}
                   submitLabel="Save Product"
+                  saveStatus={productSaveStatus}
+                  saveError={productSaveError}
                 />
                 <div className="admin-product-danger">
                   <div>

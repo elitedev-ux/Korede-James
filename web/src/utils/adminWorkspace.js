@@ -47,6 +47,15 @@ export function writeAdminWorkspace(workspace) {
   );
 }
 
+function safeWriteAdminWorkspace(workspace) {
+  try {
+    writeAdminWorkspace(workspace);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchAdminWorkspace() {
   try {
     const data = await apiRequest("/api/admin-workspace", {
@@ -59,19 +68,24 @@ export async function fetchAdminWorkspace() {
   }
 }
 
-export async function saveAdminWorkspace(workspace) {
-  writeAdminWorkspace(workspace);
+export async function saveAdminWorkspace(workspace, { strict = false } = {}) {
+  const normalizedWorkspace = normalizeAdminWorkspace(workspace);
+  safeWriteAdminWorkspace(normalizedWorkspace);
 
   try {
     const data = await apiRequest("/api/admin-workspace", {
       method: "PATCH",
       headers: adminHeaders(),
-      body: JSON.stringify({ workspace }),
+      body: JSON.stringify({ workspace: normalizedWorkspace }),
     });
-    writeAdminWorkspace(data.workspace);
+    safeWriteAdminWorkspace(data.workspace);
     return normalizeAdminWorkspace(data.workspace);
-  } catch {
-    return normalizeAdminWorkspace(workspace);
+  } catch (error) {
+    if (strict) {
+      throw error;
+    }
+
+    return normalizedWorkspace;
   }
 }
 

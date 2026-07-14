@@ -1051,14 +1051,34 @@
   grid-column: 1 / -1;
 }
 
+.admin-product-form__actions {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-product-form__error {
+  justify-self: stretch;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #d68a8a;
+  background: #fff6f6;
+  color: #8d1f1f;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .admin-product-form__submit {
-  grid-column: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-height: 48px;
-  padding: 0 24px;
+  min-width: min(100%, 280px);
+  min-height: 52px;
+  padding: 0 28px;
   border: 1px solid var(--admin-ink);
   background: var(--admin-ink);
   color: #fff;
@@ -1066,6 +1086,42 @@
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.admin-product-form__submit:hover:not(:disabled) {
+  background: #fff;
+  color: var(--admin-ink);
+}
+
+.admin-product-form__submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.admin-product-form__submit:disabled {
+  cursor: progress;
+  opacity: 0.82;
+}
+
+.admin-product-form__submit.is-saving {
+  background: #2a2a2a;
+  border-color: #2a2a2a;
+}
+
+.admin-product-form__submit.is-saved {
+  background: #0d5c3a;
+  border-color: #0d5c3a;
+}
+
+.admin-product-form__submit.is-error {
+  background: #8d1f1f;
+  border-color: #8d1f1f;
 }
 
 .admin-product-danger {
@@ -1916,10 +1972,14 @@
     min-height: 220px;
   }
 
-  .admin-product-form__submit,
+  .admin-product-form__actions,
   .admin-product-form__colourways,
   .admin-product-form__full {
     grid-column: 1;
+  }
+
+  .admin-product-form__actions {
+    justify-items: stretch;
   }
 
   .admin-product-danger {

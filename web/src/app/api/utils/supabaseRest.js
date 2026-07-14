@@ -7,7 +7,7 @@ export function fail(message, status = 400) {
 }
 
 const MAX_JSON_BODY_BYTES = 256 * 1024;
-const MAX_ADMIN_BODY_BYTES = 1024 * 1024;
+const MAX_ADMIN_BODY_BYTES = 8 * 1024 * 1024;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const rateLimitBuckets = new Map();
 
