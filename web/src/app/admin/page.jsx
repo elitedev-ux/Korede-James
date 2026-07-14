@@ -435,6 +435,8 @@ function normalizeWorkspace(workspace) {
     newsletter: workspace.newsletter || defaultWorkspace.newsletter,
     newsletterSegments:
       workspace.newsletterSegments || defaultWorkspace.newsletterSegments,
+    newsletterUpdates:
+      workspace.newsletterUpdates || defaultWorkspace.newsletterUpdates,
     settings: workspace.settings || defaultWorkspace.settings,
     audit: workspace.audit || defaultWorkspace.audit,
   };
@@ -773,9 +775,24 @@ export default function AdminPage() {
               message: payload.notes,
             });
             setNewsletterError("");
+            const nextWorkspace = {
+              ...workspace,
+              newsletterUpdates: [
+                {
+                  id: createId("newsletter-update"),
+                  kind: "update",
+                  title: payload.title,
+                  subtitle: payload.subtitle,
+                  meta: `Sent to ${result.sent || 0}/${result.total || 0}`,
+                  notes: payload.notes,
+                  sentAt: new Date().toISOString(),
+                },
+                ...(workspace.newsletterUpdates || []),
+              ],
+            };
             commitWorkspace(
               appendAudit(
-                workspace,
+                nextWorkspace,
                 result.message || `Sent Newsletter Update to ${result.sent || 0} subscribers`
               )
             );
@@ -830,7 +847,11 @@ export default function AdminPage() {
         return;
       }
 
-      if (payload.kind === "segment" || payload.mode === "delete") {
+      if (
+        payload.kind === "segment" ||
+        payload.kind === "update" ||
+        payload.mode === "delete"
+      ) {
         const nextWorkspace = applyModulePayload(workspace, view, payload);
         commitWorkspace(
           appendAudit(
@@ -1901,6 +1922,16 @@ function RequestRows({ requests, selectedRequestId, onSelect }) {
   );
 }
 
+function rowKindLabel(kind) {
+  const labels = {
+    update: "Recently sent update",
+    segment: "Audience segment",
+    subscriber: "Subscriber",
+  };
+
+  return labels[kind] || kind;
+}
+
 function ModulePanel({ view, role, workspace, onSave, notice }) {
   const module = adminModules.find((item) => item.id === view);
   const summary = moduleSummaries[view];
@@ -2032,7 +2063,10 @@ function ModulePanel({ view, role, workspace, onSave, notice }) {
               >
                 <div>
                   <strong>{row.title}</strong>
-                  <span>{row.subtitle}</span>
+                  <span>
+                    {row.kind ? `${rowKindLabel(row.kind)} / ` : ""}
+                    {row.subtitle}
+                  </span>
                 </div>
                 <em>{row.meta}</em>
               </button>
@@ -2040,7 +2074,10 @@ function ModulePanel({ view, role, workspace, onSave, notice }) {
               <div className="admin-data-row" key={row.id || row.title}>
               <div>
                 <strong>{row.title}</strong>
-                <span>{row.subtitle}</span>
+                <span>
+                  {row.kind ? `${rowKindLabel(row.kind)} / ` : ""}
+                  {row.subtitle}
+                </span>
               </div>
               <em>{row.meta}</em>
               </div>
@@ -2291,6 +2328,15 @@ function getModuleRows(view, workspace) {
   }
 
   if (view === "newsletter") {
+    const updateRows = (workspace.newsletterUpdates || []).map((update) => ({
+      id: update.id,
+      kind: "update",
+      title: update.title,
+      subtitle: update.subtitle || "Sent newsletter update",
+      meta: update.meta || "Sent",
+      notes: update.notes || "",
+      timestamp: update.sentAt,
+    }));
     const segmentRows = (workspace.newsletterSegments || []).map((segment) => ({
       id: segment.id,
       kind: "segment",
@@ -2310,7 +2356,7 @@ function getModuleRows(view, workspace) {
         : "",
     }));
 
-    return [...segmentRows, ...subscriberRows];
+    return [...updateRows, ...segmentRows, ...subscriberRows];
   }
 
   if (view === "analytics") {
@@ -2614,6 +2660,24 @@ function updateModuleRecord(workspace, view, payload) {
   }
 
   if (view === "newsletter") {
+    if (payload.kind === "update") {
+      return {
+        ...workspace,
+        newsletterUpdates: (workspace.newsletterUpdates || []).map((update) =>
+          update.id === payload.id
+            ? {
+                ...update,
+                title: payload.title,
+                subtitle: payload.subtitle,
+                meta: payload.meta,
+                notes: payload.notes,
+                kind: "update",
+              }
+            : update
+        ),
+      };
+    }
+
     return {
       ...workspace,
       newsletterSegments: (workspace.newsletterSegments || []).map((segment) =>
@@ -2684,6 +2748,15 @@ function deleteModuleRecord(workspace, view, payload) {
   }
 
   if (view === "newsletter") {
+    if (payload.kind === "update") {
+      return {
+        ...workspace,
+        newsletterUpdates: (workspace.newsletterUpdates || []).filter(
+          (update) => update.id !== payload.id
+        ),
+      };
+    }
+
     return {
       ...workspace,
       newsletterSegments: (workspace.newsletterSegments || []).filter(

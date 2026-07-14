@@ -25,6 +25,7 @@ export function createEmptyWorkspace() {
     promotions: [],
     newsletter: [],
     newsletterSegments: [],
+    newsletterUpdates: [],
     settings: [],
     audit: [],
   };
@@ -49,6 +50,7 @@ export function normalizeWorkspace(workspace) {
     promotions: Array.isArray(value.promotions) ? value.promotions : [],
     newsletter: Array.isArray(value.newsletter) ? value.newsletter : [],
     newsletterSegments: Array.isArray(value.newsletterSegments) ? value.newsletterSegments : [],
+    newsletterUpdates: Array.isArray(value.newsletterUpdates) ? value.newsletterUpdates : [],
     settings: Array.isArray(value.settings) ? value.settings : [],
     audit: Array.isArray(value.audit) ? value.audit : [],
   };

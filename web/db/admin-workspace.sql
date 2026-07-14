@@ -39,6 +39,8 @@ values (
     "content": [],
     "promotions": [],
     "newsletter": [],
+    "newsletterSegments": [],
+    "newsletterUpdates": [],
     "settings": [],
     "audit": []
   }'::jsonb
