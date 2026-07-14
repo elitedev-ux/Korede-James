@@ -56,7 +56,7 @@ function scopeWorkspaceUpdate({ previousWorkspace, nextWorkspace, role }) {
   }
 
   const allowedKeysByRole = {
-    editor: ["pieces", "content", "promotions"],
+    editor: ["pieces", "content", "promotions", "newsletterSegments"],
     studio: ["requests", "measurements", "materials"],
     support: ["requests", "customers", "orders"],
   };

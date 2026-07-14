@@ -16,6 +16,7 @@ export function createEmptyAdminWorkspace() {
     content: [],
     promotions: [],
     newsletter: [],
+    newsletterSegments: [],
     settings: [],
     audit: [],
   };
@@ -313,6 +314,7 @@ function normalizeAdminWorkspace(workspace) {
     content: workspace.content || [],
     promotions: workspace.promotions || [],
     newsletter: workspace.newsletter || [],
+    newsletterSegments: workspace.newsletterSegments || [],
     settings: workspace.settings || [],
     audit: workspace.audit || [],
   };

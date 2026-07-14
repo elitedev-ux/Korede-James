@@ -1031,6 +1031,25 @@
   text-transform: uppercase;
 }
 
+.admin-module-editor__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-delete-button--module {
+  grid-template-columns: auto auto;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  color: #7b2424;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .admin-role-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1289,6 +1308,7 @@
   .admin-role-grid,
   .admin-code-grid,
   .admin-action-grid,
+  .admin-module-editor__actions,
   .admin-team-member,
   .admin-data-row,
   .admin-permission-row {

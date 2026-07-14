@@ -433,6 +433,8 @@ function normalizeWorkspace(workspace) {
     content: workspace.content || defaultWorkspace.content,
     promotions: workspace.promotions || defaultWorkspace.promotions,
     newsletter: workspace.newsletter || defaultWorkspace.newsletter,
+    newsletterSegments:
+      workspace.newsletterSegments || defaultWorkspace.newsletterSegments,
     settings: workspace.settings || defaultWorkspace.settings,
     audit: workspace.audit || defaultWorkspace.audit,
   };
@@ -765,10 +767,54 @@ export default function AdminPage() {
           return;
         }
 
+        const nextWorkspace = applyModulePayload(workspace, view, payload);
         commitWorkspace(
           appendAudit(
-            workspace,
+            nextWorkspace,
             `${payload.action} in ${viewTitle(view)}: ${payload.notes || payload.title}`
+          )
+        );
+        return;
+      }
+
+      if (payload.mode === "delete" && payload.kind === "subscriber") {
+        setSaveState("Saving...");
+        try {
+          const updatedSubscriber = await updateNewsletterSubscriber({
+            email: payload.title,
+            status: "unsubscribed",
+            source: payload.subtitle,
+          });
+          setNewsletterSubscribers((subscribers) =>
+            subscribers.map((subscriber) =>
+              subscriber.email === updatedSubscriber.email ? updatedSubscriber : subscriber
+            )
+          );
+          commitWorkspace(
+            appendAudit(
+              workspace,
+              `Unsubscribed newsletter subscriber ${updatedSubscriber.email}`
+            )
+          );
+        } catch (error) {
+          setNewsletterError(
+            error instanceof Error
+              ? error.message
+              : "Newsletter subscriber could not be removed."
+          );
+          setSaveState("Newsletter save failed");
+        }
+        return;
+      }
+
+      if (payload.kind === "segment" || payload.mode === "delete") {
+        const nextWorkspace = applyModulePayload(workspace, view, payload);
+        commitWorkspace(
+          appendAudit(
+            nextWorkspace,
+            payload.mode === "delete"
+              ? `Removed ${payload.title || "newsletter segment"}`
+              : `Updated newsletter segment ${payload.title}`
           )
         );
         return;
@@ -807,6 +853,8 @@ export default function AdminPage() {
     const auditAction =
       payload.mode === "action"
         ? `${payload.action} in ${viewTitle(view)}`
+        : payload.mode === "delete"
+          ? `Removed ${payload.title || viewTitle(view)}`
         : `Updated ${payload.title || viewTitle(view)}`;
     commitWorkspace(appendAudit(nextWorkspace, auditAction));
   };
@@ -1870,6 +1918,23 @@ function ModulePanel({ view, role, workspace, onSave, notice }) {
     closeDraft();
   };
 
+  const deleteDraft = () => {
+    if (!draft || draft.mode !== "row") {
+      return;
+    }
+
+    onSave(view, {
+      ...draft,
+      mode: "delete",
+    });
+    closeDraft();
+  };
+
+  const canDeleteDraft =
+    draft?.mode === "row" &&
+    hasEditableRows &&
+    !["analytics", "audit"].includes(view);
+
   return (
     <section className="admin-module-view">
       <article className="admin-panel admin-panel--wide">
@@ -1997,9 +2062,23 @@ function ModulePanel({ view, role, workspace, onSave, notice }) {
                 }
               />
             </label>
-            <button className="admin-module-save" type="submit">
-              Save Update
-            </button>
+            <div className="admin-module-editor__actions">
+              {canDeleteDraft ? (
+                <button
+                  className="admin-delete-button admin-delete-button--module"
+                  type="button"
+                  onClick={deleteDraft}
+                >
+                  <Trash2 size={14} />
+                  <span>
+                    {draft.kind === "subscriber" ? "Unsubscribe" : "Remove"}
+                  </span>
+                </button>
+              ) : null}
+              <button className="admin-module-save" type="submit">
+                Save Update
+              </button>
+            </div>
           </form>
         ) : null}
       </article>
@@ -2168,8 +2247,17 @@ function getModuleRows(view, workspace) {
   }
 
   if (view === "newsletter") {
-    return workspace.newsletter.map((subscriber) => ({
+    const segmentRows = (workspace.newsletterSegments || []).map((segment) => ({
+      id: segment.id,
+      kind: "segment",
+      title: segment.title,
+      subtitle: segment.subtitle || "Audience segment",
+      meta: segment.meta || "Draft",
+      notes: segment.notes || "",
+    }));
+    const subscriberRows = workspace.newsletter.map((subscriber) => ({
       id: subscriber.id || subscriber.email,
+      kind: "subscriber",
       title: subscriber.email,
       subtitle: subscriber.source || "homepage",
       meta: subscriber.status || "active",
@@ -2177,6 +2265,8 @@ function getModuleRows(view, workspace) {
         ? `Subscribed ${formatAdminDate(subscriber.subscribed_at)}`
         : "",
     }));
+
+    return [...segmentRows, ...subscriberRows];
   }
 
   if (view === "analytics") {
@@ -2281,6 +2371,10 @@ function normalizeColorImages(value) {
 }
 
 function applyModulePayload(workspace, view, payload) {
+  if (payload.mode === "delete") {
+    return deleteModuleRecord(workspace, view, payload);
+  }
+
   if (payload.mode === "action") {
     return appendModuleAction(workspace, view, payload);
   }
@@ -2298,10 +2392,12 @@ function appendModuleAction(workspace, view, payload) {
   };
 
   if (view === "payments") {
-    if (payload.action !== "Record Deposit") {
-      return workspace;
-    }
-
+    const orderStatusByAction = {
+      "View History": "History reviewed",
+      "Record Deposit": "Deposit recorded",
+      Refund: "Refund review",
+      Cancel: "Cancellation review",
+    };
     return {
       ...workspace,
       orders: [
@@ -2309,7 +2405,7 @@ function appendModuleAction(workspace, view, payload) {
           id: `KJ-${Date.now().toString().slice(-4)}`,
           customer: payload.title,
           total: payload.subtitle || "$0",
-          status: payload.action,
+          status: orderStatusByAction[payload.action] || payload.action,
           refundLimit: "5%",
           notes: payload.notes,
         },
@@ -2319,7 +2415,19 @@ function appendModuleAction(workspace, view, payload) {
   }
 
   if (view === "communication") {
-    return workspace;
+    return {
+      ...workspace,
+      customers: [
+        {
+          name: payload.title,
+          email: createInternalEmail(payload.title),
+          orders: 0,
+          note: payload.subtitle || payload.action,
+          notes: payload.notes,
+        },
+        ...workspace.customers,
+      ],
+    };
   }
 
   if (view === "content") {
@@ -2355,12 +2463,36 @@ function appendModuleAction(workspace, view, payload) {
   }
 
   if (view === "newsletter") {
-    return workspace;
+    return {
+      ...workspace,
+      newsletterSegments: [
+        {
+          id: baseRecord.id,
+          title: payload.title,
+          subtitle: payload.subtitle || "Audience segment",
+          meta: payload.meta || "Draft",
+          notes: payload.notes,
+          kind: "segment",
+        },
+        ...(workspace.newsletterSegments || []),
+      ],
+    };
   }
 
   const collection = moduleCollectionKey(view);
   if (!collection) {
-    return workspace;
+    return {
+      ...workspace,
+      audit: [
+        {
+          id: baseRecord.id,
+          actor: payload.meta || "Admin",
+          action: `${payload.action || payload.title}: ${payload.notes || payload.subtitle}`,
+          time: "Just now",
+        },
+        ...workspace.audit,
+      ],
+    };
   }
 
   return {
@@ -2438,7 +2570,21 @@ function updateModuleRecord(workspace, view, payload) {
   }
 
   if (view === "newsletter") {
-    return workspace;
+    return {
+      ...workspace,
+      newsletterSegments: (workspace.newsletterSegments || []).map((segment) =>
+        segment.id === payload.id
+          ? {
+              ...segment,
+              title: payload.title,
+              subtitle: payload.subtitle,
+              meta: payload.meta,
+              notes: payload.notes,
+              kind: "segment",
+            }
+          : segment
+      ),
+    };
   }
 
   const collection = moduleCollectionKey(view);
@@ -2462,6 +2608,57 @@ function updateModuleRecord(workspace, view, payload) {
   };
 }
 
+function deleteModuleRecord(workspace, view, payload) {
+  if (view === "payments") {
+    return {
+      ...workspace,
+      orders: workspace.orders.filter((order) => order.id !== payload.id),
+    };
+  }
+
+  if (view === "communication") {
+    return {
+      ...workspace,
+      customers: workspace.customers.filter((customer) => customer.email !== payload.id),
+    };
+  }
+
+  if (view === "content") {
+    return {
+      ...workspace,
+      content: workspace.content.filter((entry) => (entry.id || entry.title) !== payload.id),
+    };
+  }
+
+  if (view === "marketing") {
+    return {
+      ...workspace,
+      promotions: workspace.promotions.filter(
+        (promotion) => (promotion.id || promotion.title) !== payload.id
+      ),
+    };
+  }
+
+  if (view === "newsletter") {
+    return {
+      ...workspace,
+      newsletterSegments: (workspace.newsletterSegments || []).filter(
+        (segment) => segment.id !== payload.id
+      ),
+    };
+  }
+
+  const collection = moduleCollectionKey(view);
+  if (!collection) {
+    return workspace;
+  }
+
+  return {
+    ...workspace,
+    [collection]: workspace[collection].filter((record) => record.id !== payload.id),
+  };
+}
+
 function moduleCollectionKey(view) {
   const keys = {
     contracts: "contracts",
@@ -2471,6 +2668,16 @@ function moduleCollectionKey(view) {
     audit: "audit",
   };
   return keys[view];
+}
+
+function createInternalEmail(value) {
+  const slug = String(value || "client")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+
+  return `${slug || "client"}-${Date.now().toString().slice(-4)}@admin.local`;
 }
 
 function hasModuleAccess(module, role) {
