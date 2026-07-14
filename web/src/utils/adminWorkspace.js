@@ -91,6 +91,19 @@ export async function updateNewsletterSubscriber(subscriber) {
   return data.subscriber;
 }
 
+export async function sendNewsletterCampaign({ subject, title, message }) {
+  return apiRequest("/api/newsletter", {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify({
+      mode: "campaign",
+      subject,
+      title,
+      message,
+    }),
+  });
+}
+
 export async function recordAdminInquiry(payload) {
   try {
     const data = await apiRequest("/api/commissions", {

@@ -1,4 +1,7 @@
-import { sendNewsletterConfirmationEmail } from "../utils/email.js";
+import {
+  sendNewsletterCampaignEmail,
+  sendNewsletterConfirmationEmail,
+} from "../utils/email.js";
 import {
   assertRateLimit,
   fail,
@@ -24,8 +27,15 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "newsletter-subscribe", { limit: 8 });
     const body = await readBody(request, { maxBytes: 8 * 1024 });
+
+    if (body.mode === "campaign") {
+      assertRateLimit(request, "newsletter-admin-campaign", { limit: 10 });
+      requireNewsletterAdmin(request);
+      return sendNewsletterCampaign(body);
+    }
+
+    assertRateLimit(request, "newsletter-subscribe", { limit: 8 });
     const email = validateEmail(body.email);
     const source = cleanText(body.source || "homepage", 60) || "homepage";
 
@@ -55,6 +65,38 @@ export async function POST(request) {
   } catch (error) {
     return handleNewsletterError(error, "Unable to subscribe.");
   }
+}
+
+async function sendNewsletterCampaign(body) {
+  const subject = cleanText(body.subject || body.title || "A note from Korede James", 140);
+  const title = cleanText(body.title || subject, 80);
+  const message = cleanLongText(body.message || body.notes || "", 3000);
+
+  if (!message) {
+    throw new Error("Add a newsletter message before sending.");
+  }
+
+  const subscribers = await supabaseRequest(
+    "newsletter_subscribers?select=email,status&status=eq.active&limit=1000",
+  );
+  const activeSubscribers = Array.isArray(subscribers) ? subscribers : [];
+  const results = await Promise.all(
+    activeSubscribers.map((subscriber) =>
+      sendNewsletterCampaignEmail({
+        email: subscriber.email,
+        subject,
+        title,
+        message,
+      }),
+    ),
+  );
+  const sent = results.filter((result) => result?.sent).length;
+
+  return ok({
+    sent,
+    total: activeSubscribers.length,
+    message: `Newsletter sent to ${sent} subscriber${sent === 1 ? "" : "s"}.`,
+  });
 }
 
 export async function PATCH(request) {
@@ -109,6 +151,13 @@ function validateStatus(value) {
 
 function cleanText(value, maxLength) {
   return String(value || "").trim().slice(0, maxLength);
+}
+
+function cleanLongText(value, maxLength) {
+  return String(value || "")
+    .replace(/\r/g, "")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function handleNewsletterError(error, fallbackMessage) {

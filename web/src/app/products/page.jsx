@@ -1,14 +1,40 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
-import { products } from "../../data/fashion-data";
+import { products as fallbackProducts } from "../../data/fashion-data";
 
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const catalogProducts = products;
-  const categories = ["All", ...new Set(catalogProducts.map((product) => product.category))];
+  const [catalogProducts, setCatalogProducts] = useState(fallbackProducts);
+  const categories = useMemo(
+    () => ["All", ...new Set(catalogProducts.map((product) => product.category))],
+    [catalogProducts],
+  );
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetch("/api/public-products")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!isActive || !Array.isArray(data?.products) || !data.products.length) {
+          return;
+        }
+
+        setCatalogProducts(data.products);
+      })
+      .catch(() => {
+        if (isActive) {
+          setCatalogProducts(fallbackProducts);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const visibleProducts = useMemo(() => {
     if (activeCategory === "All") {

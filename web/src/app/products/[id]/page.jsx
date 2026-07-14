@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
-import { products } from "../../../data/fashion-data";
+import { products as fallbackProducts } from "../../../data/fashion-data";
 import useStore from "../../../store/useStore";
 import { useRegion } from "../../../context/RegionContext";
 import { formatProductPrice } from "../../../utils/pricing";
@@ -20,14 +20,50 @@ const paletteSwatches = {
 
 export default function ProductDetailsPage({ params }) {
   const { id } = params;
-  const product = products.find((p) => p.id === id);
+  const fallbackProduct = fallbackProducts.find((p) => p.id === id);
+  const [product, setProduct] = useState(fallbackProduct || null);
+  const [hasLoadedProducts, setHasLoadedProducts] = useState(false);
   const { currency } = useRegion();
   const addToCart = useStore((state) => state.addToCart);
   const openCartPreview = useStore((state) => state.openCartPreview);
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
-  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[1] || "M");
+  const [selectedColor, setSelectedColor] = useState(fallbackProduct?.colors?.[0] || "");
+  const [selectedSize, setSelectedSize] = useState(fallbackProduct?.sizes?.[1] || "M");
   const [tailoringNotes, setTailoringNotes] = useState("");
   const [archivalNotes, setArchivalNotes] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    setProduct(fallbackProduct || null);
+    setHasLoadedProducts(false);
+
+    fetch("/api/public-products")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!isActive) {
+          return;
+        }
+
+        const nextProduct = Array.isArray(data?.products)
+          ? data.products.find((item) => item.id === id)
+          : null;
+        setProduct(nextProduct || fallbackProduct || null);
+      })
+      .catch(() => {
+        if (isActive) {
+          setProduct(fallbackProduct || null);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setHasLoadedProducts(true);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [fallbackProduct, id]);
 
   useEffect(() => {
     if (!product) {
@@ -46,6 +82,17 @@ export default function ProductDetailsPage({ params }) {
         : product.sizes?.[0] || "",
     );
   }, [product]);
+
+  if (!product && !hasLoadedProducts) {
+    return (
+      <main className="min-h-screen bg-white">
+        <Navbar />
+        <div className="pt-40 text-center uppercase tracking-widest">
+          Loading artifact
+        </div>
+      </main>
+    );
+  }
 
   if (!product) {
     return (

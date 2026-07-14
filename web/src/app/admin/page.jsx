@@ -31,8 +31,10 @@ import {
   fetchNewsletterSubscribers,
   fetchAdminWorkspace,
   saveAdminWorkspace,
+  sendNewsletterCampaign,
   updateNewsletterSubscriber,
 } from "../../utils/adminWorkspace";
+import { seedWorkspaceProducts } from "../../utils/productCatalog";
 import "./page.css";
 
 const STORAGE_KEY = ADMIN_WORKSPACE_STORAGE_KEY;
@@ -344,7 +346,7 @@ const moduleSummaries = {
   newsletter: {
     title: "Newsletter Audience",
     metric: "Subscriber list",
-    actions: ["Refresh List", "Export CSV", "Create Segment", "Source Review"],
+    actions: ["Send Update", "Refresh List", "Export CSV", "Create Segment"],
     lockedFor: {
       editor: ["Subscriber Status Changes"],
       studio: ["Newsletter Audience"],
@@ -436,6 +438,16 @@ function normalizeWorkspace(workspace) {
   };
 }
 
+function ensureProductCatalogue(workspace) {
+  const normalized = normalizeWorkspace(workspace || {});
+  const seeded = seedWorkspaceProducts(normalized);
+
+  return {
+    workspace: normalizeWorkspace(seeded.workspace),
+    seeded: seeded.seeded,
+  };
+}
+
 async function persistWorkspace(workspace) {
   return saveAdminWorkspace(workspace);
 }
@@ -472,7 +484,7 @@ export default function AdminPage() {
     colors: "White",
     colorImages: {},
     availability: "Available",
-    budget: "$5,000 - $10,000",
+    budget: "N2,000",
     description: "",
   });
   const [newTeamMember, setNewTeamMember] = useState({
@@ -482,7 +494,8 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    setWorkspace(readWorkspace());
+    const localCatalogue = ensureProductCatalogue(readWorkspace());
+    setWorkspace(localCatalogue.workspace);
     const storedRole = window.sessionStorage.getItem(ACCESS_ROLE_KEY);
     const hasSessionCode = Boolean(
       window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY),
@@ -491,7 +504,13 @@ export default function AdminPage() {
       setSessionRole(storedRole);
       setCurrentRole(storedRole);
       setUnlocked(true);
-      fetchAdminWorkspace().then(setWorkspace);
+      fetchAdminWorkspace().then((remoteWorkspace) => {
+        const seededCatalogue = ensureProductCatalogue(remoteWorkspace);
+        setWorkspace(seededCatalogue.workspace);
+        if (seededCatalogue.seeded) {
+          saveAdminWorkspace(seededCatalogue.workspace).then(setWorkspace);
+        }
+      });
       loadNewsletterSubscribers();
     }
   }, []);
@@ -720,6 +739,32 @@ export default function AdminPage() {
           return;
         }
 
+        if (payload.action === "Send Update") {
+          setSaveState("Sending newsletter...");
+          try {
+            const result = await sendNewsletterCampaign({
+              subject: payload.title,
+              title: payload.subtitle,
+              message: payload.notes,
+            });
+            setNewsletterError("");
+            commitWorkspace(
+              appendAudit(
+                workspace,
+                result.message || `Sent Newsletter Update to ${result.sent || 0} subscribers`
+              )
+            );
+          } catch (error) {
+            setNewsletterError(
+              error instanceof Error
+                ? error.message
+                : "Newsletter could not be sent."
+            );
+            setSaveState("Newsletter send failed");
+          }
+          return;
+        }
+
         commitWorkspace(
           appendAudit(
             workspace,
@@ -804,7 +849,7 @@ export default function AdminPage() {
       image: newPiece.image.trim(),
       colors: parseColorList(newPiece.colors),
       colorImages: normalizeColorImages(newPiece.colorImages),
-      visibility: "Hidden",
+      visibility: "Visible",
       availability: newPiece.availability,
       budget: newPiece.budget,
       description: newPiece.description.trim(),
@@ -821,7 +866,7 @@ export default function AdminPage() {
       colors: "White",
       colorImages: {},
       availability: "Available",
-      budget: "$5,000 - $10,000",
+      budget: "N2,000",
       description: "",
     });
   };
@@ -1727,7 +1772,7 @@ function viewTitle(view) {
     communication: "Client communication",
     measurements: "Measurements",
     materials: "Materials",
-    pieces: "Portfolio",
+    pieces: "Products",
     content: "Atelier content",
     marketing: "Marketing",
     newsletter: "Newsletter",
@@ -1928,7 +1973,7 @@ function ModulePanel({ view, role, workspace, onSave, notice }) {
               </label>
             </div>
             <label className="admin-notes">
-              Details
+              {draft.action === "Send Update" ? "Email Title" : "Details"}
               <textarea
                 rows={4}
                 value={draft.subtitle}
@@ -1938,14 +1983,18 @@ function ModulePanel({ view, role, workspace, onSave, notice }) {
               />
             </label>
             <label className="admin-notes">
-              Internal Notes
+              {draft.action === "Send Update" ? "Email Message" : "Internal Notes"}
               <textarea
                 rows={5}
                 value={draft.notes}
                 onChange={(event) =>
                   setDraft({ ...draft, notes: event.target.value })
                 }
-                placeholder="Add next step, approval note, fitting feedback, or client update."
+                placeholder={
+                  draft.action === "Send Update"
+                    ? "Write the newsletter message subscribers should receive."
+                    : "Add next step, approval note, fitting feedback, or client update."
+                }
               />
             </label>
             <button className="admin-module-save" type="submit">
@@ -2033,6 +2082,7 @@ function getModuleActionDraft(view, action, summary, role) {
       Publish: ["Publish request", "Owner approval and publish note"],
     },
     newsletter: {
+      "Send Update": ["Korede James atelier note", "Atelier Update"],
       "Create Segment": ["Audience segment", "Segment rule and campaign use"],
       "Source Review": ["Source review", "Review subscriber source quality"],
     },

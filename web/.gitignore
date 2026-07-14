@@ -1,6 +1,23 @@
 .DS_Store
 /node_modules/
 
+# Local environment files
+.env
+.env.*
+!.env.example
+
 # React Router
 /.react-router/
 /build/
+
+# Build, test, and local runtime output
+/.vite/
+/.vitest/
+/coverage/
+*.log
+dev-server*.log
+
+# OS and editor files
+Thumbs.db
+.idea/
+.vscode/

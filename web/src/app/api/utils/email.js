@@ -136,6 +136,36 @@ export function sendNewsletterConfirmationEmail({ email }) {
   });
 }
 
+export function sendNewsletterCampaignEmail({ email, subject, title, message }) {
+  const campaignTitle = title || subject || "Atelier Note";
+  const lines = String(message || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return sendTransactionalEmail({
+    to: email,
+    subject: subject || "A note from Korede James",
+    preview: lines[0] || "A new atelier note from Korede James.",
+    html: brandedMessage({
+      eyebrow: "Atelier Note",
+      title: campaignTitle,
+      greeting: "Hello,",
+      body: lines.length
+        ? lines
+        : ["A new Korede James atelier note is now available."],
+      details: [
+        ["Audience", "Newsletter subscribers"],
+        ["Studio", "Korede James"],
+      ],
+      action: {
+        label: "Visit Korede James",
+        href: siteOrigin(),
+      },
+    }),
+  });
+}
+
 export function sendCommissionReceivedEmail({ email, client, displayId, artifact }) {
   return sendTransactionalEmail({
     to: email,
