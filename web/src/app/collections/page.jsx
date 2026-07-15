@@ -13,7 +13,7 @@ export default function CollectionsPage() {
 
       <section className="pt-40 pb-32 px-6">
         <div className="max-w-7xl mx-auto">
-          <SectionTitle title="Freedom" subtitle="2025 Collection" />
+          <SectionTitle title="Collections" subtitle="Archive" />
 
           <div className="space-y-32">
             {collections.map((collection, index) => (
@@ -31,17 +31,33 @@ export default function CollectionsPage() {
                     <img
                       src={collection.coverImage}
                       alt={collection.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
                   </div>
 
                   {/* Collection Preview */}
-                  <div className="mt-4 aspect-[16/7] bg-gray-100 overflow-hidden">
+                  <div className="mt-4 aspect-[3344/4682] bg-[#eef0e9] overflow-hidden">
                     <img
-                      src="/assets/freedom/freedom-preview-rectangular.jpg"
-                      alt="Freedom collection preview"
-                      className="w-full h-full object-cover"
+                      src={
+                        collection.id === "freedom"
+                          ? "/assets/freedom/freedom-preview-rectangular.jpg"
+                          : collection.previewImage || collection.gallery?.[0] || collection.coverImage
+                      }
+                      alt={
+                        collection.id === "freedom"
+                          ? "Freedom collection preview"
+                          : `${collection.title} collection preview`
+                      }
+                      loading="lazy"
+                      decoding="async"
+                      className={
+                        collection.id === "freedom"
+                          ? "w-full h-full object-cover object-[72%_top]"
+                          : "w-full h-full object-cover object-top"
+                      }
                     />
                   </div>
                 </div>

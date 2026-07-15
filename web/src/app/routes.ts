@@ -8,6 +8,7 @@ import {
 } from '@react-router/dev/routes';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const EXCLUDED_PAGE_ROUTE_DIRS = new Set(['__create', 'errors']);
 
 type Tree = {
 	path: string;
@@ -49,6 +50,10 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 		const stat = statSync(filePath);
 
 		if (stat.isDirectory()) {
+			if (!basePath && EXCLUDED_PAGE_ROUTE_DIRS.has(file)) {
+				continue;
+			}
+
 			const childPath = basePath ? `${basePath}/${file}` : file;
 			const childNode = buildRouteTree(filePath, childPath);
 			node.children.push(childNode);
@@ -113,7 +118,33 @@ if (import.meta.env.DEV) {
 	}
 }
 const tree = buildRouteTree(__dirname);
+const apiRoutes = [
+	route('api/admin-workspace', './api/admin-workspace/resource.js'),
+	route('api/commissions', './api/commissions/resource.js'),
+	route('api/commissions/track', './api/commissions/track/resource.js'),
+	route('api/paystack/initialize', './api/paystack/initialize/resource.js'),
+	route('api/paystack/verify', './api/paystack/verify/resource.js'),
+	route('api/region', './api/region/resource.js'),
+	route('api/public-products', './api/public-products/resource.js'),
+	route('api/newsletter', './api/newsletter/resource.js'),
+	route('api/uploads', './api/uploads/resource.js'),
+	route('api/email-test', './api/email-test/resource.js'),
+	route('api/paystack/webhook', './api/paystack/webhook/resource.js'),
+	route('api/customer-auth/signup', './api/customer-auth/signup/resource.js'),
+	route('api/customer-auth/signin', './api/customer-auth/signin/resource.js'),
+	route('api/customer-auth/session', './api/customer-auth/session/resource.js'),
+	route('api/customer-auth/commissions', './api/customer-auth/commissions/resource.js'),
+	route('api/customer-auth/logout', './api/customer-auth/logout/resource.js'),
+	route(
+		'api/customer-auth/password/request',
+		'./api/customer-auth/password/request/resource.js'
+	),
+	route(
+		'api/customer-auth/password/confirm',
+		'./api/customer-auth/password/confirm/resource.js'
+	),
+];
 const notFound = route('*?', './__create/not-found.tsx');
-const routes = [...generateRoutes(tree), notFound];
+const routes = [...apiRoutes, ...generateRoutes(tree), notFound];
 
 export default routes;

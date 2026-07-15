@@ -1,25 +1,98 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
-import { products } from "../../../data/fashion-data";
+import { products as fallbackProducts } from "../../../data/fashion-data";
 import useStore from "../../../store/useStore";
+import { useRegion } from "../../../context/RegionContext";
+import { formatProductPrice } from "../../../utils/pricing";
 
 const paletteSwatches = {
   White: "#f8f6f0",
+  OFFWHITE: "#f8f6f0",
+  BEIGE: "#d7c3a2",
+  BLUE: "#1f3f68",
   Red: "#9f1239",
+  RED: "#9f1239",
   Black: "#111111",
   Ivory: "#f4ead8",
 };
 
 export default function ProductDetailsPage({ params }) {
   const { id } = params;
-  const product = products.find((p) => p.id === id);
+  const fallbackProduct = fallbackProducts.find((p) => p.id === id);
+  const [product, setProduct] = useState(fallbackProduct || null);
+  const [hasLoadedProducts, setHasLoadedProducts] = useState(false);
+  const { currency } = useRegion();
   const addToCart = useStore((state) => state.addToCart);
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
-  const [selectedSize, setSelectedSize] = useState("M");
+  const openCartPreview = useStore((state) => state.openCartPreview);
+  const [selectedColor, setSelectedColor] = useState(fallbackProduct?.colors?.[0] || "");
+  const [selectedSize, setSelectedSize] = useState(fallbackProduct?.sizes?.[1] || "M");
   const [tailoringNotes, setTailoringNotes] = useState("");
   const [archivalNotes, setArchivalNotes] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    setProduct(fallbackProduct || null);
+    setHasLoadedProducts(false);
+
+    fetch("/api/public-products")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!isActive) {
+          return;
+        }
+
+        const nextProduct = Array.isArray(data?.products)
+          ? data.products.find((item) => item.id === id)
+          : null;
+        setProduct(nextProduct || fallbackProduct || null);
+      })
+      .catch(() => {
+        if (isActive) {
+          setProduct(fallbackProduct || null);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setHasLoadedProducts(true);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [fallbackProduct, id]);
+
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    const paletteOptions = normalizePaletteOptions(product);
+    setSelectedColor((currentColor) =>
+      paletteOptions.includes(currentColor)
+        ? currentColor
+        : paletteOptions[0] || "",
+    );
+    setSelectedSize((currentSize) =>
+      product.sizes?.includes(currentSize)
+        ? currentSize
+        : product.sizes?.[0] || "",
+    );
+  }, [product]);
+
+  if (!product && !hasLoadedProducts) {
+    return (
+      <main className="min-h-screen bg-white">
+        <Navbar />
+        <div className="pt-40 text-center uppercase tracking-widest">
+          Loading artifact
+        </div>
+      </main>
+    );
+  }
 
   if (!product) {
     return (
@@ -32,17 +105,22 @@ export default function ProductDetailsPage({ params }) {
     );
   }
 
+  const paletteOptions = normalizePaletteOptions(product);
+  const selectedProductImage = getColorImage(product, selectedColor);
+  const sizeOptions = product.sizes?.length ? product.sizes : [];
+
   const handleSubmit = () => {
     addToCart(
       {
         ...product,
+        image: selectedProductImage,
         tailoringNotes,
         archivalNotes,
       },
       selectedSize,
       selectedColor,
     );
-    window.location.href = "/checkout";
+    openCartPreview();
   };
 
   return (
@@ -62,8 +140,8 @@ export default function ProductDetailsPage({ params }) {
           <aside className="lg:sticky lg:top-28">
             <div className="bg-[#f8f8f6] overflow-hidden">
               <img
-                src={product.image}
-                alt={product.name}
+                src={selectedProductImage}
+                alt={`${product.name} in ${selectedColor || "selected colour"}`}
                 className="w-full aspect-[4/5] object-cover"
               />
             </div>
@@ -92,39 +170,79 @@ export default function ProductDetailsPage({ params }) {
                     {product.name}
                   </span>
                 </div>
+                <div className="flex items-center justify-between gap-8 border-b border-gray-100 py-6">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-gray-400">
+                    Registered value
+                  </span>
+                  <span className="text-xs uppercase tracking-[0.2em] font-semibold text-right">
+                    {formatProductPrice(product, currency)}
+                  </span>
+                </div>
               </PortalStep>
 
               <PortalStep number="02" title="The Palette">
-                <div className="flex flex-wrap gap-4">
-                  {[...new Set([...product.colors, "Black", "Ivory"])].map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setSelectedColor(color)}
-                      className={`flex items-center gap-3 border px-4 py-3 transition-colors ${
-                        selectedColor === color
-                          ? "border-black"
-                          : "border-gray-100 hover:border-gray-300"
-                      }`}
-                    >
+                <div className="grid gap-6">
+                  <div className="flex flex-wrap gap-4">
+                    {paletteOptions.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        className={`flex items-center gap-3 border px-4 py-3 transition-colors ${
+                          selectedColor === color
+                            ? "border-black"
+                            : "border-gray-100 hover:border-gray-300"
+                        }`}
+                      >
+                        <span
+                          className="h-5 w-5 rounded-full border border-gray-200"
+                          style={{
+                            backgroundColor: paletteSwatches[color] || "#e5e5e5",
+                          }}
+                        />
+                        <span className="text-[10px] uppercase tracking-[0.2em]">
+                          {color}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-5 border border-gray-100 bg-[#fafafa] p-4">
+                    <div className="aspect-[4/5] overflow-hidden bg-white">
+                      <img
+                        src={selectedProductImage}
+                        alt={`${product.name} in ${selectedColor}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex items-center gap-5">
                       <span
-                        className="h-5 w-5 rounded-full border border-gray-200"
+                        className="h-20 w-20 border border-black/10"
                         style={{
-                          backgroundColor: paletteSwatches[color] || "#e5e5e5",
+                          backgroundColor:
+                            paletteSwatches[selectedColor] || "#e5e5e5",
                         }}
                       />
-                      <span className="text-[10px] uppercase tracking-[0.2em]">
-                        {color}
-                      </span>
-                    </button>
-                  ))}
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.28em] text-gray-400 mb-2">
+                          Selected colourway
+                        </p>
+                        <p className="text-sm uppercase tracking-[0.22em]">
+                          {selectedColor}
+                        </p>
+                        <p className="mt-3 text-xs font-light leading-relaxed text-gray-500">
+                          Final fabric shade may vary slightly after sourcing and
+                          studio lighting review.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </PortalStep>
 
               <PortalStep number="03" title="Proportions">
                 <div className="space-y-8">
                   <div className="flex flex-wrap gap-4">
-                    {["S", "M", "L"].map((size) => (
+                    {sizeOptions.map((size) => (
                       <label
                         key={size}
                         className={`flex items-center gap-3 border px-5 py-3 cursor-pointer transition-colors ${
@@ -150,6 +268,18 @@ export default function ProductDetailsPage({ params }) {
                     <label className="block text-[10px] uppercase tracking-[0.3em] font-semibold mb-4">
                       Tailoring Proportions
                     </label>
+                    <div className="mb-4 border border-gray-100 bg-white p-5 text-xs font-light leading-loose text-gray-500">
+                      <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-black">
+                        Measurement guide
+                      </p>
+                      <p>
+                        Use a soft tape over light clothing. Share bust/chest,
+                        waist, hip, shoulder width, sleeve length, trouser
+                        length/inseam, height, and fit preference such as
+                        cropped, relaxed, or fitted. Keep the tape level and do
+                        not pull it tight.
+                      </p>
+                    </div>
                     <textarea
                       rows="5"
                       value={tailoringNotes}
@@ -178,7 +308,7 @@ export default function ProductDetailsPage({ params }) {
                 onClick={handleSubmit}
                 className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-colors flex items-center justify-center gap-4"
               >
-                <span>Submit Commission</span>
+                <span>Add To Commission Brief</span>
                 <ArrowRight size={15} />
               </button>
               <p className="mt-6 text-[10px] uppercase tracking-[0.24em] text-gray-400 leading-loose">
@@ -210,4 +340,14 @@ function PortalStep({ number, title, children }) {
       {children}
     </section>
   );
+}
+
+function normalizePaletteOptions(product) {
+  const colors = product?.colors || [];
+  const imageColors = Object.keys(product?.colorImages || {});
+  return [...new Set([...colors, ...imageColors])].filter(Boolean);
+}
+
+function getColorImage(product, color) {
+  return product?.colorImages?.[color] || product?.image || "";
 }

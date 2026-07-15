@@ -1,18 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SectionTitle from "../components/SectionTitle";
-import { collections, testimonials } from "../data/fashion-data";
+import { collections } from "../data/fashion-data";
 import "./page.css";
 
 const heroVideo = "/assets/Hero%201.mp4?v=2";
 const editorialVideo = "/assets/hero2.mp4?v=2";
+const heroLowPowerVideo = "/assets/hero-low-power.webp?v=1";
+const editorialLowPowerVideo = "/assets/editorial-low-power.webp?v=1";
 
 export default function HomePage() {
   const [email, setEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState({ type: "", message: "" });
+  const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
   const [showHeroContent, setShowHeroContent] = useState(false);
+  const heroVideoPlayback = useAutoplayingVideo({
+    onAutoplayBlocked: () => setShowHeroContent(true),
+  });
+  const editorialVideoPlayback = useAutoplayingVideo();
 
   useEffect(() => {
     if (showHeroContent) return;
@@ -25,14 +33,89 @@ export default function HomePage() {
   }, [showHeroContent]);
 
   const galleryImages = [
-    "/assets/freedom/freedom-gallery-01.jpg",
-    "/assets/freedom/freedom-gallery-02.jpg",
-    "/assets/freedom/freedom-gallery-03.jpg",
-    "/assets/freedom/freedom-gallery-04.jpg",
-    "/assets/freedom/freedom-gallery-05.jpg",
-    "/assets/freedom/freedom-gallery-06.jpg",
-    "/assets/freedom/freedom-gallery-07.jpg",
+    "/assets/freedom/edit-window-red-legs-upright.jpg",
+    "/assets/freedom/IMG_4143.jpeg",
+    "/assets/freedom/edit-green-portrait.jpg",
+    "/assets/freedom/edit-room-bw.jpg",
+    "/assets/freedom/edit-negative-window.jpg",
+    "/assets/freedom/edit-foliage-bw.jpg",
+    "/assets/freedom/edit-pink-shutter.jpg",
   ];
+
+  const editorialTiles = [
+    {
+      src: galleryImages[0],
+      tileClass: "home-editorial__tile--hero",
+      imageClass: "home-editorial__image--window",
+    },
+    {
+      src: galleryImages[1],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--red-door",
+    },
+    {
+      src: galleryImages[2],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--green-portrait",
+    },
+    {
+      src: galleryImages[3],
+      tileClass: "home-editorial__tile--wide-strip",
+      imageClass: "home-editorial__image--room-bw",
+    },
+    {
+      src: galleryImages[4],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--negative-window",
+    },
+    {
+      src: galleryImages[5],
+      tileClass: "home-editorial__tile--portrait",
+      imageClass: "home-editorial__image--foliage-bw",
+    },
+  ];
+
+  const handleNewsletterSubmit = async (event) => {
+    event.preventDefault();
+    setNewsletterStatus({ type: "", message: "" });
+    setIsNewsletterSubmitting(true);
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          source: "homepage",
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to subscribe right now.");
+      }
+
+      setEmail("");
+      setNewsletterStatus({
+        type: "success",
+        message: data.emailSent
+          ? "You are subscribed. A confirmation email has been sent."
+          : "You are subscribed.",
+      });
+    } catch (error) {
+      setNewsletterStatus({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to subscribe right now.",
+      });
+    } finally {
+      setIsNewsletterSubmitting(false);
+    }
+  };
 
   return (
     <main className="home-page min-h-screen bg-white">
@@ -40,11 +123,21 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="home-hero relative h-screen w-full overflow-hidden bg-black">
-        {/* Video background, autoplays once without looping */}
+        {/* Video background, autoplays silently and loops behind the landing hero. */}
         <video
+          ref={heroVideoPlayback.ref}
           autoPlay
+          loop
           muted
+          defaultMuted
           playsInline
+          webkit-playsinline="true"
+          controls={false}
+          disablePictureInPicture
+          disableRemotePlayback
+          controlsList="nodownload noplaybackrate noremoteplayback"
+          x-webkit-airplay="deny"
+          preload="auto"
           onEnded={() => setShowHeroContent(true)}
           onError={() => setShowHeroContent(true)}
           onStalled={() => setShowHeroContent(true)}
@@ -52,9 +145,15 @@ export default function HomePage() {
         >
           <source src={heroVideo} type="video/mp4" />
         </video>
+        {heroVideoPlayback.isAutoplayBlocked ? (
+          <ConvertedVideoFallback
+            src={heroLowPowerVideo}
+            className="home-converted-video--hero"
+          />
+        ) : null}
 
         {/* Always-on cinematic dark overlay */}
-        <div className="absolute inset-0 bg-black/45" />
+        <div className="home-hero__shade absolute inset-0 bg-black/45" />
 
         {/* Overlay content, revealed after a short intro delay */}
         <AnimatePresence>
@@ -72,7 +171,7 @@ export default function HomePage() {
                 transition={{ delay: 0.3, duration: 0.9 }}
                 className="home-hero__eyebrow text-white text-xs uppercase tracking-[0.6em] mb-6 font-medium"
               >
-                Nigeria, 1960
+                Modern Heritage
               </motion.p>
 
               <motion.h1
@@ -81,7 +180,7 @@ export default function HomePage() {
                 transition={{ delay: 0.55, duration: 0.9 }}
                 className="home-hero__title text-white text-5xl md:text-8xl font-serif tracking-[0.2em] font-light uppercase mb-12"
               >
-                Freedom
+                Korede James
               </motion.h1>
 
               <motion.div
@@ -148,6 +247,27 @@ export default function HomePage() {
         </div>
 
         {/* Row 1 — three portrait images, middle one taller */}
+        <div className="home-editorial__grid">
+          {editorialTiles.map((tile, index) => (
+            <motion.div
+              key={`${tile.src}-${index}`}
+              className={`home-editorial__tile ${tile.tileClass} overflow-hidden group cursor-pointer`}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, delay: Math.min(index * 0.08, 0.3) }}
+            >
+              <img
+                src={tile.src}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className={`home-editorial__image ${tile.imageClass} transition-transform duration-700 group-hover:scale-105`}
+              />
+            </motion.div>
+          ))}
+        </div>
+
         <div className="home-editorial__row home-editorial__row--feature flex gap-[3px] w-full">
           <motion.div
             className="home-editorial__tile home-editorial__tile--narrow overflow-hidden group cursor-pointer"
@@ -157,9 +277,11 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0 }}
           >
             <img
-              src="/assets/freedom/freedom-archive-rectangular.jpg"
+              src="/assets/freedom/freedom-detail-01.jpg"
               alt=""
-              className="home-editorial__image home-editorial__image--archive"
+              loading="lazy"
+              decoding="async"
+              className="home-editorial__image home-editorial__image--archive transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
           <motion.div
@@ -172,6 +294,8 @@ export default function HomePage() {
             <img
               src={galleryImages[3]}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="home-editorial__image home-editorial__image--jacket transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
@@ -185,6 +309,8 @@ export default function HomePage() {
             <img
               src={galleryImages[1]}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="home-editorial__image home-editorial__image--portrait transition-transform duration-700 group-hover:scale-105"
             />
           </motion.div>
@@ -193,7 +319,7 @@ export default function HomePage() {
         {/* Row 2 — landscape wide + two stacked portraits */}
         <div className="home-editorial__row home-editorial__row--split flex gap-[3px] w-full mt-[3px]">
           <motion.div
-            className="home-editorial__tile home-editorial__tile--wide overflow-hidden group cursor-pointer"
+            className="home-editorial__tile home-editorial__tile--wide home-editorial__tile--freedom-frame overflow-hidden group cursor-pointer"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -202,6 +328,8 @@ export default function HomePage() {
             <img
               src="/assets/freedom/freedom-preview-rectangular.jpg"
               alt=""
+              loading="lazy"
+              decoding="async"
               className="home-editorial__image home-editorial__image--preview"
             />
           </motion.div>
@@ -216,6 +344,8 @@ export default function HomePage() {
               <img
                 src={galleryImages[2]}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="home-editorial__image home-editorial__image--red-horizontal transition-transform duration-700 group-hover:scale-105"
               />
             </motion.div>
@@ -229,6 +359,8 @@ export default function HomePage() {
               <img
                 src={galleryImages[4]}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="home-editorial__image home-editorial__image--jacket-close transition-transform duration-700 group-hover:scale-105"
               />
             </motion.div>
@@ -242,15 +374,29 @@ export default function HomePage() {
       <section className="home-editorial-pair w-full bg-white">
         <div className="home-editorial-pair__panel home-editorial-pair__panel--video">
           <video
+            ref={editorialVideoPlayback.ref}
             className="home-editorial-pair__media"
             autoPlay
             muted
+            defaultMuted
             loop
             playsInline
-            preload="metadata"
+            webkit-playsinline="true"
+            controls={false}
+            disablePictureInPicture
+            disableRemotePlayback
+            controlsList="nodownload noplaybackrate noremoteplayback"
+            x-webkit-airplay="deny"
+            preload="auto"
           >
             <source src={editorialVideo} type="video/mp4" />
           </video>
+          {editorialVideoPlayback.isAutoplayBlocked ? (
+            <ConvertedVideoFallback
+              src={editorialLowPowerVideo}
+              className="home-converted-video--editorial"
+            />
+          ) : null}
         </div>
         <motion.div
           initial={{ opacity: 0, x: 24 }}
@@ -260,9 +406,11 @@ export default function HomePage() {
           className="home-editorial-pair__panel home-editorial-pair__panel--image"
         >
           <img
-            src="/assets/freedom/freedom-cover.jpg"
+            src="/assets/freedom/edit-pink-shutter.jpg"
             alt="Freedom collection"
-            className="home-editorial-pair__media home-editorial-pair__image"
+            loading="lazy"
+            decoding="async"
+            className="home-editorial-pair__media home-editorial-pair__image home-editorial-pair__image--pink-shutter"
           />
           <div className="home-story__quote home-editorial-pair__quote absolute bg-white p-12 hidden md:block shadow-sm">
             <h4 className="text-xl font-serif mb-4 italic">
@@ -281,16 +429,19 @@ export default function HomePage() {
           <div>
             <SectionTitle
               title="Freedom"
-              subtitle="The 2025 Collection"
+              subtitle="The 2026 Collection"
             />
             <p className="text-gray-600 font-light leading-relaxed mb-8">
-              Freedom is a meditation on Nigeria's independence in 1960, a
+              Freedom is a meditation on Nigeria's independence in 1960. A
               return to a moment that promised the birth of a nation.
             </p>
             <p className="text-gray-600 font-light leading-relaxed mb-12">
-              Through traditional Yoruba silhouettes and sartorial language, the
-              collection asks what it means to carry the past while imagining the
-              future.
+              Through the lens of a modern Nigerian, the work reflects on the
+              distance between liberation as an event and freedom as a lived
+              experience. Employing traditional Yoruba silhouettes and sartorial
+              language, it engages history not as something distant, but as a
+              living inheritance, asking what it means to carry the weight of
+              the past while imagining the future.
             </p>
             <a
               href="/collections/freedom"
@@ -323,6 +474,8 @@ export default function HomePage() {
               <img
                 src={collection.coverImage}
                 alt={collection.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors" />
@@ -343,28 +496,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="home-testimonials py-32 bg-white px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <SectionTitle title="Voices of Elegance" subtitle="Testimonials" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {testimonials.map((t) => (
-              <div key={t.id} className="flex flex-col items-center">
-                <p className="text-gray-600 font-light italic mb-8 leading-relaxed">
-                  "{t.text}"
-                </p>
-                <h5 className="text-[10px] uppercase tracking-[0.2em] font-bold">
-                  {t.name}
-                </h5>
-                <span className="text-[9px] uppercase tracking-widest text-amber-600 mt-1">
-                  {t.role}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Newsletter */}
       <section className="home-newsletter py-32 border-t border-gray-100 px-6 bg-[#fafafa]">
         <div className="max-w-3xl mx-auto text-center">
@@ -375,25 +506,143 @@ export default function HomePage() {
             Subscribe to receive early access to new collections,
             behind-the-scenes insights, and exclusive invitations.
           </p>
-          <form className="home-newsletter__form flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <form
+            className="home-newsletter__form flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4"
+            onSubmit={handleNewsletterSubmit}
+          >
             <input
               type="email"
               placeholder="YOUR EMAIL ADDRESS"
+              required
+              autoComplete="email"
               className="flex-1 bg-white border border-gray-200 px-6 py-4 text-[10px] tracking-[0.2em] focus:outline-none focus:border-black"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <button
               type="submit"
+              disabled={isNewsletterSubmitting}
               className="bg-black text-white px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-semibold hover:bg-amber-800 transition-colors"
             >
-              Subscribe
+              {isNewsletterSubmitting ? "Subscribing" : "Subscribe"}
             </button>
           </form>
+          {newsletterStatus.message ? (
+            <p
+              className={`mt-6 text-[10px] uppercase tracking-[0.24em] ${
+                newsletterStatus.type === "error"
+                  ? "text-red-700"
+                  : "text-amber-700"
+              }`}
+            >
+              {newsletterStatus.message}
+            </p>
+          ) : null}
         </div>
       </section>
 
       <Footer />
     </main>
   );
+}
+
+function ConvertedVideoFallback({ src, className = "" }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      loading="eager"
+      decoding="async"
+      className={`home-converted-video ${className}`}
+    />
+  );
+}
+
+function useAutoplayingVideo({ onAutoplayBlocked } = {}) {
+  const videoRef = useRef(null);
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
+
+  const play = () => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return Promise.resolve(false);
+    }
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    video.playsInline = true;
+    video.controls = false;
+
+    return video
+      .play()
+      .then(() => {
+        setIsAutoplayBlocked(false);
+        return true;
+      })
+      .catch(() => {
+        setIsAutoplayBlocked(true);
+        onAutoplayBlocked?.();
+        return false;
+      });
+  };
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return undefined;
+    }
+
+    const playVideo = () => {
+      if (video.paused) {
+        play();
+      }
+    };
+
+    playVideo();
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          playVideo();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(video);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        playVideo();
+      }
+    };
+
+    const handleUserGesture = () => {
+      playVideo();
+    };
+
+    video.addEventListener("canplay", playVideo);
+    video.addEventListener("loadedmetadata", playVideo);
+    window.addEventListener("pointerdown", handleUserGesture, { passive: true });
+    window.addEventListener("touchstart", handleUserGesture, { passive: true });
+    window.addEventListener("click", handleUserGesture, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      observer.disconnect();
+      video.removeEventListener("canplay", playVideo);
+      video.removeEventListener("loadedmetadata", playVideo);
+      window.removeEventListener("pointerdown", handleUserGesture);
+      window.removeEventListener("touchstart", handleUserGesture);
+      window.removeEventListener("click", handleUserGesture);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [onAutoplayBlocked]);
+
+  return { ref: videoRef, isAutoplayBlocked, play };
 }

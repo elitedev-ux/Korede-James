@@ -1,11 +1,10 @@
 import React from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
-import ProductCard from "../../../components/ProductCard";
 import SectionTitle from "../../../components/SectionTitle";
-import { collections, products } from "../../../data/fashion-data";
+import { collections } from "../../../data/fashion-data";
 
 export default function CollectionDetailsPage({ params }) {
   const { id } = params;
@@ -19,10 +18,14 @@ export default function CollectionDetailsPage({ params }) {
     );
   }
 
-  const collectionProducts = products
-    .filter((p) => p.collection.includes(collection.year))
-    .slice(0, 4);
   const otherCollections = collections.filter((c) => c.id !== collection.id);
+  const isFreedomCollection = collection.id === "freedom";
+  const isFluidBeautyCollection = collection.id === "fluid-beauty";
+  const galleryLayout = isFreedomCollection
+    ? freedomGalleryLayout
+    : isFluidBeautyCollection
+      ? fluidBeautyGalleryLayout
+      : buildGalleryLayout(collection.gallery);
 
   return (
     <main className="min-h-screen bg-white">
@@ -36,8 +39,15 @@ export default function CollectionDetailsPage({ params }) {
           transition={{ duration: 2 }}
           src={collection.coverImage}
           alt={collection.title}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           className="w-full h-full object-cover"
-          style={{ objectPosition: "center 70%" }}
+          style={{
+            objectPosition: isFreedomCollection
+              ? "center 70%"
+              : collection.heroPosition || "center 50%",
+          }}
         />
         <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-6">
           <motion.p
@@ -68,65 +78,49 @@ export default function CollectionDetailsPage({ params }) {
         </a>
 
         <div className="mb-5 grid grid-cols-2 md:grid-cols-4 border-y border-gray-100">
-          <MetaItem label="Launch Date" value="2025" />
+          <MetaItem
+            label="Launch Date"
+            value={collection.year}
+          />
           <MetaItem label="Chapter" value={collection.title} />
-          <MetaItem label="Pieces" value={`${collectionProducts.length} Looks`} />
+          <MetaItem label="Images" value={`${galleryLayout.length} Frames`} />
           <MetaItem label="Archive" value={collection.year} />
         </div>
 
+        {collection.description ? (
+          <p className="mb-12 max-w-3xl text-sm md:text-base font-light leading-loose tracking-wide text-gray-500">
+            {collection.description}
+          </p>
+        ) : null}
+
         <div>
-          {/* Gallery Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-            {collection.gallery.map((img, i) => (
+          <div
+            className={`collection-collage grid grid-cols-2 gap-0 md:gap-[3px] ${
+              isFluidBeautyCollection ? "mx-auto w-full" : ""
+            }`}
+          >
+            {galleryLayout.map((item, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 28, scale: 0.98 }}
+                initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -6 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.7, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className={`group relative overflow-hidden bg-[#f8f8f6] shadow-[0_18px_60px_rgba(0,0,0,0.04)] ${i % 3 === 0 ? "md:col-span-2 aspect-[16/8]" : "aspect-[4/5]"}`}
+                className={`collection-collage__frame ${item.className} overflow-hidden bg-[#f8f8f6]`}
               >
-                <div className="absolute inset-0 border border-black/5 z-20 pointer-events-none" />
                 <motion.img
-                  src={img}
-                  className="w-full h-full object-cover transition-[filter] duration-700 group-hover:grayscale-0"
+                  src={item.src}
+                  alt=""
+                  loading={i < 2 ? "eager" : "lazy"}
+                  decoding="async"
+                  className={`w-full h-full object-cover ${item.imageClassName}`}
                   initial={{ scale: 1.04 }}
                   whileInView={{ scale: 1 }}
-                  whileHover={{ scale: 1.045 }}
                   viewport={{ once: true }}
                   transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="absolute left-5 bottom-5 z-30 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
-                  <span className="bg-white/90 px-4 py-2 text-[9px] uppercase tracking-[0.3em] font-semibold">
-                    Frame {String(i + 1).padStart(2, "0")}
-                  </span>
-                </div>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products from Collection */}
-      <section className="py-32 px-6 bg-[#fafafa]">
-        <div className="max-w-7xl mx-auto">
-          <SectionTitle
-            title="Pieces of the Vision"
-            subtitle="Selected Wearables"
-            align="left"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {collectionProducts.length > 0 ? (
-              collectionProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))
-            ) : (
-              <p className="text-gray-400 uppercase tracking-widest text-[10px]">
-                Coming soon to the digital store.
-              </p>
-            )}
           </div>
         </div>
       </section>
@@ -145,6 +139,9 @@ export default function CollectionDetailsPage({ params }) {
                   <div className="aspect-video overflow-hidden mb-6 bg-gray-100">
                     <img
                       src={c.coverImage}
+                      alt={c.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>
@@ -164,6 +161,158 @@ export default function CollectionDetailsPage({ params }) {
       <Footer />
     </main>
   );
+}
+
+const freedomGalleryLayout = [
+  {
+    src: "/assets/freedom/edit-window-red-legs-upright.jpg",
+    className: "col-span-2 aspect-[4682/3344]",
+    imageClassName: "object-[center_center]",
+  },
+  {
+    src: "/assets/freedom/IMG_4143.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-top",
+  },
+  {
+    src: "/assets/freedom/edit-green-portrait.jpg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_36%]",
+  },
+  {
+    src: "/assets/freedom/edit-room-bw.jpg",
+    className: "col-span-2 aspect-[16/9]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/edit-negative-window.jpg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_52%]",
+  },
+  {
+    src: "/assets/freedom/edit-foliage-bw.jpg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_42%]",
+  },
+  {
+    src: "/assets/freedom/edit-red-seated-upright.jpg",
+    className: "col-span-2 aspect-[4572/3039]",
+    imageClassName: "object-[center_center]",
+  },
+  {
+    src: "/assets/freedom/IMG_3694.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/IMG_4139.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/IMG_3688.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+  {
+    src: "/assets/freedom/IMG_3384.jpeg",
+    className: "aspect-[2/3]",
+    imageClassName: "object-center",
+  },
+];
+
+const fluidBeautyGalleryLayout = [
+  {
+    src: "/assets/kj-25/SMLD1748.jpeg",
+    className: "col-span-2 aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1887.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1869.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1650.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_10%] scale-[1.06]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1667.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_10%] scale-[1.06]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2013.jpeg",
+    className: "col-span-2 aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2055.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2069.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2230.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2249.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2094.jpeg",
+    className: "col-span-2 aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2102.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD2103.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1961.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+  {
+    src: "/assets/kj-25/SMLD1975.jpeg",
+    className: "aspect-[4/5]",
+    imageClassName: "object-[center_18%]",
+  },
+];
+
+function buildGalleryLayout(gallery = []) {
+  const pattern = [
+    { className: "col-span-2 aspect-[4/5]", imageClassName: "object-top" },
+    { className: "aspect-[4/5]", imageClassName: "object-top" },
+    { className: "aspect-[4/5]", imageClassName: "object-top" },
+    { className: "col-span-2 aspect-[16/10]", imageClassName: "object-center" },
+    { className: "aspect-[4/5]", imageClassName: "object-top" },
+    { className: "aspect-[4/5]", imageClassName: "object-top" },
+  ];
+
+  return gallery.map((src, index) => ({
+    src,
+    ...pattern[index % pattern.length],
+  }));
 }
 
 function MetaItem({ label, value }) {

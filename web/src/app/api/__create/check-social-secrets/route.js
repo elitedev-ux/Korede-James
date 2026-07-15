@@ -1,7 +1,10 @@
 const ALLOWED_PROVIDERS = new Set(['google', 'facebook', 'twitter', 'apple']);
 
 export function GET(request) {
-	if (process.env.NEXT_PUBLIC_CREATE_ENV !== 'DEVELOPMENT') {
+	if (
+		process.env.NODE_ENV === 'production' ||
+		process.env.NEXT_PUBLIC_CREATE_ENV !== 'DEVELOPMENT'
+	) {
 		return Response.json({ error: 'not found' }, { status: 404 });
 	}
 

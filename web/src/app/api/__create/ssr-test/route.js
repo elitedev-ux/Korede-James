@@ -31,6 +31,10 @@ const getHTMLOrError = (component) => {
 	}
 };
 export async function GET(request) {
+	if (process.env.NODE_ENV === 'production') {
+		return Response.json({ error: 'not found' }, { status: 404 });
+	}
+
 	const results = await Promise.allSettled(
 		routes.map(async (route) => {
 			let component = null;

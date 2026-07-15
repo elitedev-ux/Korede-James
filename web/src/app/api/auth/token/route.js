@@ -20,6 +20,7 @@ export async function GET(request) {
 			status: 401,
 			headers: {
 				'Content-Type': 'application/json',
+				...securityHeaders(),
 			},
 		});
 	}
@@ -36,7 +37,17 @@ export async function GET(request) {
 		{
 			headers: {
 				'Content-Type': 'application/json',
+				...securityHeaders(),
 			},
 		}
 	);
+}
+
+function securityHeaders() {
+	return {
+		'Cache-Control': 'no-store',
+		'X-Content-Type-Options': 'nosniff',
+		'X-Frame-Options': 'DENY',
+		'Referrer-Policy': 'no-referrer',
+	};
 }
