@@ -8,6 +8,7 @@ import {
 } from '@react-router/dev/routes';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const EXCLUDED_PAGE_ROUTE_DIRS = new Set(['__create', 'errors']);
 
 type Tree = {
 	path: string;
@@ -49,6 +50,10 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 		const stat = statSync(filePath);
 
 		if (stat.isDirectory()) {
+			if (!basePath && EXCLUDED_PAGE_ROUTE_DIRS.has(file)) {
+				continue;
+			}
+
 			const childPath = basePath ? `${basePath}/${file}` : file;
 			const childNode = buildRouteTree(filePath, childPath);
 			node.children.push(childNode);
@@ -122,7 +127,9 @@ const apiRoutes = [
 	route('api/region', './api/region/resource.js'),
 	route('api/public-products', './api/public-products/resource.js'),
 	route('api/newsletter', './api/newsletter/resource.js'),
+	route('api/uploads', './api/uploads/resource.js'),
 	route('api/email-test', './api/email-test/resource.js'),
+	route('api/paystack/webhook', './api/paystack/webhook/resource.js'),
 	route('api/customer-auth/signup', './api/customer-auth/signup/resource.js'),
 	route('api/customer-auth/signin', './api/customer-auth/signin/resource.js'),
 	route('api/customer-auth/session', './api/customer-auth/session/resource.js'),

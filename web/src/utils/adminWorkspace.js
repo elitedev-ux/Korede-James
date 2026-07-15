@@ -166,6 +166,7 @@ function recordAdminInquiryLocally({
   notes = "",
   phone = "",
   source = "Website inquiry",
+  attachments = [],
   customer,
   project,
 }) {
@@ -192,6 +193,7 @@ function recordAdminInquiryLocally({
     updated: "Just now",
     phone: phone || customer?.phone || "",
     notes: [source, projectNotes].filter(Boolean).join("\n\n"),
+    attachments: normalizeAttachments(attachments),
   };
 
   writeAdminWorkspace({
@@ -433,4 +435,17 @@ function adminHeaders() {
 
 function normalizeLookup(value = "") {
   return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function normalizeAttachments(attachments) {
+  return Array.isArray(attachments)
+    ? attachments
+        .map((file) => ({
+          name: String(file?.name || "Reference file").slice(0, 160),
+          url: String(file?.url || ""),
+          mimeType: String(file?.mimeType || ""),
+          size: Number(file?.size || 0),
+        }))
+        .filter((file) => file.url)
+    : [];
 }

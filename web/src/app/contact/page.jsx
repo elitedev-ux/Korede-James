@@ -212,7 +212,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Map Placeholder */}
       <section className="h-[400px] bg-gray-100 overflow-hidden relative group">
         <div className="absolute inset-0 grayscale opacity-50 group-hover:opacity-80 transition-opacity">
           <img
@@ -222,7 +221,12 @@ export default function ContactPage() {
           />
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bg-white p-6 shadow-xl text-center">
+          <a
+            href="https://www.google.com/maps/search/?api=1&query=Lagos%2C%20Nigeria"
+            target="_blank"
+            rel="noreferrer"
+            className="bg-white p-6 shadow-xl text-center transition-transform hover:-translate-y-1"
+          >
             <MapPin
               className="text-black mx-auto mb-4"
               size={32}
@@ -232,9 +236,9 @@ export default function ContactPage() {
               Korede James Atelier
             </h4>
             <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-2">
-              Lagos, NG
+              Lagos, NG / Open Map
             </p>
-          </div>
+          </a>
         </div>
       </section>
 

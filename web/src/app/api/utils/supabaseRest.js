@@ -97,6 +97,36 @@ export async function supabaseRequest(path, options = {}) {
   return data;
 }
 
+export async function supabaseStorageFetch(path, options = {}) {
+  const { url, key } = getSupabaseConfig();
+  const response = await fetch(`${url}/storage/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      ...(options.body && typeof options.body === "string"
+        ? { "Content-Type": "application/json" }
+        : {}),
+      ...(options.headers || {}),
+    },
+  });
+
+  if (options.allowNotFound && response.status === 404) {
+    return { status: 404, data: null };
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => "");
+
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || "Supabase storage request failed.");
+  }
+
+  return { status: response.status, data };
+}
+
 export class RateLimitError extends Error {
   constructor() {
     super("Too many requests. Please wait a moment and try again.");

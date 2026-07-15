@@ -1165,6 +1165,41 @@
   text-transform: uppercase;
 }
 
+.admin-attachments {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-attachments p {
+  margin: 0 0 4px;
+  color: var(--admin-muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-attachments a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--admin-line);
+  color: var(--admin-ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-attachments a:hover {
+  border-color: var(--admin-ink);
+}
+
 .admin-module-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

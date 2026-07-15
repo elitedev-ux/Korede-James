@@ -35,6 +35,7 @@ import {
   updateNewsletterSubscriber,
 } from "../../utils/adminWorkspace";
 import { seedWorkspaceProducts } from "../../utils/productCatalog";
+import { uploadSiteFile } from "../../utils/uploads";
 import "./page.css";
 
 const STORAGE_KEY = ADMIN_WORKSPACE_STORAGE_KEY;
@@ -386,7 +387,7 @@ const moduleSummaries = {
 };
 
 const crossRoleRequirements = [
-  "2FA required for every admin account",
+  "Role-scoped admin access codes required for every desk session",
   "Every change is tagged with user name and timestamp",
   "Payment and API credentials visible to Owner only",
   "No raw card data stored; payment processor tokenization only",
@@ -512,54 +513,6 @@ function ensureProductCatalogue(workspace) {
 
 async function persistWorkspace(workspace) {
   return saveAdminWorkspace(workspace, { strict: true });
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
-async function readOptimizedImageAsDataUrl(file) {
-  const fallbackDataUrl = await readFileAsDataUrl(file);
-
-  if (
-    typeof document === "undefined" ||
-    typeof Image === "undefined" ||
-    !file.type?.startsWith("image/")
-  ) {
-    return fallbackDataUrl;
-  }
-
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = fallbackDataUrl;
-    });
-    const maxDimension = 1200;
-    const largestSide = Math.max(image.width, image.height);
-    const scale = largestSide > maxDimension ? maxDimension / largestSide : 1;
-    const width = Math.max(1, Math.round(image.width * scale));
-    const height = Math.max(1, Math.round(image.height * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      return fallbackDataUrl;
-    }
-
-    context.drawImage(image, 0, 0, width, height);
-    return canvas.toDataURL("image/jpeg", 0.78);
-  } catch {
-    return fallbackDataUrl;
-  }
 }
 
 function ProductEditorForm({
@@ -1311,9 +1264,23 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readOptimizedImageAsDataUrl(file);
-    setEditingProduct((product) => ({ ...product, image }));
-    event.target.value = "";
+    setProductSaveError("");
+    try {
+      const uploadedFile = await uploadSiteFile(file, {
+        scope: "admin-products",
+        admin: true,
+        optimizeImage: true,
+      });
+      setEditingProduct((product) => ({ ...product, image: uploadedFile.url }));
+      setProductSaveStatus("idle");
+    } catch (error) {
+      setProductSaveStatus("error");
+      setProductSaveError(
+        error instanceof Error ? error.message : "Product image upload failed.",
+      );
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const handlePieceColorImageUpload = async (color, event) => {
@@ -1322,15 +1289,29 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readOptimizedImageAsDataUrl(file);
-    setEditingProduct((product) => ({
-      ...product,
-      colorImages: {
-        ...(product?.colorImages || {}),
-        [color]: image,
-      },
-    }));
-    event.target.value = "";
+    setProductSaveError("");
+    try {
+      const uploadedFile = await uploadSiteFile(file, {
+        scope: "admin-products",
+        admin: true,
+        optimizeImage: true,
+      });
+      setEditingProduct((product) => ({
+        ...product,
+        colorImages: {
+          ...(product?.colorImages || {}),
+          [color]: uploadedFile.url,
+        },
+      }));
+      setProductSaveStatus("idle");
+    } catch (error) {
+      setProductSaveStatus("error");
+      setProductSaveError(
+        error instanceof Error ? error.message : `${color} image upload failed.`,
+      );
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const handleNewPieceImageUpload = async (event) => {
@@ -1339,9 +1320,23 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readOptimizedImageAsDataUrl(file);
-    setNewPiece((currentPiece) => ({ ...currentPiece, image }));
-    event.target.value = "";
+    setProductSaveError("");
+    try {
+      const uploadedFile = await uploadSiteFile(file, {
+        scope: "admin-products",
+        admin: true,
+        optimizeImage: true,
+      });
+      setNewPiece((currentPiece) => ({ ...currentPiece, image: uploadedFile.url }));
+      setProductSaveStatus("idle");
+    } catch (error) {
+      setProductSaveStatus("error");
+      setProductSaveError(
+        error instanceof Error ? error.message : "Product image upload failed.",
+      );
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const handleNewPieceColorImageUpload = async (color, event) => {
@@ -1350,15 +1345,29 @@ export default function AdminPage() {
       return;
     }
 
-    const image = await readOptimizedImageAsDataUrl(file);
-    setNewPiece((currentPiece) => ({
-      ...currentPiece,
-      colorImages: {
-        ...currentPiece.colorImages,
-        [color]: image,
-      },
-    }));
-    event.target.value = "";
+    setProductSaveError("");
+    try {
+      const uploadedFile = await uploadSiteFile(file, {
+        scope: "admin-products",
+        admin: true,
+        optimizeImage: true,
+      });
+      setNewPiece((currentPiece) => ({
+        ...currentPiece,
+        colorImages: {
+          ...currentPiece.colorImages,
+          [color]: uploadedFile.url,
+        },
+      }));
+      setProductSaveStatus("idle");
+    } catch (error) {
+      setProductSaveStatus("error");
+      setProductSaveError(
+        error instanceof Error ? error.message : `${color} image upload failed.`,
+      );
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const handleUnlock = async (event) => {
@@ -1758,6 +1767,23 @@ export default function AdminPage() {
                     }
                   />
                 </label>
+                {Array.isArray(selectedRequest.attachments) &&
+                selectedRequest.attachments.length ? (
+                  <div className="admin-attachments">
+                    <p>Reference files</p>
+                    {selectedRequest.attachments.map((file) => (
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        key={file.url}
+                      >
+                        <Upload size={13} />
+                        <span>{file.name || "Reference file"}</span>
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
               </article>
             ) : null}
           </section>

@@ -6,11 +6,13 @@ import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import { recordAdminInquiry } from "../../utils/adminWorkspace";
 import { getCustomerSession } from "../../utils/customerAccount";
+import { uploadSiteFile } from "../../utils/uploads";
 
 export default function CommissionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedId, setSubmittedId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [referenceFiles, setReferenceFiles] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
@@ -49,8 +51,17 @@ export default function CommissionPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError("");
 
     try {
+      const attachments = await Promise.all(
+        referenceFiles.map((file) =>
+          uploadSiteFile(file, {
+            scope: "commission-reference",
+            optimizeImage: file.type?.startsWith("image/"),
+          }),
+        ),
+      );
       const request = await recordAdminInquiry({
         client: formData.name,
         email: formData.email,
@@ -60,16 +71,25 @@ export default function CommissionPage() {
         source: "Bespoke enquiry",
         notes: [
           formData.measurements ? `Measurements: ${formData.measurements}` : "",
-          referenceFiles.length
-            ? `Reference files: ${referenceFiles.map((file) => file.name).join(", ")}`
+          attachments.length
+            ? `Reference files:\n${attachments
+                .map((file) => `${file.name}: ${file.url}`)
+                .join("\n")}`
             : "",
           formData.notes,
         ]
           .filter(Boolean)
           .join("\n\n"),
+        attachments,
       });
       setSubmittedId(request.id);
       setIsSubmitted(true);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Unable to send inquiry. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -338,6 +358,11 @@ export default function CommissionPage() {
                   />
                   <span>{isSubmitting ? "Sending..." : "Send Inquiry"}</span>
                 </button>
+                {submitError ? (
+                  <p className="border border-red-100 bg-red-50 px-5 py-4 text-xs text-red-800">
+                    {submitError}
+                  </p>
+                ) : null}
               </form>
             )}
           </div>

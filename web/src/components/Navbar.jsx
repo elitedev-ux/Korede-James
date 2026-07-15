@@ -266,7 +266,7 @@ export default function Navbar() {
                 ) : (
                   cart.map((item) => (
                     <div
-                      key={`${item.id}-${item.size}-${item.color}`}
+                      key={item.lineKey || `${item.id}-${item.size}-${item.color}`}
                       className="flex gap-5"
                     >
                       <a
@@ -298,6 +298,7 @@ export default function Navbar() {
                                   item.size,
                                   item.color,
                                   item.quantity - 1,
+                                  item.lineKey,
                                 )
                               }
                               className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -315,6 +316,7 @@ export default function Navbar() {
                                   item.size,
                                   item.color,
                                   item.quantity + 1,
+                                  item.lineKey,
                                 )
                               }
                               className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -332,7 +334,12 @@ export default function Navbar() {
                             </span>
                             <button
                               onClick={() =>
-                                removeFromCart(item.id, item.size, item.color)
+                                removeFromCart(
+                                  item.id,
+                                  item.size,
+                                  item.color,
+                                  item.lineKey,
+                                )
                               }
                               className="text-gray-300 hover:text-red-400 transition-colors"
                               type="button"

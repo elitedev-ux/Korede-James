@@ -189,12 +189,16 @@ export async function confirmOrderPayment(reference, payment = {}) {
 
   const wasAlreadyPaid = existingOrder.paymentStatus === "paid";
   const paidAt = payment.paidAt || new Date().toISOString();
+  const totalLabel =
+    typeof payment.total === "number" && payment.total > 0
+      ? formatCurrency(payment.total, payment.currency || "NGN")
+      : payment.total || existingOrder.total;
   const nextOrder = {
     ...existingOrder,
     status: "Accepted / deposit paid",
     paymentStatus: "paid",
     paymentConfirmedAt: existingOrder.paymentConfirmedAt || paidAt,
-    total: payment.total || existingOrder.total,
+    total: totalLabel,
     notes: appendUniqueLine(
       existingOrder.notes,
       `Payment confirmed via ${payment.method || "Paystack"}${normalizedReference ? ` (${normalizedReference})` : ""}.`,
@@ -211,7 +215,7 @@ export async function confirmOrderPayment(reference, payment = {}) {
       status: "Accepted / deposit paid",
       stage: "Accepted / deposit paid",
       updated: "Just now",
-      budget: payment.total || request.budget,
+      budget: totalLabel || request.budget,
       notes: appendUniqueLine(
         request.notes,
         `Payment confirmed via ${payment.method || "Paystack"}${normalizedReference ? ` (${normalizedReference})` : ""}.`,
@@ -372,6 +376,7 @@ function createInquiryRecord({
   notes = "",
   phone = "",
   source = "Website inquiry",
+  attachments = [],
   customer,
   project,
 }) {
@@ -399,6 +404,7 @@ function createInquiryRecord({
     updated: "Just now",
     phone: phone || customer?.phone || "",
     notes: [source, projectNotes].filter(Boolean).join("\n\n"),
+    attachments: normalizeAttachments(attachments),
   };
 }
 
@@ -475,4 +481,17 @@ function appendUniqueLine(notes = "", line = "") {
   }
 
   return [current, nextLine].filter(Boolean).join("\n");
+}
+
+function normalizeAttachments(attachments) {
+  return Array.isArray(attachments)
+    ? attachments
+        .map((file) => ({
+          name: String(file?.name || "Reference file").slice(0, 160),
+          url: String(file?.url || ""),
+          mimeType: String(file?.mimeType || ""),
+          size: Number(file?.size || 0),
+        }))
+        .filter((file) => file.url)
+    : [];
 }
