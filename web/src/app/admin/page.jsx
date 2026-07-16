@@ -415,6 +415,10 @@ const emptyProductForm = {
   description: "",
   fabric: "",
   care: "",
+  shippingWeightKg: "",
+  shippingLengthCm: "",
+  shippingWidthCm: "",
+  shippingHeightCm: "",
 };
 
 function createId(prefix) {
@@ -435,6 +439,10 @@ function createProductForm(piece = {}) {
       piece.prices?.NGN || parsePriceAmount(piece.budget) || emptyProductForm.ngnPrice,
     ),
     usdPrice: String(piece.prices?.USD ?? emptyProductForm.usdPrice),
+    shippingWeightKg: String(piece.shipping?.weightKg ?? ""),
+    shippingLengthCm: String(piece.shipping?.lengthCm ?? ""),
+    shippingWidthCm: String(piece.shipping?.widthCm ?? ""),
+    shippingHeightCm: String(piece.shipping?.heightCm ?? ""),
   };
 }
 
@@ -458,9 +466,19 @@ function productFormToPiece(form, id) {
     description: form.description.trim(),
     fabric: form.fabric.trim(),
     care: form.care.trim(),
+    shipping: {
+      weightKg: parseDecimalAmount(form.shippingWeightKg),
+      lengthCm: parseDecimalAmount(form.shippingLengthCm),
+      widthCm: parseDecimalAmount(form.shippingWidthCm),
+      heightCm: parseDecimalAmount(form.shippingHeightCm),
+    },
     source: form.source || "admin",
     ngnPrice: undefined,
     usdPrice: undefined,
+    shippingWeightKg: undefined,
+    shippingLengthCm: undefined,
+    shippingWidthCm: undefined,
+    shippingHeightCm: undefined,
   };
 }
 
@@ -621,6 +639,42 @@ function ProductEditorForm({
             value={product.sizes}
             onChange={(event) => onChange("sizes", event.target.value)}
             placeholder="S, M, L, XL"
+          />
+        </label>
+        <label>
+          Parcel weight (kg)
+          <input
+            inputMode="decimal"
+            value={product.shippingWeightKg || ""}
+            onChange={(event) => onChange("shippingWeightKg", event.target.value)}
+            placeholder="0.8"
+          />
+        </label>
+        <label>
+          Parcel length (cm)
+          <input
+            inputMode="decimal"
+            value={product.shippingLengthCm || ""}
+            onChange={(event) => onChange("shippingLengthCm", event.target.value)}
+            placeholder="45"
+          />
+        </label>
+        <label>
+          Parcel width (cm)
+          <input
+            inputMode="decimal"
+            value={product.shippingWidthCm || ""}
+            onChange={(event) => onChange("shippingWidthCm", event.target.value)}
+            placeholder="35"
+          />
+        </label>
+        <label>
+          Parcel height (cm)
+          <input
+            inputMode="decimal"
+            value={product.shippingHeightCm || ""}
+            onChange={(event) => onChange("shippingHeightCm", event.target.value)}
+            placeholder="12"
           />
         </label>
         <label>
@@ -2703,6 +2757,11 @@ function formatColorList(value) {
 function parsePriceAmount(value) {
   const amount = Number(String(value ?? "").replace(/[^0-9.]/g, ""));
   return Number.isFinite(amount) ? Math.max(0, Math.round(amount)) : 0;
+}
+
+function parseDecimalAmount(value) {
+  const amount = Number(String(value ?? "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(amount) ? Math.max(0, Math.round(amount * 10) / 10) : 0;
 }
 
 function normalizeColorImages(value) {

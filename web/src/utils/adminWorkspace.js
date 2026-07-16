@@ -227,6 +227,9 @@ function recordAdminOrderLocally({ customer, items, contact, shipping, payment }
   const transit = Number(payment?.shipping) || 0;
   const total = Number(payment?.total) || subtotal + transit;
   const totalLabel = formatCurrency(total, currency);
+  const shippingQuote = normalizeShippingQuote(payment?.shippingQuote);
+  const transitLabel = transit ? formatCurrency(transit, currency) : "Atelier confirmation";
+  const dispatchSummary = formatDispatchSummary(shippingQuote, transitLabel);
   const request = {
     id: `req-${orderId.toLowerCase()}`,
     client: customer.name,
@@ -242,6 +245,7 @@ function recordAdminOrderLocally({ customer, items, contact, shipping, payment }
       "Collection order submitted from website.",
       contactSummary ? `Contact: ${contactSummary}` : "",
       shippingSummary ? `Delivery: ${shippingSummary}` : "",
+      dispatchSummary ? `Dispatch: ${dispatchSummary}` : "",
       itemSummary ? `Pieces: ${itemSummary}` : "",
       `Payment: ${totalLabel} via ${payment?.method || "Card"}${payment?.cardLast4 ? ` ending ${payment.cardLast4}` : ""}.`,
     ]
@@ -255,6 +259,9 @@ function recordAdminOrderLocally({ customer, items, contact, shipping, payment }
     status: "Inquiry received",
     refundLimit: "Not applicable",
     notes: request.notes,
+    subtotal: formatCurrency(subtotal, currency),
+    shipping: transitLabel,
+    shippingQuote,
     paystackReference: payment?.reference || "",
   };
 
@@ -448,4 +455,40 @@ function normalizeAttachments(attachments) {
         }))
         .filter((file) => file.url)
     : [];
+}
+
+function normalizeShippingQuote(quote) {
+  if (!quote || typeof quote !== "object") {
+    return null;
+  }
+
+  return {
+    status: String(quote.status || "manual"),
+    provider: String(quote.provider || "DHL Express"),
+    serviceName: String(quote.serviceName || "DHL dispatch"),
+    amount: Number(quote.amount || 0),
+    currency: String(quote.currency || "NGN"),
+    estimatedDelivery: String(quote.estimatedDelivery || ""),
+    transitDays: String(quote.transitDays || ""),
+    generatedAt: String(quote.generatedAt || ""),
+    note: String(quote.note || ""),
+  };
+}
+
+function formatDispatchSummary(quote, transitLabel) {
+  if (!quote) {
+    return transitLabel;
+  }
+
+  if (quote.status !== "quoted") {
+    return `${quote.provider} pending final atelier confirmation`;
+  }
+
+  return [
+    `${quote.provider} estimate ${transitLabel}`,
+    quote.serviceName,
+    quote.estimatedDelivery ? `ETA ${quote.estimatedDelivery}` : "",
+  ]
+    .filter(Boolean)
+    .join(" / ");
 }

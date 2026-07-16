@@ -69,6 +69,7 @@ export function productToAdminPiece(product) {
     collection: product.collection || "",
     archetype: product.archetype || "",
     sizes: Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ["S", "M", "L", "XL"],
+    shipping: normalizeShipping(product.shipping),
     source: "linesheet",
   };
 }
@@ -102,6 +103,7 @@ export function pieceToPublicProduct(piece) {
     fabric: piece.fabric || "Confirmed by atelier",
     care: piece.care || "Care instructions confirmed after commission review.",
     collection: piece.collection || "Atelier Desk",
+    shipping: normalizeShipping(piece.shipping),
     source: piece.source || "admin",
   };
 }
@@ -133,6 +135,23 @@ function normalizeColorImages(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
+function normalizeShipping(value) {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const shipping = {
+    weightKg: normalizeDecimal(value.weightKg),
+    lengthCm: normalizeDecimal(value.lengthCm),
+    widthCm: normalizeDecimal(value.widthCm),
+    heightCm: normalizeDecimal(value.heightCm),
+  };
+
+  return Object.fromEntries(
+    Object.entries(shipping).filter(([, amount]) => amount > 0),
+  );
+}
+
 function parseMoney(value) {
   const rawValue = String(value || "").replace(/[^0-9.,]/g, "");
 
@@ -157,6 +176,11 @@ function parseMoney(value) {
 function normalizeAmount(value) {
   const amount = Number(value) || 0;
   return Math.max(0, Math.round(amount));
+}
+
+function normalizeDecimal(value) {
+  const amount = Number(value) || 0;
+  return Math.max(0, Math.round(amount * 10) / 10);
 }
 
 function formatBudget(value) {

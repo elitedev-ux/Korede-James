@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, CheckCircle2, ShoppingBag } from "lucide-react";
 import Navbar from "../../components/Navbar";
@@ -12,13 +12,17 @@ import { formatMoney, sumLineItems } from "../../utils/pricing";
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
   const { currency } = useRegion();
+  const checkoutFormRef = useRef(null);
   const [orderId, setOrderId] = useState("");
   const [customerSession, setCustomerSession] = useState(null);
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [shippingQuote, setShippingQuote] = useState(null);
+  const [shippingError, setShippingError] = useState("");
+  const [isEstimatingShipping, setIsEstimatingShipping] = useState(false);
   const subtotal = sumLineItems(cart, currency);
-  const shipping = 0;
+  const shipping = getQuoteAmount(shippingQuote);
   const total = subtotal + shipping;
 
   useEffect(() => {
@@ -36,6 +40,11 @@ export default function CheckoutPage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    setShippingQuote(null);
+    setShippingError("");
+  }, [cart, currency]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -95,8 +104,15 @@ export default function CheckoutPage() {
     const firstName = String(form.get("firstName") || "").trim();
     const lastName = String(form.get("lastName") || "").trim();
     setIsSubmitting(true);
+    setPaymentError("");
 
     try {
+      const destination = getShippingDestination(form);
+      const activeShippingQuote =
+        shippingQuote ||
+        (await requestShippingQuote(event.currentTarget, { silent: true })) ||
+        createManualCheckoutQuote(currency);
+      const shippingAmount = getQuoteAmount(activeShippingQuote);
       const orderPayload = {
         customer: {
           name: [firstName, lastName].filter(Boolean).join(" ") || "Website Client",
@@ -104,20 +120,14 @@ export default function CheckoutPage() {
           phone: String(form.get("phone") || "").trim(),
         },
         contact: String(form.get("phone") || "").trim(),
-        shipping: [
-          form.get("address"),
-          form.get("city"),
-          form.get("region"),
-          form.get("postalCode"),
-          form.get("country"),
-        ]
-          .filter(Boolean)
-          .join(", "),
+        shipping: formatShippingAddress(destination),
+        shippingAddress: destination,
         items: cart,
         payment: {
           subtotal,
-          shipping,
-          total,
+          shipping: shippingAmount,
+          shippingQuote: activeShippingQuote,
+          total: subtotal + shippingAmount,
           method: "Paystack",
           currency,
         },
@@ -147,6 +157,66 @@ export default function CheckoutPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const requestShippingQuote = async (formElement, { silent = false } = {}) => {
+    const form = new FormData(formElement);
+    const destination = getShippingDestination(form);
+
+    if (!destination.country || !destination.city) {
+      if (!silent) {
+        setShippingError("Enter at least country and city to estimate DHL dispatch.");
+      }
+      return null;
+    }
+
+    setIsEstimatingShipping(true);
+    setShippingError("");
+
+    try {
+      const response = await fetch("/api/shipping/rates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          destination,
+          items: cart,
+          currency,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.quote) {
+        throw new Error(data.error || "Unable to estimate DHL dispatch.");
+      }
+
+      setShippingQuote(data.quote);
+      return data.quote;
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to estimate DHL dispatch.";
+      setShippingError(message);
+      if (silent) {
+        throw error;
+      }
+      return null;
+    } finally {
+      setIsEstimatingShipping(false);
+    }
+  };
+
+  const handleCalculateShipping = () => {
+    if (checkoutFormRef.current) {
+      requestShippingQuote(checkoutFormRef.current);
+    }
+  };
+
+  const handleTransitChange = () => {
+    setShippingQuote(null);
+    setShippingError("");
   };
 
   if (orderId) {
@@ -224,6 +294,7 @@ export default function CheckoutPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
             <form
+              ref={checkoutFormRef}
               key={customerSession?.email || "guest-checkout"}
               onSubmit={handleSubmit}
               className="lg:col-span-2 space-y-12"
@@ -255,20 +326,89 @@ export default function CheckoutPage() {
 
               <CheckoutSection title="Transit Information">
                 <div className="grid grid-cols-1 gap-4">
-                  <Field label="Address" name="address" required />
+                  <Field
+                    label="Address"
+                    name="address"
+                    required
+                    onChange={handleTransitChange}
+                  />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Field label="City" name="city" required />
-                    <Field label="State / Region" name="region" required />
-                    <Field label="Postal Code" name="postalCode" required />
+                    <Field
+                      label="City"
+                      name="city"
+                      required
+                      onChange={handleTransitChange}
+                    />
+                    <Field
+                      label="State / Region"
+                      name="region"
+                      required
+                      onChange={handleTransitChange}
+                    />
+                    <Field
+                      label="Postal Code"
+                      name="postalCode"
+                      required
+                      onChange={handleTransitChange}
+                    />
                   </div>
-                  <Field label="Country" name="country" required />
+                  <Field
+                    label="Country"
+                    name="country"
+                    required
+                    onChange={handleTransitChange}
+                  />
+                  <div className="border border-gray-100 bg-white p-5">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.28em] font-semibold">
+                          DHL dispatch estimate
+                        </p>
+                        <p className="mt-2 text-xs font-light leading-relaxed text-gray-500">
+                          We estimate dispatch now and confirm the final DHL
+                          shipment when the atelier package is ready.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isEstimatingShipping}
+                        onClick={handleCalculateShipping}
+                        className="border border-black px-6 py-4 text-[9px] uppercase tracking-[0.28em] font-semibold transition-colors hover:bg-black hover:text-white disabled:cursor-wait disabled:opacity-50"
+                      >
+                        {isEstimatingShipping ? "Calculating..." : "Calculate DHL"}
+                      </button>
+                    </div>
+                    {shippingQuote ? (
+                      <div className="mt-5 border-t border-gray-100 pt-5 text-xs font-light leading-relaxed text-gray-500">
+                        <p className="font-semibold uppercase tracking-[0.22em] text-black">
+                          {shippingQuote.status === "quoted"
+                            ? `${shippingQuote.provider}: ${formatMoney(
+                                getQuoteAmount(shippingQuote),
+                                currency,
+                              )}`
+                            : "Dispatch fee will be confirmed by atelier"}
+                        </p>
+                        <p className="mt-2">
+                          {shippingQuote.estimatedDelivery
+                            ? `Estimated delivery: ${shippingQuote.estimatedDelivery}`
+                            : shippingQuote.note}
+                        </p>
+                      </div>
+                    ) : null}
+                    {shippingError ? (
+                      <p className="mt-5 border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-800">
+                        {shippingError}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </CheckoutSection>
 
               <CheckoutSection title="Payment Details">
                 <p className="text-xs font-light leading-loose text-gray-500">
                   Secure payment is handled by Paystack. The website does not
-                  collect or store card details.
+                  collect or store card details. DHL dispatch is held as an
+                  estimate and reviewed again before the final package is sent.
                 </p>
               </CheckoutSection>
 
@@ -282,7 +422,7 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isEstimatingShipping}
                 className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all"
               >
                 {isSubmitting ? "Opening Paystack..." : "Pay With Paystack"}
@@ -315,13 +455,18 @@ export default function CheckoutPage() {
 
                 <div className="space-y-5 text-xs tracking-widest border-t border-gray-200 pt-6">
                   <SummaryLine label="Registered Value" value={formatMoney(subtotal, currency)} />
-                  <SummaryLine label="Transit" value={formatMoney(shipping, currency)} />
+                  <SummaryLine
+                    label="DHL Dispatch"
+                    value={shippingSummaryValue(shippingQuote, currency)}
+                  />
                   <SummaryLine label="Payment" value="Paystack" />
                   <SummaryLine label="Total Due" value={formatMoney(total, currency)} />
                 </div>
 
                 <p className="mt-8 text-[9px] uppercase tracking-widest text-gray-400 leading-loose">
                   Workshop timeline: 1 - 4 weeks from commission submission.
+                  DHL dispatch is estimated at checkout and confirmed before
+                  final shipment.
                 </p>
               </div>
             </aside>
@@ -370,6 +515,57 @@ function SummaryLine({ label, value }) {
       <span className="font-bold">{value}</span>
     </div>
   );
+}
+
+function getShippingDestination(form) {
+  return {
+    address: String(form.get("address") || "").trim(),
+    city: String(form.get("city") || "").trim(),
+    region: String(form.get("region") || "").trim(),
+    postalCode: String(form.get("postalCode") || "").trim(),
+    country: String(form.get("country") || "").trim(),
+  };
+}
+
+function formatShippingAddress(destination) {
+  return [
+    destination.address,
+    destination.city,
+    destination.region,
+    destination.postalCode,
+    destination.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function getQuoteAmount(quote) {
+  return quote?.status === "quoted" ? Number(quote.amount || 0) : 0;
+}
+
+function shippingSummaryValue(quote, currency) {
+  if (!quote) {
+    return "Calculate after address";
+  }
+
+  if (quote.status !== "quoted") {
+    return "Atelier confirmation";
+  }
+
+  return formatMoney(getQuoteAmount(quote), currency);
+}
+
+function createManualCheckoutQuote(currency) {
+  return {
+    status: "manual",
+    provider: "DHL Express",
+    serviceName: "DHL dispatch",
+    amount: 0,
+    amounts: { NGN: 0, USD: 0 },
+    currency,
+    note: "Dispatch fee will be confirmed by the atelier before shipment.",
+    generatedAt: new Date().toISOString(),
+  };
 }
 
 function ArtifactBlueprint({ item }) {

@@ -1,6 +1,7 @@
 import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js";
 import { DEFAULT_MARKET, getLineItemPrice } from "../../../../utils/pricing.js";
 import { appendOrder } from "../../admin-workspace/utils/workspaceStore.js";
+import { resolveTrustedShippingQuote } from "../../shipping/rates/shippingQuote.js";
 
 const PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize";
 
@@ -11,7 +12,19 @@ export async function POST(request) {
     const body = await readBody(request, { maxBytes: 64 * 1024 });
     const displayCurrency = resolveDisplayCurrency(body);
     const paymentCurrency = resolvePaystackCurrency();
-    const amount = resolvePaymentAmount(body, paymentCurrency);
+    const subtotal = sumItems(body?.items, paymentCurrency);
+    const shippingQuote = await resolveTrustedShippingQuote({
+      quote: body?.payment?.shippingQuote,
+      destination: body?.shippingAddress,
+      items: body?.items,
+      currency: paymentCurrency,
+    });
+    const shipping = Number(shippingQuote?.amount || 0);
+    const amount = resolvePaymentAmount({
+      body,
+      subtotal,
+      shipping,
+    });
     const email = String(body.customer?.email || "").trim();
 
     if (!email) {
@@ -41,7 +54,9 @@ export async function POST(request) {
               displayCurrency,
               chargedCurrency: paymentCurrency,
               currency: paymentCurrency,
-              subtotal: sumItems(body?.items, paymentCurrency),
+              subtotal,
+              shipping,
+              shippingQuote,
               total: amount,
             },
           },
@@ -63,7 +78,9 @@ export async function POST(request) {
         displayCurrency,
         chargedCurrency: paymentCurrency,
         currency: paymentCurrency,
-        subtotal: sumItems(body?.items, paymentCurrency),
+        subtotal,
+        shipping,
+        shippingQuote,
         total: amount,
         method: "Paystack",
         reference,
@@ -101,11 +118,11 @@ function toMinorUnits(amount) {
   return Math.round(Number(amount || 0) * 100);
 }
 
-function resolvePaymentAmount(body, currency) {
-  const itemTotal = sumItems(body?.items, currency);
+function resolvePaymentAmount({ body, subtotal, shipping }) {
+  const computedTotal = Number(subtotal || 0) + Number(shipping || 0);
 
-  if (itemTotal > 0) {
-    return itemTotal;
+  if (computedTotal > 0) {
+    return computedTotal;
   }
 
   const explicitTotal = Number(body?.payment?.total ?? body?.total ?? 0);

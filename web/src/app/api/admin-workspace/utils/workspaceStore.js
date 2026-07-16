@@ -120,6 +120,9 @@ export async function appendOrder(payload) {
   const shipping = Number(payment.shipping) || 0;
   const total = Number(payment.total) || subtotal + shipping;
   const totalLabel = formatCurrency(total, currency);
+  const shippingQuote = normalizeShippingQuote(payment.shippingQuote);
+  const shippingLabel = shipping ? formatCurrency(shipping, currency) : "Atelier confirmation";
+  const dispatchSummary = formatDispatchSummary(shippingQuote, shippingLabel);
   const customer = payload.customer || {};
   const request = {
     id: `req-${orderId.toLowerCase()}`,
@@ -136,6 +139,7 @@ export async function appendOrder(payload) {
       "Collection order submitted from website.",
       contactSummary ? `Contact: ${contactSummary}` : "",
       shippingSummary ? `Delivery: ${shippingSummary}` : "",
+      dispatchSummary ? `Dispatch: ${dispatchSummary}` : "",
       itemSummary ? `Pieces: ${itemSummary}` : "",
       `Payment: ${totalLabel} via ${payment.method || "Card"}${payment.cardLast4 ? ` ending ${payment.cardLast4}` : ""}${paymentStatus === "paid" ? " confirmed" : " pending confirmation"}.`,
     ]
@@ -149,6 +153,9 @@ export async function appendOrder(payload) {
     status: paymentStatus === "paid" ? "Accepted / deposit paid" : "Awaiting payment confirmation",
     refundLimit: "Not applicable",
     notes: request.notes,
+    subtotal: formatCurrency(subtotal, currency),
+    shipping: shippingLabel,
+    shippingQuote,
     paystackReference: payment.reference || "",
     paymentStatus,
     paymentConfirmedAt: payment.paidAt || "",
@@ -494,4 +501,40 @@ function normalizeAttachments(attachments) {
         }))
         .filter((file) => file.url)
     : [];
+}
+
+function normalizeShippingQuote(quote) {
+  if (!quote || typeof quote !== "object") {
+    return null;
+  }
+
+  return {
+    status: String(quote.status || "manual"),
+    provider: String(quote.provider || "DHL Express"),
+    serviceName: String(quote.serviceName || "DHL dispatch"),
+    amount: Number(quote.amount || 0),
+    currency: String(quote.currency || "NGN"),
+    estimatedDelivery: String(quote.estimatedDelivery || ""),
+    transitDays: String(quote.transitDays || ""),
+    generatedAt: String(quote.generatedAt || ""),
+    note: String(quote.note || ""),
+  };
+}
+
+function formatDispatchSummary(quote, shippingLabel) {
+  if (!quote) {
+    return shippingLabel;
+  }
+
+  if (quote.status !== "quoted") {
+    return `${quote.provider} pending final atelier confirmation`;
+  }
+
+  return [
+    `${quote.provider} estimate ${shippingLabel}`,
+    quote.serviceName,
+    quote.estimatedDelivery ? `ETA ${quote.estimatedDelivery}` : "",
+  ]
+    .filter(Boolean)
+    .join(" / ");
 }
