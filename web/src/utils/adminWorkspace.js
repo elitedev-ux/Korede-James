@@ -57,14 +57,24 @@ function safeWriteAdminWorkspace(workspace) {
   }
 }
 
-export async function fetchAdminWorkspace() {
+export async function authenticateAdminAccess(code) {
+  const data = await apiRequest("/api/admin-workspace?authOnly=1", {
+    headers: { "x-kj-admin-code": String(code || "").trim() },
+  });
+  return data.role;
+}
+
+export async function fetchAdminWorkspace({ strict = false } = {}) {
   try {
     const data = await apiRequest("/api/admin-workspace", {
       headers: adminHeaders(),
     });
     writeAdminWorkspace(data.workspace);
     return normalizeAdminWorkspace(data.workspace);
-  } catch {
+  } catch (error) {
+    if (strict) {
+      throw error;
+    }
     return readAdminWorkspace();
   }
 }
@@ -418,13 +428,18 @@ function formatCurrency(value, currency = "NGN") {
 }
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error("Admin service is temporarily unavailable. Please try again.");
+  }
   const text = await response.text();
   let data = {};
 

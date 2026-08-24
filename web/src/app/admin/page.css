@@ -232,6 +232,11 @@
   animation: admin-save-spin 900ms linear infinite;
 }
 
+.admin-save-state.is-error {
+  color: #8d2e2e;
+  background: #fff4f4;
+}
+
 .admin-private-pill,
 .admin-pill {
   color: #5e544b;

@@ -28,6 +28,7 @@ import {
 import {
   ADMIN_ACCESS_SECRET_KEY,
   ADMIN_WORKSPACE_STORAGE_KEY,
+  authenticateAdminAccess,
   createEmptyAdminWorkspace,
   fetchNewsletterSubscribers,
   fetchAdminWorkspace,
@@ -826,13 +827,17 @@ export default function AdminPage() {
       setCurrentRole(storedRole);
       setActiveView(storedRole === "editor" ? "pieces" : "overview");
       setUnlocked(true);
-      fetchAdminWorkspace().then((remoteWorkspace) => {
-        const seededCatalogue = ensureProductCatalogue(remoteWorkspace);
-        setWorkspace(seededCatalogue.workspace);
-        if (seededCatalogue.seeded) {
-          saveAdminWorkspace(seededCatalogue.workspace).then(setWorkspace);
-        }
-      });
+      setSaveState("Connecting workspace...");
+      fetchAdminWorkspace({ strict: true })
+        .then((remoteWorkspace) => {
+          const seededCatalogue = ensureProductCatalogue(remoteWorkspace);
+          setWorkspace(seededCatalogue.workspace);
+          setSaveState("Workspace connected");
+          if (seededCatalogue.seeded) {
+            saveAdminWorkspace(seededCatalogue.workspace).then(setWorkspace);
+          }
+        })
+        .catch(() => setSaveState("Workspace offline"));
       loadNewsletterSubscribers();
     }
   }, []);
@@ -1474,24 +1479,26 @@ export default function AdminPage() {
 
     try {
       window.sessionStorage.setItem(ADMIN_ACCESS_SECRET_KEY, code);
-      const response = await fetch("/api/admin-workspace", {
-        headers: {
-          "x-kj-admin-code": code,
-        },
-      });
-      const data = await response.json().catch(() => ({}));
+      const role = await authenticateAdminAccess(code);
 
-      if (!response.ok || !roleProfiles[data.role]) {
-        throw new Error(data.error || "Invalid access code.");
+      if (!roleProfiles[role]) {
+        throw new Error("Invalid access code.");
       }
 
       window.sessionStorage.setItem(ACCESS_KEY, "true");
-      window.sessionStorage.setItem(ACCESS_ROLE_KEY, data.role);
-      setSessionRole(data.role);
-      setCurrentRole(data.role);
-      setWorkspace(normalizeWorkspace(data.workspace || {}));
+      window.sessionStorage.setItem(ACCESS_ROLE_KEY, role);
+      setSessionRole(role);
+      setCurrentRole(role);
+      setWorkspace(ensureProductCatalogue(readWorkspace()).workspace);
       setUnlocked(true);
       setAccessError("");
+      setSaveState("Connecting workspace...");
+      fetchAdminWorkspace({ strict: true })
+        .then((remoteWorkspace) => {
+          setWorkspace(ensureProductCatalogue(remoteWorkspace).workspace);
+          setSaveState("Workspace connected");
+        })
+        .catch(() => setSaveState("Workspace offline"));
       loadNewsletterSubscribers();
     } catch (error) {
       window.sessionStorage.removeItem(ACCESS_KEY);
@@ -1619,10 +1626,16 @@ export default function AdminPage() {
             )}
             <span className="admin-private-pill">Private</span>
             <div
-              className={`admin-save-state ${saveState === "Saving..." ? "is-saving" : ""}`}
+              className={`admin-save-state ${saveState === "Saving..." ? "is-saving" : ""} ${/(failed|offline)/i.test(saveState) ? "is-error" : ""}`}
               aria-live="polite"
             >
-              {saveState === "Saving..." ? <Clock size={15} /> : <CheckCircle2 size={15} />}
+              {/(failed|offline)/i.test(saveState) ? (
+                <AlertTriangle size={15} />
+              ) : saveState === "Saving..." ? (
+                <Clock size={15} />
+              ) : (
+                <CheckCircle2 size={15} />
+              )}
               <span>{saveState}</span>
             </div>
           </div>

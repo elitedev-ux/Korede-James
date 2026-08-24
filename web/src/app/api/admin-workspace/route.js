@@ -16,8 +16,15 @@ import {
 
 export async function GET(request) {
   try {
-    assertRateLimit(request, "admin-workspace-read", { limit: 120 });
+    const authOnly = new URL(request.url).searchParams.get("authOnly") === "1";
+    assertRateLimit(request, authOnly ? "admin-auth" : "admin-workspace-read", {
+      limit: authOnly ? 10 : 120,
+    });
     const role = requireAdmin(request);
+    if (authOnly) {
+      return ok({ authenticated: true, role });
+    }
+
     const fullWorkspace = await readWorkspace();
     const workspace =
       role === "owner" ? fullWorkspace : { ...fullWorkspace, errors: [] };

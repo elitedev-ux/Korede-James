@@ -77,7 +77,7 @@ export function assertRateLimit(request, scope, { limit = 20, windowMs = RATE_LI
 
 export async function supabaseRequest(path, options = {}) {
   const { url, key } = getSupabaseConfig();
-  const response = await fetch(`${url}/rest/v1/${path}`, {
+  const response = await fetchBackend(`${url}/rest/v1/${path}`, {
     ...options,
     headers: {
       apikey: key,
@@ -99,7 +99,7 @@ export async function supabaseRequest(path, options = {}) {
 
 export async function supabaseStorageFetch(path, options = {}) {
   const { url, key } = getSupabaseConfig();
-  const response = await fetch(`${url}/storage/v1/${path}`, {
+  const response = await fetchBackend(`${url}/storage/v1/${path}`, {
     ...options,
     headers: {
       apikey: key,
@@ -157,10 +157,54 @@ function getSupabaseConfig() {
     );
   }
 
+  const normalizedUrl = url.replace(/\/$/, "");
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    if (!["https:", "http:"].includes(parsedUrl.protocol)) {
+      throw new Error();
+    }
+  } catch {
+    throw new Error("SUPABASE_URL is not a valid web address.");
+  }
+
   return {
-    url: url.replace(/\/$/, ""),
+    url: normalizedUrl,
     key,
   };
+}
+
+async function fetchBackend(url, options = {}) {
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: options.signal || AbortSignal.timeout(15_000),
+      });
+      if (response.status >= 500 && attempt === 0) {
+        if (response.body) {
+          await response.body.cancel().catch(() => undefined);
+        }
+        await wait(350);
+        continue;
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) {
+        await wait(350);
+        continue;
+      }
+    }
+  }
+
+  console.error("Backend service request failed:", url, lastError);
+  throw new Error("Workspace service is temporarily unreachable.");
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function getClientIp(request) {
