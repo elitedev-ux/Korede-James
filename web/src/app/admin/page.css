@@ -1970,6 +1970,210 @@
   border-radius: 0;
 }
 
+.admin-error-dashboard {
+  display: grid;
+}
+
+.admin-error-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid #dedbd5;
+  margin-bottom: 24px;
+}
+
+.admin-error-summary > div {
+  display: flex;
+  min-height: 96px;
+  padding: 20px 22px;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid #dedbd5;
+}
+
+.admin-error-summary > div:last-child {
+  border-right: 0;
+}
+
+.admin-error-summary span,
+.admin-error-filters button,
+.admin-error-card__heading span,
+.admin-error-card__meta,
+.admin-error-card__actions button {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-error-summary strong {
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.admin-error-filters {
+  display: flex;
+  gap: 0;
+  margin-bottom: 18px;
+  overflow-x: auto;
+}
+
+.admin-error-filters button {
+  min-width: 112px;
+  padding: 12px 18px;
+  border: 1px solid #dedbd5;
+  border-right: 0;
+  background: #fff;
+}
+
+.admin-error-filters button:last-child {
+  border-right: 1px solid #dedbd5;
+}
+
+.admin-error-filters button.is-active {
+  color: #fff;
+  background: #111;
+  border-color: #111;
+}
+
+.admin-error-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-error-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  border: 1px solid #dedbd5;
+  background: #fff;
+}
+
+.admin-error-card__icon {
+  display: flex;
+  justify-content: center;
+  padding-top: 22px;
+  color: #8d2e2e;
+  border-right: 1px solid #dedbd5;
+}
+
+.admin-error-card__body {
+  min-width: 0;
+  padding: 20px;
+}
+
+.admin-error-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.admin-error-card__heading > div:first-child {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-error-card__heading strong {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.admin-error-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin-top: 16px;
+  color: #6c6861;
+}
+
+.admin-error-severity {
+  padding: 6px 9px;
+  border: 1px solid #dedbd5;
+}
+
+.admin-error-severity.is-critical {
+  color: #8d2e2e;
+  border-color: #e8c5c5;
+  background: #fff4f4;
+}
+
+.admin-error-severity.is-warning {
+  color: #765813;
+  border-color: #eadcae;
+  background: #fffbed;
+}
+
+.admin-error-details {
+  margin-top: 18px;
+  border-top: 1px solid #ece9e4;
+  padding-top: 14px;
+}
+
+.admin-error-details summary {
+  cursor: pointer;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-error-details pre {
+  max-height: 220px;
+  margin-top: 12px;
+  padding: 14px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f7f6f3;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.admin-error-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.admin-error-card__actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 13px;
+  border: 1px solid #111;
+  background: #fff;
+}
+
+.admin-error-card__actions button:hover {
+  color: #fff;
+  background: #111;
+}
+
+.admin-error-empty {
+  display: flex;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid #dedbd5;
+  color: #77736d;
+  text-align: center;
+}
+
+.admin-error-empty strong {
+  color: #111;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.admin-error-empty span {
+  font-size: 12px;
+}
+
 @media (max-width: 1080px) {
   .admin-page {
     grid-template-columns: 1fr;
@@ -2019,6 +2223,32 @@
 
   .admin-product-danger {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-error-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-error-summary > div {
+    min-height: 78px;
+    border-right: 0;
+    border-bottom: 1px solid #dedbd5;
+  }
+
+  .admin-error-summary > div:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-error-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-error-card__icon {
+    display: none;
+  }
+
+  .admin-error-card__heading {
     flex-direction: column;
   }
 }

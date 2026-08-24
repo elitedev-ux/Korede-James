@@ -41,6 +41,7 @@ values (
     "newsletter": [],
     "newsletterSegments": [],
     "newsletterUpdates": [],
+    "errors": [],
     "settings": [],
     "audit": []
   }'::jsonb

@@ -18,6 +18,7 @@ export function createEmptyAdminWorkspace() {
     newsletter: [],
     newsletterSegments: [],
     newsletterUpdates: [],
+    errors: [],
     settings: [],
     audit: [],
   };
@@ -87,6 +88,16 @@ export async function saveAdminWorkspace(workspace, { strict = false } = {}) {
 
     return normalizedWorkspace;
   }
+}
+
+export async function updateAdminErrorReport(id, status) {
+  const data = await apiRequest("/api/errors/report", {
+    method: "PATCH",
+    headers: adminHeaders(),
+    body: JSON.stringify({ id, status }),
+  });
+  safeWriteAdminWorkspace(data.workspace);
+  return normalizeAdminWorkspace(data.workspace);
 }
 
 export async function fetchNewsletterSubscribers() {
@@ -340,6 +351,7 @@ function normalizeAdminWorkspace(workspace) {
     newsletter: workspace.newsletter || [],
     newsletterSegments: workspace.newsletterSegments || [],
     newsletterUpdates: workspace.newsletterUpdates || [],
+    errors: workspace.errors || [],
     settings: workspace.settings || [],
     audit: workspace.audit || [],
   };

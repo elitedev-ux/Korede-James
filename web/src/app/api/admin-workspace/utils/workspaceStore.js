@@ -26,6 +26,7 @@ export function createEmptyWorkspace() {
     newsletter: [],
     newsletterSegments: [],
     newsletterUpdates: [],
+    errors: [],
     settings: [],
     audit: [],
   };
@@ -51,6 +52,7 @@ export function normalizeWorkspace(workspace) {
     newsletter: Array.isArray(value.newsletter) ? value.newsletter : [],
     newsletterSegments: Array.isArray(value.newsletterSegments) ? value.newsletterSegments : [],
     newsletterUpdates: Array.isArray(value.newsletterUpdates) ? value.newsletterUpdates : [],
+    errors: Array.isArray(value.errors) ? value.errors : [],
     settings: Array.isArray(value.settings) ? value.settings : [],
     audit: Array.isArray(value.audit) ? value.audit : [],
   };
@@ -80,6 +82,38 @@ export async function writeWorkspace(workspace) {
     }),
   });
   return normalized;
+}
+
+export async function appendErrorReport(payload = {}) {
+  const workspace = await readWorkspace();
+  const report = normalizeErrorReport(payload);
+  const recentMatchIndex = workspace.errors.findIndex(
+    (entry) =>
+      entry.fingerprint === report.fingerprint &&
+      Date.now() - new Date(entry.lastSeenAt || entry.occurredAt || 0).getTime() <
+        10 * 60 * 1000,
+  );
+  const errors = [...workspace.errors];
+
+  if (recentMatchIndex >= 0) {
+    const existing = errors[recentMatchIndex];
+    errors[recentMatchIndex] = {
+      ...existing,
+      count: (Number(existing.count) || 1) + 1,
+      lastSeenAt: report.lastSeenAt,
+      details: report.details || existing.details,
+      status: existing.status === "dismissed" ? "open" : existing.status,
+    };
+  } else {
+    errors.unshift(report);
+  }
+
+  const nextWorkspace = normalizeWorkspace({
+    ...workspace,
+    errors: errors.slice(0, 250),
+  });
+  await writeWorkspace(nextWorkspace);
+  return recentMatchIndex >= 0 ? errors[recentMatchIndex] : report;
 }
 
 export async function appendInquiry(payload) {
@@ -457,6 +491,54 @@ function createAuditEntry(action) {
 function createWorkspaceId(prefix) {
   const suffix = Date.now().toString().slice(-6);
   return `${prefix}-${suffix}`;
+}
+
+function normalizeErrorReport(payload) {
+  const occurredAt = validIsoDate(payload.occurredAt) || new Date().toISOString();
+  const source = cleanErrorText(payload.source, 80) || "website";
+  const message = cleanErrorText(payload.message, 500) || "Unknown application error";
+  const route = cleanRoute(payload.route);
+  const context = cleanErrorText(payload.context, 300);
+  const details = cleanErrorText(payload.details, 2000);
+  const fingerprint = cleanErrorText(
+    payload.fingerprint || `${source}|${route}|${message}`,
+    700,
+  ).toLowerCase();
+
+  return {
+    id: createWorkspaceId("error"),
+    fingerprint,
+    source,
+    severity: ["critical", "error", "warning"].includes(payload.severity)
+      ? payload.severity
+      : "error",
+    status: "open",
+    message,
+    context,
+    details,
+    route,
+    occurredAt,
+    lastSeenAt: new Date().toISOString(),
+    count: 1,
+  };
+}
+
+function cleanErrorText(value, maxLength) {
+  return String(value || "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function cleanRoute(value) {
+  const route = cleanErrorText(value, 300).split(/[?#]/)[0];
+  return route.startsWith("/") ? route : route ? `/${route}` : "";
+}
+
+function validIsoDate(value) {
+  const date = new Date(value || "");
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
 function formatWorkspaceDetails(value) {

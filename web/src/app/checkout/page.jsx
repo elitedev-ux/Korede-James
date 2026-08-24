@@ -13,6 +13,7 @@ import {
   formatPreferredContact,
   getContactMethod,
 } from "../../utils/contactPreferences";
+import { reportAppError } from "../../utils/errorReporting";
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
@@ -147,6 +148,11 @@ export default function CheckoutPage() {
 
       window.location.href = data.authorizationUrl;
     } catch (error) {
+      reportAppError(error, {
+        source: "checkout",
+        severity: "critical",
+        context: "Paystack checkout initialization",
+      });
       setPaymentError(
         error instanceof Error ? error.message : "Unable to start Paystack checkout.",
       );

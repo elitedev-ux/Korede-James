@@ -1,6 +1,9 @@
 import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js";
 import { DEFAULT_MARKET, getLineItemPrice } from "../../../../utils/pricing.js";
-import { appendOrder } from "../../admin-workspace/utils/workspaceStore.js";
+import {
+  appendErrorReport,
+  appendOrder,
+} from "../../admin-workspace/utils/workspaceStore.js";
 import {
   createPendingShippingQuote,
   resolveTrustedShippingQuote,
@@ -44,72 +47,176 @@ export async function POST(request) {
       return fail("Payment amount is invalid.", 400);
     }
 
-    const response = await fetch(PAYSTACK_INITIALIZE_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        amount: toMinorUnits(amount),
-        currency: paymentCurrency,
-        callback_url: `${siteOrigin()}/checkout?payment=paystack`,
-        metadata: {
-          orderPayload: {
-            ...body,
-            payment: {
-              ...(body.payment || {}),
-              displayCurrency,
-              chargedCurrency: paymentCurrency,
-              currency: paymentCurrency,
-              subtotal,
-              shipping,
-              shippingQuote,
-              total: amount,
-            },
+    const paystackPayload = {
+      email,
+      amount: toMinorUnits(amount),
+      currency: paymentCurrency,
+      callback_url: `${siteOrigin()}/checkout?payment=paystack`,
+      metadata: {
+        orderPayload: {
+          ...body,
+          payment: {
+            ...(body.payment || {}),
+            displayCurrency,
+            chargedCurrency: paymentCurrency,
+            currency: paymentCurrency,
+            subtotal,
+            shipping,
+            shippingQuote,
+            total: amount,
           },
-          source: "korede-james-checkout",
         },
-      }),
+        source: "korede-james-checkout",
+      },
+    };
+    const { response, data } = await initializePaystackTransaction({
+      secretKey,
+      payload: paystackPayload,
     });
-    const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data?.status) {
-      return fail(data?.message || "Unable to initialize Paystack payment.", 400);
+      const providerMessage =
+        data?.message || `Paystack returned HTTP ${response.status}.`;
+      await recordPaymentError({
+        message: providerMessage,
+        details: JSON.stringify({
+          status: response.status,
+          currency: paymentCurrency,
+          amount,
+        }),
+      });
+      return fail(providerMessage, 400);
     }
 
     const reference = data.data?.reference;
-    const pendingOrder = await appendOrder({
-      ...body,
-      payment: {
-        ...(body.payment || {}),
-        displayCurrency,
-        chargedCurrency: paymentCurrency,
-        currency: paymentCurrency,
-        subtotal,
-        shipping,
-        shippingQuote,
-        total: amount,
-        method: "Paystack",
+    let pendingOrder = null;
+    try {
+      pendingOrder = await appendOrder({
+        ...body,
+        payment: {
+          ...(body.payment || {}),
+          displayCurrency,
+          chargedCurrency: paymentCurrency,
+          currency: paymentCurrency,
+          subtotal,
+          shipping,
+          shippingQuote,
+          total: amount,
+          method: "Paystack",
+          reference,
+          status: "pending",
+        },
+      });
+    } catch (workspaceError) {
+      await recordWorkspaceError({
+        error: workspaceError,
         reference,
-        status: "pending",
-      },
-    });
+      });
+    }
 
     return ok({
       authorizationUrl: data.data?.authorization_url,
       accessCode: data.data?.access_code,
       reference,
-      order: pendingOrder.order,
+      order: pendingOrder?.order || null,
     });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to initialize payment.";
-    return fail(
+    await recordPaymentError({
       message,
-      error instanceof Error && "status" in error ? error.status : 500,
+      details: error instanceof Error ? error.stack : "",
+    });
+    return fail(
+      isPaymentNetworkError(error)
+        ? "Payment service is temporarily unavailable. Please try again shortly."
+        : message,
+      isPaymentNetworkError(error)
+        ? 503
+        : error instanceof Error && "status" in error
+          ? error.status
+          : 500,
     );
+  }
+}
+
+async function initializePaystackTransaction({ secretKey, payload }) {
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(PAYSTACK_INITIALIZE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(15_000),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status >= 500 && attempt === 0) {
+        await wait(350);
+        continue;
+      }
+
+      return { response, data };
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) {
+        await wait(350);
+        continue;
+      }
+    }
+  }
+
+  throw new PaymentNetworkError(
+    lastError instanceof Error ? lastError.message : "Paystack request failed.",
+    lastError,
+  );
+}
+
+async function recordPaymentError({ message, details }) {
+  console.error("Paystack initialization error:", message);
+  await appendErrorReport({
+    source: "paystack",
+    severity: "critical",
+    message,
+    context: "Payment initialization",
+    details,
+    route: "/api/paystack/initialize",
+  }).catch(() => undefined);
+}
+
+async function recordWorkspaceError({ error, reference }) {
+  console.error("Pending Paystack order persistence failed:", reference, error);
+  await appendErrorReport({
+    source: "admin-workspace",
+    severity: "critical",
+    message:
+      error instanceof Error ? error.message : "Pending order could not be saved.",
+    context: "Saving pending Paystack order",
+    details: JSON.stringify({
+      reference,
+      stack: error instanceof Error ? error.stack : "",
+    }),
+    route: "/api/paystack/initialize",
+  }).catch(() => undefined);
+}
+
+function isPaymentNetworkError(error) {
+  return error instanceof PaymentNetworkError;
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+class PaymentNetworkError extends Error {
+  constructor(message, cause) {
+    super(message, { cause });
+    this.name = "PaymentNetworkError";
   }
 }
 

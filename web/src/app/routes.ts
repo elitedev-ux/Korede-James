@@ -130,6 +130,7 @@ const apiRoutes = [
 	route('api/newsletter', './api/newsletter/resource.js'),
 	route('api/uploads', './api/uploads/resource.js'),
 	route('api/email-test', './api/email-test/resource.js'),
+	route('api/errors/report', './api/errors/report/resource.js'),
 	route('api/paystack/webhook', './api/paystack/webhook/resource.js'),
 	route('api/customer-auth/signup', './api/customer-auth/signup/resource.js'),
 	route('api/customer-auth/signin', './api/customer-auth/signin/resource.js'),

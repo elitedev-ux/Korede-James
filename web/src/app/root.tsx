@@ -35,6 +35,8 @@ import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
 import '../__create/design-mode';
 import type { Route } from './+types/root';
 import { RegionProvider } from '../context/RegionContext.jsx';
+import ErrorReporter from '../components/ErrorReporter.jsx';
+import { reportAppError } from '../utils/errorReporting.js';
 import CookieConsent from '../components/CookieConsent.jsx';
 
 export const links = () => [];
@@ -499,6 +501,12 @@ class ErrorBoundaryWrapper extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: unknown, info: unknown) {
     console.error(error, info);
+    reportAppError(error, {
+      source: 'react',
+      severity: 'critical',
+      context: 'React error boundary',
+      details: JSON.stringify(info),
+    });
   }
 
   render() {
@@ -724,6 +732,7 @@ export default function App() {
   return (
     <SessionProvider>
       <RegionProvider>
+        <ErrorReporter />
         <Outlet />
         <CookieConsent />
       </RegionProvider>

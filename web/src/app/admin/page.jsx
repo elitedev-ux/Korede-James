@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   ArrowLeft,
   BarChart3,
   CheckCircle2,
@@ -32,6 +33,7 @@ import {
   fetchAdminWorkspace,
   saveAdminWorkspace,
   sendNewsletterCampaign,
+  updateAdminErrorReport,
   updateNewsletterSubscriber,
 } from "../../utils/adminWorkspace";
 import { seedWorkspaceProducts } from "../../utils/productCatalog";
@@ -224,6 +226,15 @@ const adminModules = [
     label: "Audit",
     icon: History,
     owner: "Full activity history with user name and timestamp",
+    editor: "No access",
+    studio: "No access",
+    support: "No access",
+  },
+  {
+    id: "errors",
+    label: "Error Reports",
+    icon: AlertTriangle,
+    owner: "Review website, payment, API, upload, and browser failures",
     editor: "No access",
     studio: "No access",
     support: "No access",
@@ -514,6 +525,7 @@ function normalizeWorkspace(workspace) {
       workspace.newsletterSegments || defaultWorkspace.newsletterSegments,
     newsletterUpdates:
       workspace.newsletterUpdates || defaultWorkspace.newsletterUpdates,
+    errors: workspace.errors || defaultWorkspace.errors,
     settings: workspace.settings || defaultWorkspace.settings,
     audit: workspace.audit || defaultWorkspace.audit,
   };
@@ -978,6 +990,12 @@ export default function AdminPage() {
         detail: "Portfolio ready",
         icon: Package,
       },
+      {
+        label: "Open Errors",
+        value: workspace.errors.filter((entry) => entry.status === "open").length,
+        detail: "Needs review",
+        icon: AlertTriangle,
+      },
     ];
   }, [currentRole, workspace]);
 
@@ -1063,6 +1081,28 @@ export default function AdminPage() {
       ...nextWorkspace.audit,
     ],
   });
+
+  const updateErrorStatus = async (errorId, status) => {
+    setSaveState("Saving...");
+    try {
+      const savedWorkspace = await updateAdminErrorReport(errorId, status);
+      setWorkspace(ensureProductCatalogue(savedWorkspace).workspace);
+      setSaveState("Saved just now");
+    } catch {
+      setSaveState("Save failed");
+    }
+  };
+
+  const refreshErrorReports = async () => {
+    setSaveState("Refreshing errors...");
+    try {
+      const remoteWorkspace = await fetchAdminWorkspace();
+      setWorkspace(ensureProductCatalogue(remoteWorkspace).workspace);
+      setSaveState("Updated just now");
+    } catch {
+      setSaveState("Refresh failed");
+    }
+  };
 
   const handleModuleSave = async (view, payload) => {
     if (view === "newsletter") {
@@ -2047,8 +2087,16 @@ export default function AdminPage() {
           </section>
         ) : null}
 
+        {activeView === "errors" ? (
+          <ErrorDashboard
+            errors={workspace.errors}
+            onStatusChange={updateErrorStatus}
+            onRefresh={refreshErrorReports}
+          />
+        ) : null}
+
         {visibleModules.some((module) => module.id === activeView) &&
-        !["requests", "pieces", "team"].includes(activeView) ? (
+        !["requests", "pieces", "team", "errors"].includes(activeView) ? (
           <ModulePanel
             view={activeView}
             role={currentRole}
@@ -2198,8 +2246,140 @@ function viewTitle(view) {
     settings: "Settings",
     team: "User management",
     audit: "Audit log",
+    errors: "Error reports",
   };
   return titles[view] || "Workspace overview";
+}
+
+function ErrorDashboard({ errors, onStatusChange, onRefresh }) {
+  const [filter, setFilter] = useState("open");
+  const visibleErrors = errors.filter((entry) =>
+    filter === "all" ? true : entry.status === filter,
+  );
+  const openCount = errors.filter((entry) => entry.status === "open").length;
+  const criticalCount = errors.filter(
+    (entry) => entry.status === "open" && entry.severity === "critical",
+  ).length;
+
+  return (
+    <section className="admin-error-dashboard">
+      <article className="admin-panel admin-panel--wide">
+        <div className="admin-panel__heading">
+          <div>
+            <p className="admin-kicker">System Health</p>
+            <h3>Error reports</h3>
+          </div>
+          <button className="admin-icon-button" type="button" onClick={onRefresh}>
+            <History size={15} />
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div className="admin-error-summary">
+          <div>
+            <span>Open</span>
+            <strong>{openCount}</strong>
+          </div>
+          <div>
+            <span>Critical</span>
+            <strong>{criticalCount}</strong>
+          </div>
+          <div>
+            <span>Total recorded</span>
+            <strong>{errors.length}</strong>
+          </div>
+        </div>
+
+        <div className="admin-error-filters" aria-label="Filter error reports">
+          {["open", "resolved", "dismissed", "all"].map((status) => (
+            <button
+              type="button"
+              className={filter === status ? "is-active" : ""}
+              onClick={() => setFilter(status)}
+              key={status}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
+        {visibleErrors.length ? (
+          <div className="admin-error-list">
+            {visibleErrors.map((entry) => (
+              <article className="admin-error-card" key={entry.id}>
+                <div className="admin-error-card__icon">
+                  <AlertTriangle size={17} />
+                </div>
+                <div className="admin-error-card__body">
+                  <div className="admin-error-card__heading">
+                    <div>
+                      <span>{entry.source || "website"}</span>
+                      <strong>{entry.message}</strong>
+                    </div>
+                    <div className="admin-heading-badges">
+                      <span className={`admin-error-severity is-${entry.severity || "error"}`}>
+                        {entry.severity || "error"}
+                      </span>
+                      {Number(entry.count) > 1 ? (
+                        <span className="admin-pill">{entry.count} occurrences</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="admin-error-card__meta">
+                    <span>{entry.route || "Unknown page"}</span>
+                    <span>{entry.context || "No context supplied"}</span>
+                    <span>{formatErrorTime(entry.lastSeenAt || entry.occurredAt)}</span>
+                  </div>
+                  {entry.details ? (
+                    <details className="admin-error-details">
+                      <summary>Technical details</summary>
+                      <pre>{entry.details}</pre>
+                    </details>
+                  ) : null}
+                  <div className="admin-error-card__actions">
+                    {entry.status !== "resolved" ? (
+                      <button type="button" onClick={() => onStatusChange(entry.id, "resolved")}>
+                        <CheckCircle2 size={14} />
+                        <span>Mark Resolved</span>
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => onStatusChange(entry.id, "open")}>
+                        <History size={14} />
+                        <span>Reopen</span>
+                      </button>
+                    )}
+                    {entry.status !== "dismissed" ? (
+                      <button type="button" onClick={() => onStatusChange(entry.id, "dismissed")}>
+                        <Trash2 size={14} />
+                        <span>Dismiss</span>
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="admin-error-empty">
+            <CheckCircle2 size={24} />
+            <strong>No {filter === "all" ? "recorded" : filter} errors</strong>
+            <span>New website and payment failures will appear here automatically.</span>
+          </div>
+        )}
+      </article>
+    </section>
+  );
+}
+
+function formatErrorTime(value) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) {
+    return "Time unavailable";
+  }
+  return date.toLocaleString("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 function RequestRows({ requests, selectedRequestId, onSelect }) {

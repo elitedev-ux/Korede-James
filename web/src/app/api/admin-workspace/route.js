@@ -18,7 +18,9 @@ export async function GET(request) {
   try {
     assertRateLimit(request, "admin-workspace-read", { limit: 120 });
     const role = requireAdmin(request);
-    const workspace = await readWorkspace();
+    const fullWorkspace = await readWorkspace();
+    const workspace =
+      role === "owner" ? fullWorkspace : { ...fullWorkspace, errors: [] };
     return ok({ workspace, role });
   } catch (error) {
     return handleWorkspaceError(error, "Unable to load admin workspace.");
