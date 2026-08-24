@@ -7,8 +7,35 @@ import SectionTitle from "../../components/SectionTitle";
 import { recordAdminInquiry } from "../../utils/adminWorkspace";
 import { getCustomerSession } from "../../utils/customerAccount";
 import { uploadSiteFile } from "../../utils/uploads";
+import { useRegion } from "../../context/RegionContext";
+import { formatMoney } from "../../utils/pricing";
+
+const BUDGET_OPTIONS = [
+  {
+    id: "signature",
+    minimum: { NGN: 5_000_000, USD: 5_000 },
+    maximum: { NGN: 10_000_000, USD: 10_000 },
+  },
+  {
+    id: "couture",
+    minimum: { NGN: 10_000_000, USD: 10_000 },
+    maximum: { NGN: 25_000_000, USD: 25_000 },
+  },
+  {
+    id: "collector",
+    minimum: { NGN: 25_000_000, USD: 25_000 },
+  },
+];
+
+function formatBudgetOption(option, currency) {
+  const minimum = formatMoney(option.minimum[currency], currency);
+  return option.maximum
+    ? `${minimum} - ${formatMoney(option.maximum[currency], currency)}`
+    : `${minimum}+`;
+}
 
 export default function CommissionPage() {
+  const { currency } = useRegion();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedId, setSubmittedId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,7 +45,7 @@ export default function CommissionPage() {
     name: "",
     email: "",
     type: "Evening Wear",
-    budget: "$5,000 - $10,000",
+    budget: BUDGET_OPTIONS[0].id,
     date: "",
     measurements: "",
     notes: "",
@@ -54,6 +81,9 @@ export default function CommissionPage() {
     setSubmitError("");
 
     try {
+      const selectedBudget =
+        BUDGET_OPTIONS.find((option) => option.id === formData.budget) ||
+        BUDGET_OPTIONS[0];
       const attachments = await Promise.all(
         referenceFiles.map((file) =>
           uploadSiteFile(file, {
@@ -66,7 +96,7 @@ export default function CommissionPage() {
         client: formData.name,
         email: formData.email,
         artifact: formData.type,
-        budget: formData.budget,
+        budget: formatBudgetOption(selectedBudget, currency),
         due: formData.date,
         source: "Bespoke enquiry",
         notes: [
@@ -264,9 +294,11 @@ export default function CommissionPage() {
                         setFormData({ ...formData, budget: e.target.value })
                       }
                     >
-                      <option>$5,000 - $10,000</option>
-                      <option>$10,000 - $25,000</option>
-                      <option>$25,000+</option>
+                      {BUDGET_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {formatBudgetOption(option, currency)}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
