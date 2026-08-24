@@ -1,7 +1,10 @@
 import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js";
 import { DEFAULT_MARKET, getLineItemPrice } from "../../../../utils/pricing.js";
 import { appendOrder } from "../../admin-workspace/utils/workspaceStore.js";
-import { resolveTrustedShippingQuote } from "../../shipping/rates/shippingQuote.js";
+import {
+  createPendingShippingQuote,
+  resolveTrustedShippingQuote,
+} from "../../shipping/rates/shippingQuote.js";
 
 const PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize";
 
@@ -13,12 +16,18 @@ export async function POST(request) {
     const displayCurrency = resolveDisplayCurrency(body);
     const paymentCurrency = resolvePaystackCurrency();
     const subtotal = sumItems(body?.items, paymentCurrency);
-    const shippingQuote = await resolveTrustedShippingQuote({
-      quote: body?.payment?.shippingQuote,
-      destination: body?.shippingAddress,
-      items: body?.items,
-      currency: paymentCurrency,
-    });
+    const shippingQuote = isDhlCheckoutEnabled()
+      ? await resolveTrustedShippingQuote({
+          quote: body?.payment?.shippingQuote,
+          destination: body?.shippingAddress,
+          items: body?.items,
+          currency: paymentCurrency,
+        })
+      : createPendingShippingQuote({
+          destination: body?.shippingAddress,
+          items: body?.items,
+          currency: paymentCurrency,
+        });
     const shipping = Number(shippingQuote?.amount || 0);
     const amount = resolvePaymentAmount({
       body,
@@ -157,6 +166,10 @@ function resolveDisplayCurrency(body) {
 function resolvePaystackCurrency() {
   const currency = String(process.env.PAYSTACK_CURRENCY || "NGN").toUpperCase();
   return ["NGN", "USD"].includes(currency) ? currency : "NGN";
+}
+
+function isDhlCheckoutEnabled() {
+  return String(process.env.DHL_CHECKOUT_ENABLED || "false").toLowerCase() === "true";
 }
 
 function siteOrigin() {

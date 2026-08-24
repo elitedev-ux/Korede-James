@@ -117,6 +117,22 @@ export async function resolveTrustedShippingQuote({
   });
 }
 
+export function createPendingShippingQuote({
+  destination,
+  items = [],
+  currency = DEFAULT_MARKET.currency,
+} = {}) {
+  const normalizedCurrency = normalizeCurrency(currency);
+  return signQuote(
+    manualQuote({
+      currency: normalizedCurrency,
+      destination: normalizeDestination(destination),
+      parcel: buildParcel(items),
+      reason: "Automated dispatch estimates are pending activation.",
+    }),
+  );
+}
+
 function quotedDhlRate({ rate, currency, destination, parcel }) {
   const amounts = amountsByCurrency(rate.amount, rate.currency);
   const amount = amounts[currency] || 0;

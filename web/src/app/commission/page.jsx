@@ -9,6 +9,11 @@ import { getCustomerSession } from "../../utils/customerAccount";
 import { uploadSiteFile } from "../../utils/uploads";
 import { useRegion } from "../../context/RegionContext";
 import { formatMoney } from "../../utils/pricing";
+import {
+  CONTACT_METHODS,
+  formatPreferredContact,
+  getContactMethod,
+} from "../../utils/contactPreferences";
 
 const BUDGET_OPTIONS = [
   {
@@ -46,6 +51,8 @@ export default function CommissionPage() {
     email: "",
     type: "Evening Wear",
     budget: BUDGET_OPTIONS[0].id,
+    contactMethod: CONTACT_METHODS[0].value,
+    contactDetail: "",
     date: "",
     measurements: "",
     notes: "",
@@ -100,6 +107,10 @@ export default function CommissionPage() {
         due: formData.date,
         source: "Bespoke enquiry",
         notes: [
+          `Preferred contact: ${formatPreferredContact(
+            formData.contactMethod,
+            formData.contactDetail,
+          )}`,
           formData.measurements ? `Measurements: ${formData.measurements}` : "",
           attachments.length
             ? `Reference files:\n${attachments
@@ -300,6 +311,49 @@ export default function CommissionPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+                      Preferred Communication
+                    </label>
+                    <select
+                      className="w-full bg-white border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
+                      value={formData.contactMethod}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contactMethod: e.target.value,
+                          contactDetail: "",
+                        })
+                      }
+                    >
+                      {CONTACT_METHODS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+                      Contact Details
+                    </label>
+                    <input
+                      required
+                      type={formData.contactMethod === "email" ? "email" : "text"}
+                      className="w-full bg-white border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
+                      placeholder={getContactMethod(formData.contactMethod).placeholder}
+                      value={formData.contactDetail}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contactDetail: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
 
