@@ -3,7 +3,15 @@ export function ok(data, init = {}) {
 }
 
 export function fail(message, status = 400) {
-  return json({ error: message }, { status });
+  return json(
+    {
+      error:
+        status >= 500
+          ? "Service temporarily unavailable. Please try again later."
+          : message,
+    },
+    { status },
+  );
 }
 
 const MAX_JSON_BODY_BYTES = 256 * 1024;
@@ -30,37 +38,122 @@ export async function readBody(
   const contentLength = Number(request.headers.get("content-length") || 0);
 
   if (contentLength > maxBytes) {
-    throw new Error("Request body is too large.");
+    throw requestBodyError("Request body is too large.", 413);
   }
 
   const contentType = request.headers.get("content-type") || "";
   if (
     requireJson &&
-    contentLength > 0 &&
-    !contentType.toLowerCase().includes("application/json")
+    request.body !== null &&
+    contentType.split(";")[0].trim().toLowerCase() !== "application/json"
   ) {
-    throw new Error("Request content type must be application/json.");
+    throw requestBodyError("Request content type must be application/json.", 415);
   }
 
+  if (!request.body) return {};
+  const reader = request.body.getReader();
+  const chunks = [];
+  let byteCount = 0;
   try {
-    const text = await request.text();
-
-    if (new TextEncoder().encode(text).length > maxBytes) {
-      throw new Error("Request body is too large.");
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      byteCount += value.byteLength;
+      if (byteCount > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw requestBodyError("Request body is too large.", 413);
+      }
+      chunks.push(value);
     }
-
-    return text ? JSON.parse(text) : {};
-  } catch (error) {
-    if (error instanceof Error && error.message === "Request body is too large.") {
-      throw error;
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(byteCount);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  const text = new TextDecoder().decode(bytes);
+  try {
+    const body = text ? JSON.parse(text) : {};
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw new Error();
     }
-
-    return {};
+    return body;
+  } catch {
+    throw requestBodyError("Request body must be a valid JSON object.", 400);
   }
 }
 
-export function assertRateLimit(request, scope, { limit = 20, windowMs = RATE_LIMIT_WINDOW_MS } = {}) {
-  const clientKey = `${scope}:${getClientIp(request)}`;
+function requestBodyError(message, status) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+export function assertSameOrigin(request) {
+  const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  const configuredOrigin =
+    process.env.PUBLIC_SITE_URL || process.env.VITE_PUBLIC_SITE_URL || "";
+  let suppliedOrigin = "";
+  let allowedOrigin = "";
+
+  try {
+    suppliedOrigin = origin ? new URL(origin).origin : "";
+    allowedOrigin =
+      process.env.NODE_ENV === "production" && configuredOrigin
+        ? new URL(configuredOrigin).origin
+        : new URL(request.url).origin;
+  } catch {
+    // Invalid URL syntax is treated as an untrusted origin below.
+  }
+
+  if (
+    !suppliedOrigin ||
+    !allowedOrigin ||
+    suppliedOrigin !== allowedOrigin ||
+    (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none")
+  ) {
+    const error = new Error("Cross-origin request rejected.");
+    error.status = 403;
+    throw error;
+  }
+}
+
+export async function assertRateLimit(
+  request,
+  scope,
+  { limit = 20, windowMs = RATE_LIMIT_WINDOW_MS } = {},
+) {
+  const clientKey = rateLimitKey(scope, getClientIp(request));
+
+  if (hasSupabaseConfig()) {
+    try {
+      const allowed = await supabaseRequest("rpc/consume_rate_limit", {
+        method: "POST",
+        body: JSON.stringify({
+          p_key_hash: clientKey,
+          p_limit: Math.max(1, Math.min(10_000, Math.floor(limit))),
+          p_window_seconds: Math.max(1, Math.ceil(windowMs / 1000)),
+        }),
+      });
+      if (!allowed) {
+        throw new RateLimitError();
+      }
+      return;
+    } catch (error) {
+      if (error instanceof RateLimitError || process.env.NODE_ENV === "production") {
+        throw error;
+      }
+    }
+  }
+
+  assertLocalRateLimit(clientKey, { limit, windowMs });
+}
+
+function assertLocalRateLimit(clientKey, { limit, windowMs }) {
   const now = Date.now();
   const bucket = rateLimitBuckets.get(clientKey);
 
@@ -72,6 +165,17 @@ export function assertRateLimit(request, scope, { limit = 20, windowMs = RATE_LI
   bucket.count += 1;
   if (bucket.count > limit) {
     throw new RateLimitError();
+  }
+
+  if (rateLimitBuckets.size > 10_000) {
+    for (const [key, value] of rateLimitBuckets) {
+      if (value.resetAt <= now) {
+        rateLimitBuckets.delete(key);
+      }
+    }
+    while (rateLimitBuckets.size > 10_000) {
+      rateLimitBuckets.delete(rateLimitBuckets.keys().next().value);
+    }
   }
 }
 
@@ -91,7 +195,20 @@ export async function supabaseRequest(path, options = {}) {
   const data = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || "Supabase request failed.");
+    console.error("Supabase request failed:", {
+      path: String(path).split("?")[0],
+      status: response.status,
+      code: data?.code,
+      message: data?.message || data?.error,
+    });
+    const isConflict = data?.code === "40001";
+    const error = new Error(
+      isConflict
+        ? "Workspace changed before it could be saved."
+        : "Database service request failed.",
+    );
+    error.status = isConflict ? 409 : 503;
+    throw error;
   }
 
   return data;
@@ -121,7 +238,14 @@ export async function supabaseStorageFetch(path, options = {}) {
     : await response.text().catch(() => "");
 
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || "Supabase storage request failed.");
+    console.error("Supabase storage request failed:", {
+      path: String(path).split("?")[0],
+      status: response.status,
+      message: data?.message || data?.error,
+    });
+    const error = new Error("File storage service request failed.");
+    error.status = 503;
+    throw error;
   }
 
   return { status: response.status, data };
@@ -209,14 +333,33 @@ function wait(milliseconds) {
 
 function getClientIp(request) {
   const headers = request?.headers;
-  const forwardedFor = headers?.get("x-forwarded-for") || "";
-  const realIp = headers?.get("x-real-ip") || "";
   const vercelForwardedFor = headers?.get("x-vercel-forwarded-for") || "";
+  const netlifyIp = headers?.get("x-nf-client-connection-ip") || "";
+  const cloudflareIp = headers?.get("cf-connecting-ip") || "";
 
   return (
-    forwardedFor.split(",")[0]?.trim() ||
     vercelForwardedFor.split(",")[0]?.trim() ||
-    realIp.trim() ||
+    netlifyIp.trim() ||
+    cloudflareIp.trim() ||
     "unknown"
   );
 }
+
+function rateLimitKey(scope, clientIp) {
+  const secret =
+    process.env.RATE_LIMIT_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    "local-development-rate-limit";
+  return createHmac("sha256", secret)
+    .update(`${String(scope).slice(0, 100)}:${clientIp}`)
+    .digest("hex");
+}
+
+function hasSupabaseConfig() {
+  return Boolean(
+    (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) &&
+      (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY),
+  );
+}
+import { createHmac } from "node:crypto";

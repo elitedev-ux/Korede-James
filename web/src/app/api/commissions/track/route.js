@@ -3,7 +3,7 @@ import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "commission-track", { limit: 20 });
+    await assertRateLimit(request, "commission-track", { limit: 20 });
     const body = await readBody(request, { maxBytes: 8 * 1024 });
     const result = await findTrackableCommission({
       commissionId: body.commissionId,

@@ -6,6 +6,7 @@ import {
   clearCustomerSession,
   getCustomerCommissions,
   getCustomerSession,
+  resendCustomerVerification,
   signInCustomer,
 } from "../../utils/customerAccount";
 import "./page.css";
@@ -19,9 +20,18 @@ export default function AccountPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canResendVerification, setCanResendVerification] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("verified") === "1") {
+      setMessage("Email verified. You can sign in now.");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (query.get("verification") === "failed") {
+      setError("That verification link is invalid or expired.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     getCustomerSession()
       .then((customer) => {
         if (isMounted) {
@@ -77,11 +87,29 @@ export default function AccountPage() {
     setError("");
     setMessage("");
     setIsSubmitting(true);
+    setCanResendVerification(false);
 
     try {
       const nextSession = await signInCustomer(form.email, form.password);
       setSession(nextSession);
       setMessage("Welcome back.");
+    } catch (caughtError) {
+      setError(caughtError.message);
+      setCanResendVerification(
+        String(caughtError.message || "").toLowerCase().includes("verify your email"),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerificationResend = async () => {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const result = await resendCustomerVerification(form.email);
+      setMessage(result.message);
+      setCanResendVerification(false);
     } catch (caughtError) {
       setError(caughtError.message);
     } finally {
@@ -222,6 +250,12 @@ export default function AccountPage() {
                   <LockKeyhole size={15} />
                   <span>{isSubmitting ? "Checking" : "Sign In"}</span>
                 </button>
+                {canResendVerification ? (
+                  <button className="account-link-button is-secondary" disabled={isSubmitting} type="button" onClick={handleVerificationResend}>
+                    <Mail size={15} />
+                    <span>Resend Verification Email</span>
+                  </button>
+                ) : null}
               </form>
 
               <div className="account-divider" />

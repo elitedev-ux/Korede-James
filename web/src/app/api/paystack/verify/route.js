@@ -1,5 +1,4 @@
 import {
-  appendOrder,
   confirmOrderPayment,
   readWorkspace,
 } from "../../admin-workspace/utils/workspaceStore.js";
@@ -8,12 +7,16 @@ import {
   sendPaymentReceivedEmail,
 } from "../../utils/email.js";
 import { assertRateLimit, fail, ok } from "../../utils/supabaseRest.js";
+import {
+  publicOrderReceipt,
+  validateTransactionForOrder,
+} from "../utils/paymentVerification.js";
 
 const PAYSTACK_VERIFY_URL = "https://api.paystack.co/transaction/verify";
 
 export async function GET(request) {
   try {
-    assertRateLimit(request, "paystack-verify", { limit: 30 });
+    await assertRateLimit(request, "paystack-verify", { limit: 30 });
     const secretKey = getPaystackSecretKey();
     const url = new URL(request.url);
     const reference = url.searchParams.get("reference");
@@ -23,8 +26,8 @@ export async function GET(request) {
     }
 
     const existingOrder = await findExistingOrder(reference);
-    if (existingOrder?.paymentStatus === "paid") {
-      return ok({ order: existingOrder, alreadyRecorded: true });
+    if (!existingOrder) {
+      return fail("No pending checkout matches this payment reference.", 400);
     }
 
     const response = await fetch(
@@ -46,29 +49,27 @@ export async function GET(request) {
       return fail("Payment was not successful.", 400);
     }
 
-    const orderPayload = transaction?.metadata?.orderPayload;
-    if (!orderPayload && !existingOrder) {
-      return fail("Payment metadata is missing the order details.", 400);
+    const validation = validateTransactionForOrder(transaction, existingOrder);
+    if (!validation.valid) {
+      console.error("Paystack verification mismatch:", reference, validation.reason);
+      return fail("Payment details did not match the pending order.", 400);
+    }
+
+    if (existingOrder.paymentStatus === "paid") {
+      return ok({
+        order: publicOrderReceipt(existingOrder),
+        alreadyRecorded: true,
+      });
     }
 
     const payment = {
-      ...(orderPayload?.payment || {}),
       method: "Paystack",
       reference,
-      currency: transaction.currency || paystackCurrency(),
+      currency: transaction.currency,
       paidAt: transaction.paid_at,
       status: "paid",
     };
-    const result =
-      existingOrder
-        ? await confirmOrderPayment(reference, {
-            ...payment,
-            total: existingOrder.total,
-          })
-        : await appendOrder({
-            ...orderPayload,
-            payment,
-          });
+    const result = await confirmOrderPayment(reference, payment);
 
     if (!result?.order || !result?.request) {
       return fail("Unable to record verified payment.", 500);
@@ -91,9 +92,8 @@ export async function GET(request) {
     }
 
     return ok({
-      order: result.order,
-      request: result.request,
-      orderPayload,
+      order: publicOrderReceipt(result.order),
+      alreadyRecorded: result.alreadyPaid,
     });
   } catch (error) {
     const message =
@@ -122,8 +122,4 @@ function getPaystackSecretKey() {
   }
 
   return key;
-}
-
-function paystackCurrency() {
-  return process.env.PAYSTACK_CURRENCY || "NGN";
 }

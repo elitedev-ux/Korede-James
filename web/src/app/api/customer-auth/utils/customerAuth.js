@@ -8,6 +8,7 @@ import {
 import {
   fail,
   assertRateLimit,
+  assertSameOrigin,
   ok,
   readBody,
   supabaseRequest,
@@ -17,12 +18,20 @@ import { sendPasswordResetEmail } from "../../utils/email.js";
 const COOKIE_NAME = "kj_customer_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 const RESET_TOKEN_MAX_AGE_MS = 1000 * 60 * 30;
+const VERIFICATION_TOKEN_MAX_AGE_MS = 1000 * 60 * 60 * 24;
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
-export { assertRateLimit, fail, ok, readBody, sendPasswordResetEmail };
+export {
+  assertRateLimit,
+  assertSameOrigin,
+  fail,
+  ok,
+  readBody,
+  sendPasswordResetEmail,
+};
 
 export function validateEmail(email) {
   const normalized = normalizeEmail(email);
@@ -37,8 +46,8 @@ export function validateEmail(email) {
 
 export function validatePassword(password) {
   const value = String(password || "");
-  if (value.length < 8) {
-    throw new Error("Password must be at least 8 characters.");
+  if (value.length < 12) {
+    throw new Error("Password must be at least 12 characters.");
   }
   if (value.length > 128) {
     throw new Error("Password must be 128 characters or fewer.");
@@ -53,9 +62,16 @@ function publicAccount(account) {
 
   return {
     id: account.id,
-    firstName: account.first_name,
-    lastName: account.last_name,
+    firstName: account.first_name ?? account.firstName,
+    lastName: account.last_name ?? account.lastName,
     email: account.email,
+  };
+}
+
+function sessionAccount(account) {
+  return {
+    ...publicAccount(account),
+    sessionVersion: Number(account.session_version ?? account.sessionVersion ?? 1),
   };
 }
 
@@ -63,8 +79,23 @@ export async function findCustomerByEmail(email) {
   const normalized = normalizeEmail(email);
   const params = new URLSearchParams({
     select:
-      "id,first_name,last_name,email,password_hash,password_salt,reset_token_hash,reset_expires_at",
+      "id,first_name,last_name,email,password_hash,password_salt,email_verified_at,verification_token_hash,verification_expires_at,session_version,reset_token_hash,reset_expires_at",
     email: `eq.${normalized}`,
+    limit: "1",
+  });
+  const rows = await supabaseRequest(`customer_accounts?${params.toString()}`);
+  return rows?.[0] || null;
+}
+
+export async function findCustomerById(id) {
+  const customerId = String(id || "");
+  if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(customerId)) {
+    return null;
+  }
+  const params = new URLSearchParams({
+    select:
+      "id,first_name,last_name,email,email_verified_at,session_version",
+    id: `eq.${customerId}`,
     limit: "1",
   });
   const rows = await supabaseRequest(`customer_accounts?${params.toString()}`);
@@ -74,8 +105,20 @@ export async function findCustomerByEmail(email) {
 export async function findCustomerByResetToken(token) {
   const tokenHash = hashToken(token);
   const params = new URLSearchParams({
-    select: "id,first_name,last_name,email,reset_token_hash,reset_expires_at",
+    select: "id,first_name,last_name,email,session_version,reset_token_hash,reset_expires_at",
     reset_token_hash: `eq.${tokenHash}`,
+    limit: "1",
+  });
+  const rows = await supabaseRequest(`customer_accounts?${params.toString()}`);
+  return rows?.[0] || null;
+}
+
+export async function findCustomerByVerificationToken(token) {
+  const tokenHash = hashToken(token);
+  const params = new URLSearchParams({
+    select:
+      "id,first_name,last_name,email,email_verified_at,verification_token_hash,verification_expires_at,session_version",
+    verification_token_hash: `eq.${tokenHash}`,
     limit: "1",
   });
   const rows = await supabaseRequest(`customer_accounts?${params.toString()}`);
@@ -96,11 +139,15 @@ export async function createCustomer({ firstName, lastName, email, password }) {
 
   const existing = await findCustomerByEmail(normalizedEmail);
   if (existing) {
-    throw new Error("An account already exists for this email.");
+    throw new Error("Unable to create an account with those details.");
   }
 
   const salt = randomBytes(16).toString("hex");
   const passwordHash = hashPassword(validatePassword(password), salt);
+  const verificationToken = randomBytes(32).toString("base64url");
+  const verificationExpiresAt = new Date(
+    Date.now() + VERIFICATION_TOKEN_MAX_AGE_MS,
+  ).toISOString();
   const rows = await supabaseRequest("customer_accounts", {
     method: "POST",
     headers: { Prefer: "return=representation" },
@@ -110,10 +157,17 @@ export async function createCustomer({ firstName, lastName, email, password }) {
       email: normalizedEmail,
       password_hash: passwordHash,
       password_salt: salt,
+      verification_token_hash: hashToken(verificationToken),
+      verification_expires_at: verificationExpiresAt,
+      verification_requested_at: new Date().toISOString(),
+      session_version: 1,
     }),
   });
 
-  return publicAccount(rows?.[0]);
+  return {
+    customer: publicAccount(rows?.[0]),
+    verificationToken,
+  };
 }
 
 export async function verifyCustomer(email, password) {
@@ -121,6 +175,56 @@ export async function verifyCustomer(email, password) {
   if (!account || !verifyPassword(password, account.password_salt, account.password_hash)) {
     throw new Error("Email or password is incorrect.");
   }
+
+  if (!account.email_verified_at) {
+    throw new Error("Verify your email address before signing in.");
+  }
+
+  return sessionAccount(account);
+}
+
+export async function requestCustomerEmailVerification(email) {
+  const normalizedEmail = validateEmail(email);
+  const account = await findCustomerByEmail(normalizedEmail);
+  if (!account || account.email_verified_at) return null;
+
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_MAX_AGE_MS).toISOString();
+  const accepted = await supabaseRequest("rpc/request_customer_email_verification", {
+    method: "POST",
+    body: JSON.stringify({
+      p_email: normalizedEmail,
+      p_token_hash: hashToken(token),
+      p_expires_at: expiresAt,
+    }),
+  });
+
+  return accepted === true ? { customer: publicAccount(account), token } : null;
+}
+
+export async function verifyCustomerEmailToken(token) {
+  const verificationToken = String(token || "");
+  if (!/^[a-zA-Z0-9_-]{20,160}$/.test(verificationToken)) {
+    throw new Error("Verification link is invalid or expired.");
+  }
+  const account = await findCustomerByVerificationToken(verificationToken);
+  if (
+    !account ||
+    !account.verification_expires_at ||
+    new Date(account.verification_expires_at).getTime() < Date.now()
+  ) {
+    throw new Error("Verification link is invalid or expired.");
+  }
+
+  await supabaseRequest(`customer_accounts?id=eq.${account.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      email_verified_at: new Date().toISOString(),
+      verification_token_hash: null,
+      verification_expires_at: null,
+      updated_at: new Date().toISOString(),
+    }),
+  });
 
   return publicAccount(account);
 }
@@ -170,6 +274,7 @@ export async function updatePasswordWithToken(token, password) {
       reset_token_hash: null,
       reset_requested_at: null,
       reset_expires_at: null,
+      session_version: Number(account.session_version || 1) + 1,
       updated_at: new Date().toISOString(),
     }),
   });
@@ -177,21 +282,21 @@ export async function updatePasswordWithToken(token, password) {
 
 export function createSessionResponse(customer, request) {
   const cookie = serializeCookie(COOKIE_NAME, signSession(customer), request);
-  return ok({ customer }, { headers: { "Set-Cookie": cookie } });
+  return ok({ customer: publicAccount(customer) }, { headers: { "Set-Cookie": cookie } });
 }
 
-export function clearSessionResponse() {
+export function clearSessionResponse(request) {
   return ok(
     { success: true },
     {
       headers: {
-        "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Priority=High`,
+        "Set-Cookie": serializeCookie(COOKIE_NAME, "", request, 0),
       },
     }
   );
 }
 
-export function readCustomerSession(request) {
+export async function readCustomerSession(request) {
   const cookie = request.headers.get("cookie") || "";
   const value = cookie
     .split(";")
@@ -203,7 +308,20 @@ export function readCustomerSession(request) {
     return null;
   }
 
-  return verifySession(value);
+  const session = verifySession(value);
+  if (!session) {
+    return null;
+  }
+
+  const account = await findCustomerById(session.id);
+  if (
+    !account?.email_verified_at ||
+    Number(account.session_version || 1) !== Number(session.sessionVersion)
+  ) {
+    return null;
+  }
+
+  return publicAccount(account);
 }
 
 export function buildResetUrl(request, token) {
@@ -212,6 +330,16 @@ export function buildResetUrl(request, token) {
     process.env.VITE_PUBLIC_SITE_URL ||
     new URL(request.url).origin;
   const url = new URL("/account/reset-password", origin);
+  url.searchParams.set("token", token);
+  return url.toString();
+}
+
+export function buildVerificationUrl(request, token) {
+  const origin =
+    process.env.PUBLIC_SITE_URL ||
+    process.env.VITE_PUBLIC_SITE_URL ||
+    new URL(request.url).origin;
+  const url = new URL("/account/verify-email", origin);
   url.searchParams.set("token", token);
   return url.toString();
 }
@@ -236,17 +364,22 @@ function hashToken(token) {
 }
 
 function sessionSecret() {
-  return (
-    process.env.CUSTOMER_AUTH_SECRET ||
-    process.env.AUTH_SECRET ||
-    "dev-only-korede-james-customer-secret"
+  const secret = String(
+    process.env.CUSTOMER_AUTH_SECRET || process.env.AUTH_SECRET || "",
   );
+  if (secret.length < 32) {
+    const error = new Error("Customer authentication is not configured.");
+    error.status = 503;
+    throw error;
+  }
+  return secret;
 }
 
 function signSession(customer) {
   const payload = Buffer.from(
     JSON.stringify({
-      ...customer,
+      id: customer.id,
+      sessionVersion: Number(customer.sessionVersion || 1),
       exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE,
     })
   ).toString("base64url");
@@ -278,18 +411,17 @@ function verifySession(value) {
     }
     return {
       id: session.id,
-      firstName: session.firstName,
-      lastName: session.lastName,
-      email: session.email,
+      sessionVersion: session.sessionVersion,
     };
   } catch {
     return null;
   }
 }
 
-function serializeCookie(name, value, request) {
+function serializeCookie(name, value, request, maxAge = SESSION_MAX_AGE) {
   const forwardedProto = request.headers.get("x-forwarded-proto") || "";
   const isSecure =
+    process.env.NODE_ENV === "production" ||
     forwardedProto.split(",")[0]?.trim() === "https" ||
     new URL(request.url).protocol === "https:";
   return [
@@ -297,7 +429,7 @@ function serializeCookie(name, value, request) {
     "Path=/",
     "HttpOnly",
     "SameSite=Lax",
-    `Max-Age=${SESSION_MAX_AGE}`,
+    `Max-Age=${maxAge}`,
     "Priority=High",
     isSecure ? "Secure" : "",
   ]

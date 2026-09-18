@@ -1,35 +1,20 @@
+import { appendInquiry } from "../admin-workspace/utils/workspaceStore.js";
+import { sendCommissionReceivedEmail } from "../utils/email.js";
 import {
-  appendInquiry,
-  appendOrder,
-} from "../admin-workspace/utils/workspaceStore.js";
-import {
-  sendCommissionReceivedEmail,
-  sendPaymentReceivedEmail,
-} from "../utils/email.js";
-import { assertRateLimit, fail, ok, readBody } from "../utils/supabaseRest.js";
+  assertRateLimit,
+  assertSameOrigin,
+  fail,
+  ok,
+  readBody,
+} from "../utils/supabaseRest.js";
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "commission-submit", { limit: 10 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "commission-submit", { limit: 10 });
     const body = await readBody(request, { maxBytes: 64 * 1024 });
-    const type = body.type || "inquiry";
-
-    if (type === "order") {
-      const result = await appendOrder(body);
-      await sendCommissionReceivedEmail({
-        email: result.request.email,
-        client: result.request.client,
-        displayId: result.order.id,
-        artifact: result.request.artifact,
-      });
-      await sendPaymentReceivedEmail({
-        email: result.request.email,
-        client: result.request.client,
-        displayId: result.order.id,
-        total: result.order.total,
-        method: body.payment?.method,
-      });
-      return ok(result);
+    if (body.type && body.type !== "inquiry") {
+      return fail("Unsupported commission request type.", 400);
     }
 
     const result = await appendInquiry(body);
@@ -39,7 +24,15 @@ export async function POST(request) {
       displayId: result.request.id,
       artifact: result.request.artifact,
     });
-    return ok(result);
+    return ok(
+      {
+        request: {
+          id: result.request.id,
+          status: result.request.status,
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to record commission.";

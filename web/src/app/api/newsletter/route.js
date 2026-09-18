@@ -1,9 +1,11 @@
+import { createHash, randomBytes } from "node:crypto";
 import {
   sendNewsletterCampaignEmail,
   sendNewsletterConfirmationEmail,
 } from "../utils/email.js";
 import {
   assertRateLimit,
+  assertSameOrigin,
   fail,
   ok,
   readBody,
@@ -13,7 +15,7 @@ import { requireAdmin } from "../admin-workspace/utils/workspaceStore.js";
 
 export async function GET(request) {
   try {
-    assertRateLimit(request, "newsletter-admin-read", { limit: 120 });
+    await assertRateLimit(request, "newsletter-admin-read", { limit: 120 });
     requireNewsletterAdmin(request);
     const subscribers = await supabaseRequest(
       "newsletter_subscribers?select=id,email,status,source,subscribed_at,updated_at&order=subscribed_at.desc&limit=500",
@@ -27,40 +29,45 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    assertSameOrigin(request);
     const body = await readBody(request, { maxBytes: 8 * 1024 });
 
     if (body.mode === "campaign") {
-      assertRateLimit(request, "newsletter-admin-campaign", { limit: 10 });
-      requireNewsletterAdmin(request);
+      await assertRateLimit(request, "newsletter-admin-campaign", { limit: 10 });
+      requireNewsletterOwner(request);
       return sendNewsletterCampaign(body);
     }
 
-    assertRateLimit(request, "newsletter-subscribe", { limit: 8 });
+    await assertRateLimit(request, "newsletter-subscribe", { limit: 8 });
     const email = validateEmail(body.email);
     const source = cleanText(body.source || "homepage", 60) || "homepage";
+    const confirmationToken = randomBytes(32).toString("base64url");
+    const confirmationExpiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    ).toISOString();
 
-    const rows = await supabaseRequest(
-      "newsletter_subscribers?on_conflict=email",
+    const shouldSend = await supabaseRequest(
+      "rpc/request_newsletter_subscription",
       {
         method: "POST",
-        headers: {
-          Prefer: "resolution=merge-duplicates,return=representation",
-        },
         body: JSON.stringify({
-          email,
-          source,
-          status: "active",
+          p_email: email,
+          p_source: source,
+          p_token_hash: hashToken(confirmationToken),
+          p_expires_at: confirmationExpiresAt,
         }),
       },
     );
 
-    const subscriber = Array.isArray(rows) ? rows[0] : rows;
-    const emailResult = await sendNewsletterConfirmationEmail({ email });
+    if (shouldSend === true) {
+      await sendNewsletterConfirmationEmail({
+        email,
+        confirmationUrl: `${siteOrigin()}/newsletter/confirm?token=${encodeURIComponent(confirmationToken)}`,
+      });
+    }
 
     return ok({
-      subscriber,
-      emailSent: Boolean(emailResult?.sent),
-      message: "Subscription received.",
+      message: "Check your inbox to confirm your subscription.",
     });
   } catch (error) {
     return handleNewsletterError(error, "Unable to subscribe.");
@@ -77,7 +84,7 @@ async function sendNewsletterCampaign(body) {
   }
 
   const subscribers = await supabaseRequest(
-    "newsletter_subscribers?select=email,status&status=eq.active&limit=1000",
+    "newsletter_subscribers?select=email,status&status=eq.active&confirmed_at=not.is.null&limit=1000",
   );
   const activeSubscribers = Array.isArray(subscribers) ? subscribers : [];
   const results = await Promise.all(
@@ -101,8 +108,9 @@ async function sendNewsletterCampaign(body) {
 
 export async function PATCH(request) {
   try {
-    assertRateLimit(request, "newsletter-admin-write", { limit: 60 });
-    requireNewsletterAdmin(request);
+    assertSameOrigin(request);
+    await assertRateLimit(request, "newsletter-admin-write", { limit: 60 });
+    requireNewsletterOwner(request);
     const body = await readBody(request, { maxBytes: 8 * 1024 });
     const email = validateEmail(body.email);
     const status = validateStatus(body.status);
@@ -131,7 +139,7 @@ export async function PATCH(request) {
 function validateEmail(value) {
   const email = String(value || "").trim().toLowerCase();
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error("Enter a valid email address.");
   }
 
@@ -160,6 +168,18 @@ function cleanLongText(value, maxLength) {
     .slice(0, maxLength);
 }
 
+function hashToken(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function siteOrigin() {
+  return String(
+    process.env.PUBLIC_SITE_URL ||
+      process.env.VITE_PUBLIC_SITE_URL ||
+      "http://localhost:4000",
+  ).replace(/\/$/, "");
+}
+
 function handleNewsletterError(error, fallbackMessage) {
   const message = error instanceof Error ? error.message : fallbackMessage;
 
@@ -170,7 +190,11 @@ function handleNewsletterError(error, fallbackMessage) {
     );
   }
 
-  if (message === "Admin access is required." || message === "Owner or editor access is required.") {
+  if (
+    message === "Admin access is required." ||
+    message === "Owner or editor access is required." ||
+    message === "Owner access is required."
+  ) {
     return fail(message, message === "Admin access is required." ? 401 : 403);
   }
 
@@ -179,6 +203,16 @@ function handleNewsletterError(error, fallbackMessage) {
     message || fallbackMessage,
     error instanceof Error && "status" in error ? error.status : status,
   );
+}
+
+function requireNewsletterOwner(request) {
+  const role = requireAdmin(request);
+  if (role !== "owner") {
+    const error = new Error("Owner access is required.");
+    error.status = 403;
+    throw error;
+  }
+  return role;
 }
 
 function requireNewsletterAdmin(request) {

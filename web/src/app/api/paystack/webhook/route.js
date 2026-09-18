@@ -1,17 +1,18 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import {
-  appendOrder,
   confirmOrderPayment,
+  readWorkspace,
 } from "../../admin-workspace/utils/workspaceStore.js";
 import {
   sendCommissionReceivedEmail,
   sendPaymentReceivedEmail,
 } from "../../utils/email.js";
 import { assertRateLimit, fail, ok } from "../../utils/supabaseRest.js";
+import { validateTransactionForOrder } from "../utils/paymentVerification.js";
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "paystack-webhook", { limit: 120 });
+    await assertRateLimit(request, "paystack-webhook", { limit: 120 });
     const secretKey = getPaystackSecretKey();
     const rawBody = await request.text();
     const signature = request.headers.get("x-paystack-signature") || "";
@@ -36,30 +37,25 @@ export async function POST(request) {
       return ok({ received: true, ignored: true });
     }
 
+    const existingOrder = await findExistingOrder(reference);
+    if (!existingOrder) {
+      return ok({ received: true, recorded: false });
+    }
+
+    const validation = validateTransactionForOrder(transaction, existingOrder);
+    if (!validation.valid) {
+      console.error("Paystack webhook mismatch:", reference, validation.reason);
+      return fail("Payment details did not match the pending order.", 400);
+    }
+
     const payment = {
       method: "Paystack",
       reference,
-      currency: transaction.currency || paystackCurrency(),
+      currency: transaction.currency,
       paidAt: transaction.paid_at || new Date().toISOString(),
       status: "paid",
-      total: minorToMajor(transaction.amount),
     };
-    let result = await confirmOrderPayment(reference, payment);
-
-    if (!result?.order) {
-      const orderPayload = transaction.metadata?.orderPayload;
-      if (!orderPayload) {
-        return ok({ received: true, recorded: false });
-      }
-
-      result = await appendOrder({
-        ...orderPayload,
-        payment: {
-          ...(orderPayload.payment || {}),
-          ...payment,
-        },
-      });
-    }
+    const result = await confirmOrderPayment(reference, payment);
 
     if (result?.order && result?.request && !result.alreadyPaid) {
       await sendCommissionReceivedEmail({
@@ -113,11 +109,11 @@ function getPaystackSecretKey() {
   return key;
 }
 
-function minorToMajor(amount) {
-  const value = Number(amount || 0);
-  return Number.isFinite(value) && value > 0 ? Math.round(value / 100) : 0;
-}
-
-function paystackCurrency() {
-  return process.env.PAYSTACK_CURRENCY || "NGN";
+async function findExistingOrder(reference) {
+  const workspace = await readWorkspace();
+  return (
+    workspace.orders.find(
+      (order) => String(order.paystackReference || "") === String(reference),
+    ) || null
+  );
 }

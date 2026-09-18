@@ -15,7 +15,6 @@ export default function ResetPasswordPage() {
     password: "",
     confirmPassword: "",
   });
-  const [devResetUrl, setDevResetUrl] = useState("");
   const [requestSent, setRequestSent] = useState(false);
   const [passwordUpdated, setPasswordUpdated] = useState(false);
   const [error, setError] = useState("");
@@ -29,18 +28,17 @@ export default function ResetPasswordPage() {
     const token = new URLSearchParams(window.location.search).get("token");
     if (token) {
       setPasswordForm((current) => ({ ...current, token }));
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
   const handleRequest = async (event) => {
     event.preventDefault();
     setError("");
-    setDevResetUrl("");
     setIsSubmitting(true);
 
     try {
-      const result = await requestCustomerPasswordReset(email);
-      setDevResetUrl(result.devResetUrl || "");
+      await requestCustomerPasswordReset(email);
       setRequestSent(true);
     } catch (caughtError) {
       setError(caughtError.message);
@@ -54,8 +52,8 @@ export default function ResetPasswordPage() {
     setError("");
     setPasswordUpdated(false);
 
-    if (passwordForm.password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (passwordForm.password.length < 12) {
+      setError("Password must be at least 12 characters.");
       return;
     }
 
@@ -122,15 +120,7 @@ export default function ResetPasswordPage() {
             {requestSent ? (
               <div className="account-status">
                 If an account exists for that email, a reset message will be sent
-                when email delivery is connected.
-                {devResetUrl ? (
-                  <>
-                    <br />
-                    <a className="account-inline-link" href={devResetUrl}>
-                      Open local reset link
-                    </a>
-                  </>
-                ) : null}
+                shortly.
               </div>
             ) : null}
 

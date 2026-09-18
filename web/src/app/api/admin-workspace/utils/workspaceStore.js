@@ -1,15 +1,11 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { supabaseRequest } from "../../utils/supabaseRest.js";
 import { formatMoney, sumLineItems } from "../../../../utils/pricing.js";
 
 const WORKSPACE_ID = process.env.ADMIN_WORKSPACE_ID || "main";
 
-const legacyRolePasswords = {
-  Iamtheadmin: "owner",
-  Iamtheeditor: "editor",
-  Iamthestudio: "studio",
-  Iamthesupport: "support",
-};
+const ADMIN_COOKIE_NAME = "kj_admin_session";
+const ADMIN_SESSION_MAX_AGE = 60 * 60 * 8;
 
 export function createEmptyWorkspace() {
   return {
@@ -60,28 +56,60 @@ export function normalizeWorkspace(workspace) {
 
 export async function readWorkspace() {
   const params = new URLSearchParams({
-    select: "data",
+    select: "data,version",
     id: `eq.${WORKSPACE_ID}`,
     limit: "1",
   });
   const rows = await supabaseRequest(`admin_workspaces?${params.toString()}`);
-  return normalizeWorkspace(rows?.[0]?.data);
+  return normalizeWorkspace({
+    ...(rows?.[0]?.data || {}),
+    _version: Number(rows?.[0]?.version || 0),
+  });
 }
 
 export async function writeWorkspace(workspace) {
   const normalized = normalizeWorkspace(workspace);
-  await supabaseRequest("admin_workspaces?on_conflict=id", {
-    method: "POST",
-    headers: {
-      Prefer: "resolution=merge-duplicates,return=minimal",
-    },
-    body: JSON.stringify({
-      id: WORKSPACE_ID,
-      data: normalized,
-      updated_at: new Date().toISOString(),
-    }),
-  });
-  return normalized;
+  const expectedVersion = Number(normalized._version);
+  if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1) {
+    throw workspaceConflict();
+  }
+
+  const { _version, ...data } = normalized;
+  try {
+    const rows = await supabaseRequest("rpc/replace_admin_workspace", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        p_id: WORKSPACE_ID,
+        p_data: data,
+        p_expected_version: expectedVersion,
+      }),
+    });
+    const saved = Array.isArray(rows) ? rows[0] : rows;
+    if (!saved?.workspace_version) {
+      throw workspaceConflict();
+    }
+    return normalizeWorkspace({
+      ...(saved.workspace_data || data),
+      _version: Number(saved.workspace_version),
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Workspace changed before it could be saved")
+    ) {
+      throw workspaceConflict();
+    }
+    throw error;
+  }
+}
+
+function workspaceConflict() {
+  const error = new Error(
+    "Workspace changed in another session. Refresh and try again.",
+  );
+  error.status = 409;
+  return error;
 }
 
 export async function appendErrorReport(payload = {}) {
@@ -191,6 +219,10 @@ export async function appendOrder(payload) {
     shipping: shippingLabel,
     shippingQuote,
     paystackReference: payment.reference || "",
+    paystackExpectedAmountMinor: Math.round(total * 100),
+    paystackExpectedCurrency: String(currency).toUpperCase(),
+    paystackExpectedEmail: String(customer.email || "").trim().toLowerCase(),
+    paystackExpectedSource: String(payment.source || ""),
     paymentStatus,
     paymentConfirmedAt: payment.paidAt || "",
   };
@@ -230,10 +262,7 @@ export async function confirmOrderPayment(reference, payment = {}) {
 
   const wasAlreadyPaid = existingOrder.paymentStatus === "paid";
   const paidAt = payment.paidAt || new Date().toISOString();
-  const totalLabel =
-    typeof payment.total === "number" && payment.total > 0
-      ? formatCurrency(payment.total, payment.currency || "NGN")
-      : payment.total || existingOrder.total;
+  const totalLabel = existingOrder.total;
   const nextOrder = {
     ...existingOrder,
     status: "Accepted / deposit paid",
@@ -294,28 +323,48 @@ export async function findTrackableCommission({ commissionId, email }) {
   const normalizedInputId = normalizeLookup(commissionId);
   const normalizedEmail = String(email || "").trim().toLowerCase();
 
+  if (
+    normalizedInputId.length < 8 ||
+    normalizedInputId.length > 80 ||
+    normalizedEmail.length > 254 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+  ) {
+    return null;
+  }
+
   const order = workspace.orders.find(
-    (item) => normalizeLookup(item.id) === normalizedInputId
+    (item) => safeEquals(normalizeLookup(item.id), normalizedInputId),
   );
-  const request = workspace.requests.find((item) => {
+  let request = null;
+  workspace.requests.forEach((item) => {
     const requestIds = [
       item.id,
       item.id?.replace(/^req-/i, ""),
-      order ? `req-${order.id}` : "",
-    ].map(normalizeLookup);
-    const matchesId = requestIds.includes(normalizedInputId);
-    const matchesEmail =
-      String(item.email || "").trim().toLowerCase() === normalizedEmail;
+    ]
+      .map(normalizeLookup)
+      .filter(Boolean);
+    const targetIds = [
+      normalizedInputId,
+      order ? normalizeLookup(`req-${order.id}`) : "",
+    ].filter(Boolean);
+    const matchesId = requestIds.some((id) =>
+      targetIds.some((targetId) => safeEquals(id, targetId)),
+    );
+    const matchesEmail = safeEquals(
+      String(item.email || "").trim().toLowerCase(),
+      normalizedEmail,
+    );
 
     if (order) {
-      return (
-        matchesEmail &&
-        (requestIds.includes(normalizeLookup(`req-${order.id}`)) ||
-          item.client === order.customer)
-      );
+      if (matchesEmail && matchesId) {
+        request = item;
+      }
+      return;
     }
 
-    return matchesId && matchesEmail;
+    if (matchesId && matchesEmail) {
+      request = item;
+    }
   });
 
   if (!request) {
@@ -323,15 +372,18 @@ export async function findTrackableCommission({ commissionId, email }) {
   }
 
   return {
-    request,
-    order,
     displayId: order?.id || request.id,
+    request: {
+      artifact: request.artifact,
+      status: request.status,
+      stage: request.stage,
+      updated: request.updated,
+    },
   };
 }
 
 export function requireAdmin(request) {
-  const suppliedCode = request.headers.get("x-kj-admin-code") || "";
-  const role = findRoleForAccessCode(suppliedCode);
+  const role = verifyAdminSession(readCookie(request, ADMIN_COOKIE_NAME));
 
   if (!role) {
     throw new AdminAuthError();
@@ -340,16 +392,20 @@ export function requireAdmin(request) {
   return role;
 }
 
-function findRoleForAccessCode(suppliedCode) {
+export function authenticateAdminCode(suppliedCode) {
   const code = String(suppliedCode || "").trim();
   if (!code || code.length > 160) {
-    return null;
+    throw new AdminAuthError();
   }
 
   const configuredCodes = readConfiguredRoleCodes();
-  const entries = Object.entries(
-    Object.keys(configuredCodes).length ? configuredCodes : legacyRolePasswords,
-  );
+  const entries = Object.entries(configuredCodes);
+
+  if (!entries.length) {
+    const error = new Error("Admin authentication is not configured.");
+    error.status = 503;
+    throw error;
+  }
 
   for (const [expectedCode, role] of entries) {
     if (safeEquals(code, expectedCode) && isKnownRole(role)) {
@@ -357,7 +413,29 @@ function findRoleForAccessCode(suppliedCode) {
     }
   }
 
-  return null;
+  throw new AdminAuthError();
+}
+
+export function createAdminSessionCookie(role, request) {
+  if (!isKnownRole(role)) {
+    throw new AdminAuthError();
+  }
+
+  const payload = Buffer.from(
+    JSON.stringify({
+      role,
+      exp: Math.floor(Date.now() / 1000) + ADMIN_SESSION_MAX_AGE,
+    }),
+  ).toString("base64url");
+  const signature = createHmac("sha256", adminSessionSecret())
+    .update(payload)
+    .digest("base64url");
+
+  return serializeAdminCookie(`${payload}.${signature}`, request);
+}
+
+export function clearAdminSessionCookie(request) {
+  return serializeAdminCookie("", request, 0);
 }
 
 function readConfiguredRoleCodes() {
@@ -383,7 +461,9 @@ function readConfiguredRoleCodes() {
 
 function removeEmptyCodes(codes) {
   return Object.fromEntries(
-    Object.entries(codes).filter(([code, role]) => code && isKnownRole(role)),
+    Object.entries(codes).filter(
+      ([code, role]) => code.length >= 16 && isKnownRole(role),
+    ),
   );
 }
 
@@ -399,6 +479,73 @@ function safeEquals(left, right) {
     leftBuffer.length === rightBuffer.length &&
     timingSafeEqual(leftBuffer, rightBuffer)
   );
+}
+
+function verifyAdminSession(value) {
+  const [payload, signature] = String(value || "").split(".");
+  if (!payload || !signature) {
+    return null;
+  }
+
+  const expected = createHmac("sha256", adminSessionSecret())
+    .update(payload)
+    .digest("base64url");
+  if (!safeEquals(signature, expected)) {
+    return null;
+  }
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (
+      !isKnownRole(session.role) ||
+      !session.exp ||
+      session.exp < Math.floor(Date.now() / 1000)
+    ) {
+      return null;
+    }
+    return session.role;
+  } catch {
+    return null;
+  }
+}
+
+function adminSessionSecret() {
+  const secret = String(process.env.ADMIN_SESSION_SECRET || "");
+  if (secret.length < 32) {
+    const error = new Error("Admin authentication is not configured.");
+    error.status = 503;
+    throw error;
+  }
+  return secret;
+}
+
+function readCookie(request, name) {
+  const cookie = request.headers.get("cookie") || "";
+  return cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
+}
+
+function serializeAdminCookie(value, request, maxAge = ADMIN_SESSION_MAX_AGE) {
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "";
+  const isSecure =
+    process.env.NODE_ENV === "production" ||
+    forwardedProto.split(",")[0]?.trim() === "https" ||
+    new URL(request.url).protocol === "https:";
+
+  return [
+    `${ADMIN_COOKIE_NAME}=${value}`,
+    "Path=/api",
+    "HttpOnly",
+    "SameSite=Strict",
+    `Max-Age=${maxAge}`,
+    "Priority=High",
+    isSecure ? "Secure" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
 }
 
 export class AdminAuthError extends Error {
@@ -489,8 +636,7 @@ function createAuditEntry(action) {
 }
 
 function createWorkspaceId(prefix) {
-  const suffix = Date.now().toString().slice(-6);
-  return `${prefix}-${suffix}`;
+  return `${prefix}-${randomBytes(12).toString("base64url")}`;
 }
 
 function normalizeErrorReport(payload) {

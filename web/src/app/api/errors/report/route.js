@@ -7,6 +7,7 @@ import {
 } from "../../admin-workspace/utils/workspaceStore.js";
 import {
   assertRateLimit,
+  assertSameOrigin,
   fail,
   ok,
   readBody,
@@ -14,7 +15,12 @@ import {
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "error-report", { limit: 30 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "error-report", { limit: 30 });
+    const role = requireAdmin(request);
+    if (role !== "owner") {
+      return fail("Owner access is required to submit error reports.", 403);
+    }
     const body = await readBody(request, { maxBytes: 16 * 1024 });
     const report = await appendErrorReport({
       source: body.source,
@@ -42,7 +48,8 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    assertRateLimit(request, "error-report-update", { limit: 60 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "error-report-update", { limit: 60 });
     const role = requireAdmin(request);
     if (role !== "owner") {
       return fail("Owner access is required to manage error reports.", 403);

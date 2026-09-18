@@ -4,8 +4,8 @@ import { assertRateLimit } from "../../utils/supabaseRest.js";
 
 export async function GET(request) {
   try {
-    assertRateLimit(request, "customer-commissions", { limit: 60 });
-    const customer = readCustomerSession(request);
+    await assertRateLimit(request, "customer-commissions", { limit: 60 });
+    const customer = await readCustomerSession(request);
 
     if (!customer?.email) {
       return fail("Sign in to view your commissions.", 401);

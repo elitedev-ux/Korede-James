@@ -1,8 +1,3 @@
-import { formatMoney, sumLineItems } from "./pricing";
-
-export const ADMIN_WORKSPACE_STORAGE_KEY = "korede-james-admin-workspace-v2";
-export const ADMIN_ACCESS_SECRET_KEY = "korede-james-admin-secret";
-
 export function createEmptyAdminWorkspace() {
   return {
     requests: [],
@@ -24,114 +19,62 @@ export function createEmptyAdminWorkspace() {
   };
 }
 
-export function readAdminWorkspace() {
-  if (typeof window === "undefined") {
-    return createEmptyAdminWorkspace();
-  }
-
-  try {
-    const stored = window.localStorage.getItem(ADMIN_WORKSPACE_STORAGE_KEY);
-    return normalizeAdminWorkspace(stored ? JSON.parse(stored) : {});
-  } catch {
-    return createEmptyAdminWorkspace();
-  }
-}
-
-export function writeAdminWorkspace(workspace) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(
-    ADMIN_WORKSPACE_STORAGE_KEY,
-    JSON.stringify(normalizeAdminWorkspace(workspace)),
-  );
-}
-
-function safeWriteAdminWorkspace(workspace) {
-  try {
-    writeAdminWorkspace(workspace);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function authenticateAdminAccess(code) {
-  const data = await apiRequest("/api/admin-workspace?authOnly=1", {
-    headers: { "x-kj-admin-code": String(code || "").trim() },
+  const data = await apiRequest("/api/admin-auth/session", {
+    method: "POST",
+    body: JSON.stringify({ code: String(code || "").trim() }),
   });
   return data.role;
 }
 
-export async function fetchAdminWorkspace({ strict = false } = {}) {
-  try {
-    const data = await apiRequest("/api/admin-workspace", {
-      headers: adminHeaders(),
-    });
-    writeAdminWorkspace(data.workspace);
-    return normalizeAdminWorkspace(data.workspace);
-  } catch (error) {
-    if (strict) {
-      throw error;
-    }
-    return readAdminWorkspace();
-  }
+export async function fetchAdminAccessSession() {
+  const data = await apiRequest("/api/admin-auth/session");
+  return data.role;
 }
 
-export async function saveAdminWorkspace(workspace, { strict = false } = {}) {
-  const normalizedWorkspace = normalizeAdminWorkspace(workspace);
-  safeWriteAdminWorkspace(normalizedWorkspace);
+export async function logoutAdminAccess() {
+  await apiRequest("/api/admin-auth/session", { method: "DELETE" });
+}
 
-  try {
-    const data = await apiRequest("/api/admin-workspace", {
-      method: "PATCH",
-      headers: adminHeaders(),
-      body: JSON.stringify({ workspace: normalizedWorkspace }),
-    });
-    safeWriteAdminWorkspace(data.workspace);
-    return normalizeAdminWorkspace(data.workspace);
-  } catch (error) {
-    if (strict) {
-      throw error;
-    }
+export async function fetchAdminWorkspace() {
+  const data = await apiRequest("/api/admin-workspace");
+  return normalizeAdminWorkspace(data.workspace);
+}
 
-    return normalizedWorkspace;
-  }
+export async function saveAdminWorkspace(workspace) {
+  const data = await apiRequest("/api/admin-workspace", {
+    method: "PATCH",
+    body: JSON.stringify({
+      workspace: normalizeAdminWorkspace(workspace),
+    }),
+  });
+  return normalizeAdminWorkspace(data.workspace);
 }
 
 export async function updateAdminErrorReport(id, status) {
   const data = await apiRequest("/api/errors/report", {
     method: "PATCH",
-    headers: adminHeaders(),
     body: JSON.stringify({ id, status }),
   });
-  safeWriteAdminWorkspace(data.workspace);
   return normalizeAdminWorkspace(data.workspace);
 }
 
 export async function fetchNewsletterSubscribers() {
-  const data = await apiRequest("/api/newsletter", {
-    headers: adminHeaders(),
-  });
-
+  const data = await apiRequest("/api/newsletter");
   return Array.isArray(data.subscribers) ? data.subscribers : [];
 }
 
 export async function updateNewsletterSubscriber(subscriber) {
   const data = await apiRequest("/api/newsletter", {
     method: "PATCH",
-    headers: adminHeaders(),
     body: JSON.stringify(subscriber),
   });
-
   return data.subscriber;
 }
 
 export async function sendNewsletterCampaign({ subject, title, message }) {
   return apiRequest("/api/newsletter", {
     method: "POST",
-    headers: adminHeaders(),
     body: JSON.stringify({
       mode: "campaign",
       subject,
@@ -142,289 +85,53 @@ export async function sendNewsletterCampaign({ subject, title, message }) {
 }
 
 export async function recordAdminInquiry(payload) {
-  try {
-    const data = await apiRequest("/api/commissions", {
-      method: "POST",
-      body: JSON.stringify({ ...payload, type: "inquiry" }),
-    });
-    writeAdminWorkspace(data.workspace);
-    return data.request;
-  } catch {
-    return recordAdminInquiryLocally(payload);
-  }
+  const data = await apiRequest("/api/commissions", {
+    method: "POST",
+    body: JSON.stringify({ ...payload, type: "inquiry" }),
+  });
+  return data.request;
 }
 
 export async function recordAdminOrder(payload) {
-  try {
-    const data = await apiRequest("/api/commissions", {
-      method: "POST",
-      body: JSON.stringify({ ...payload, type: "order" }),
-    });
-    writeAdminWorkspace(data.workspace);
-    return data.order;
-  } catch {
-    return recordAdminOrderLocally(payload);
-  }
+  const data = await apiRequest("/api/commissions", {
+    method: "POST",
+    body: JSON.stringify({ ...payload, type: "order" }),
+  });
+  return data.order;
 }
 
 export async function trackAdminCommission({ commissionId, email }) {
-  try {
-    return await apiRequest("/api/commissions/track", {
-      method: "POST",
-      body: JSON.stringify({ commissionId, email }),
-    });
-  } catch {
-    return findLocalCommissionRecord({ commissionId, email });
-  }
-}
-
-function recordAdminInquiryLocally({
-  client,
-  email,
-  artifact,
-  budget = "To be quoted",
-  due = "",
-  notes = "",
-  phone = "",
-  source = "Website inquiry",
-  attachments = [],
-  customer,
-  project,
-}) {
-  const workspace = readAdminWorkspace();
-  const firstName = customer?.firstName || "";
-  const lastName = customer?.lastName || "";
-  const customerName = customer?.name || [firstName, lastName].filter(Boolean).join(" ");
-  const projectNotes = [
-    project?.timeline ? `Timeline: ${project.timeline}` : "",
-    project?.notes,
-    notes,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-  const request = {
-    id: createWorkspaceId("REQ"),
-    client: client || customerName || "Website Client",
-    email: email || customer?.email || "No email provided",
-    artifact: artifact || project?.type || project?.title || "General inquiry",
-    budget: project?.budget || budget,
-    status: "Inquiry received",
-    stage: "Inquiry received",
-    due: due || project?.timeline || "Not specified",
-    updated: "Just now",
-    phone: phone || customer?.phone || "",
-    notes: [source, projectNotes].filter(Boolean).join("\n\n"),
-    attachments: normalizeAttachments(attachments),
-  };
-
-  writeAdminWorkspace({
-    ...workspace,
-    requests: [request, ...workspace.requests],
-    customers: upsertWorkspaceCustomer(workspace.customers, {
-      name: request.client,
-      email: request.email,
-      note: request.notes || source,
-    }),
-    audit: [
-      createAuditEntry(`Received ${source.toLowerCase()} from ${request.client}`),
-      ...workspace.audit,
-    ],
+  return apiRequest("/api/commissions/track", {
+    method: "POST",
+    body: JSON.stringify({ commissionId, email }),
   });
-
-  return request;
 }
 
-function recordAdminOrderLocally({ customer, items, contact, shipping, payment }) {
-  const workspace = readAdminWorkspace();
-  const orderId = createWorkspaceId("KJ");
-  const itemSummary = items
-    .map((item) => `${item.quantity || 1}x ${item.name}`)
-    .join(", ");
-  const contactSummary = formatWorkspaceDetails(contact);
-  const shippingSummary = formatWorkspaceDetails(shipping);
-  const currency = payment?.currency || "NGN";
-  const computedSubtotal = sumLineItems(items, currency);
-  const subtotal = Number(payment?.subtotal) || computedSubtotal;
-  const transit = Number(payment?.shipping) || 0;
-  const total = Number(payment?.total) || subtotal + transit;
-  const totalLabel = formatCurrency(total, currency);
-  const shippingQuote = normalizeShippingQuote(payment?.shippingQuote);
-  const transitLabel = transit ? formatCurrency(transit, currency) : "Atelier confirmation";
-  const dispatchSummary = formatDispatchSummary(shippingQuote, transitLabel);
-  const request = {
-    id: `req-${orderId.toLowerCase()}`,
-    client: customer.name,
-    email: customer.email,
-    artifact: itemSummary || "Collection order",
-    budget: totalLabel,
-    status: "Inquiry received",
-    stage: "Inquiry received",
-    due: "To be scheduled",
-    updated: "Just now",
-    phone: customer.phone,
-    notes: [
-      "Collection order submitted from website.",
-      contactSummary ? `Contact: ${contactSummary}` : "",
-      shippingSummary ? `Delivery: ${shippingSummary}` : "",
-      dispatchSummary ? `Dispatch: ${dispatchSummary}` : "",
-      itemSummary ? `Pieces: ${itemSummary}` : "",
-      `Payment: ${totalLabel} via ${payment?.method || "Card"}${payment?.cardLast4 ? ` ending ${payment.cardLast4}` : ""}.`,
-    ]
-      .filter(Boolean)
-      .join("\n"),
-  };
-  const order = {
-    id: orderId,
-    customer: customer.name,
-    total: totalLabel,
-    status: "Inquiry received",
-    refundLimit: "Not applicable",
-    notes: request.notes,
-    subtotal: formatCurrency(subtotal, currency),
-    shipping: transitLabel,
-    shippingQuote,
-    paystackReference: payment?.reference || "",
-  };
-
-  writeAdminWorkspace({
-    ...workspace,
-    requests: [request, ...workspace.requests],
-    orders: [order, ...workspace.orders],
-    customers: upsertWorkspaceCustomer(workspace.customers, {
-      name: customer.name,
-      email: customer.email,
-      note: `Submitted ${items.length} collection piece${items.length === 1 ? "" : "s"}.`,
-    }),
-    audit: [
-      createAuditEntry(`Received paid collection order ${orderId}`),
-      ...workspace.audit,
-    ],
-  });
-
-  return order;
-}
-
-function findLocalCommissionRecord({ commissionId, email }) {
-  const workspace = readAdminWorkspace();
-  const normalizedInputId = normalizeLookup(commissionId);
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-
-  const order = workspace.orders.find(
-    (item) => normalizeLookup(item.id) === normalizedInputId,
-  );
-  const request = workspace.requests.find((item) => {
-    const requestIds = [
-      item.id,
-      item.id?.replace(/^req-/i, ""),
-      order ? `req-${order.id}` : "",
-    ].map(normalizeLookup);
-    const matchesId = requestIds.includes(normalizedInputId);
-    const matchesEmail =
-      String(item.email || "").trim().toLowerCase() === normalizedEmail;
-
-    if (order) {
-      return (
-        matchesEmail &&
-        (requestIds.includes(normalizeLookup(`req-${order.id}`)) ||
-          item.client === order.customer)
-      );
-    }
-
-    return matchesId && matchesEmail;
-  });
-
-  if (!request) {
-    return null;
-  }
-
-  return {
-    request,
-    order,
-    displayId: order?.id || request.id,
-  };
-}
-
-function normalizeAdminWorkspace(workspace) {
+function normalizeAdminWorkspace(workspace = {}) {
   return {
     ...createEmptyAdminWorkspace(),
     ...workspace,
-    requests: workspace.requests || [],
-    pieces: workspace.pieces || [],
-    team: workspace.team || [],
-    orders: workspace.orders || [],
-    customers: workspace.customers || [],
-    contracts: workspace.contracts || [],
-    measurements: workspace.measurements || [],
-    materials: workspace.materials || [],
-    content: workspace.content || [],
-    promotions: workspace.promotions || [],
-    newsletter: workspace.newsletter || [],
-    newsletterSegments: workspace.newsletterSegments || [],
-    newsletterUpdates: workspace.newsletterUpdates || [],
-    errors: workspace.errors || [],
-    settings: workspace.settings || [],
-    audit: workspace.audit || [],
+    requests: Array.isArray(workspace.requests) ? workspace.requests : [],
+    pieces: Array.isArray(workspace.pieces) ? workspace.pieces : [],
+    team: Array.isArray(workspace.team) ? workspace.team : [],
+    orders: Array.isArray(workspace.orders) ? workspace.orders : [],
+    customers: Array.isArray(workspace.customers) ? workspace.customers : [],
+    contracts: Array.isArray(workspace.contracts) ? workspace.contracts : [],
+    measurements: Array.isArray(workspace.measurements) ? workspace.measurements : [],
+    materials: Array.isArray(workspace.materials) ? workspace.materials : [],
+    content: Array.isArray(workspace.content) ? workspace.content : [],
+    promotions: Array.isArray(workspace.promotions) ? workspace.promotions : [],
+    newsletter: Array.isArray(workspace.newsletter) ? workspace.newsletter : [],
+    newsletterSegments: Array.isArray(workspace.newsletterSegments)
+      ? workspace.newsletterSegments
+      : [],
+    newsletterUpdates: Array.isArray(workspace.newsletterUpdates)
+      ? workspace.newsletterUpdates
+      : [],
+    errors: Array.isArray(workspace.errors) ? workspace.errors : [],
+    settings: Array.isArray(workspace.settings) ? workspace.settings : [],
+    audit: Array.isArray(workspace.audit) ? workspace.audit : [],
   };
-}
-
-function upsertWorkspaceCustomer(customers, nextCustomer) {
-  const normalizedEmail = String(nextCustomer.email || "").toLowerCase();
-  const existing = customers.find(
-    (customer) => String(customer.email || "").toLowerCase() === normalizedEmail,
-  );
-
-  if (!existing) {
-    return [
-      {
-        name: nextCustomer.name,
-        email: nextCustomer.email,
-        orders: 1,
-        note: nextCustomer.note,
-      },
-      ...customers,
-    ];
-  }
-
-  return customers.map((customer) =>
-    String(customer.email || "").toLowerCase() === normalizedEmail
-      ? {
-          ...customer,
-          name: nextCustomer.name || customer.name,
-          note: nextCustomer.note || customer.note,
-          orders: (customer.orders || 0) + 1,
-        }
-      : customer,
-  );
-}
-
-function createAuditEntry(action) {
-  return {
-    id: createWorkspaceId("audit"),
-    actor: "Website",
-    action,
-    time: "Just now",
-  };
-}
-
-function createWorkspaceId(prefix) {
-  const suffix = Date.now().toString().slice(-6);
-  return `${prefix}-${suffix}`;
-}
-
-function formatWorkspaceDetails(value) {
-  if (!value) {
-    return "";
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return Object.values(value).filter(Boolean).join(", ");
-}
-
-function formatCurrency(value, currency = "NGN") {
-  return formatMoney(value, currency);
 }
 
 async function apiRequest(path, options = {}) {
@@ -432,17 +139,18 @@ async function apiRequest(path, options = {}) {
   try {
     response = await fetch(path, {
       ...options,
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
         ...(options.headers || {}),
       },
     });
   } catch {
-    throw new Error("Admin service is temporarily unavailable. Please try again.");
+    throw new Error("Live service is temporarily unavailable. Please try again.");
   }
+
   const text = await response.text();
   let data = {};
-
   try {
     data = text ? JSON.parse(text) : {};
   } catch {
@@ -450,72 +158,8 @@ async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(data.error || data.message || "Workspace request failed.");
+    throw new Error(data.error || data.message || "Live service request failed.");
   }
 
   return data;
-}
-
-function adminHeaders() {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  const code =
-    window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY);
-
-  return code ? { "x-kj-admin-code": code } : {};
-}
-
-function normalizeLookup(value = "") {
-  return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function normalizeAttachments(attachments) {
-  return Array.isArray(attachments)
-    ? attachments
-        .map((file) => ({
-          name: String(file?.name || "Reference file").slice(0, 160),
-          url: String(file?.url || ""),
-          mimeType: String(file?.mimeType || ""),
-          size: Number(file?.size || 0),
-        }))
-        .filter((file) => file.url)
-    : [];
-}
-
-function normalizeShippingQuote(quote) {
-  if (!quote || typeof quote !== "object") {
-    return null;
-  }
-
-  return {
-    status: String(quote.status || "manual"),
-    provider: String(quote.provider || "DHL Express"),
-    serviceName: String(quote.serviceName || "DHL dispatch"),
-    amount: Number(quote.amount || 0),
-    currency: String(quote.currency || "NGN"),
-    estimatedDelivery: String(quote.estimatedDelivery || ""),
-    transitDays: String(quote.transitDays || ""),
-    generatedAt: String(quote.generatedAt || ""),
-    note: String(quote.note || ""),
-  };
-}
-
-function formatDispatchSummary(quote, transitLabel) {
-  if (!quote) {
-    return transitLabel;
-  }
-
-  if (quote.status !== "quoted") {
-    return `${quote.provider} pending final atelier confirmation`;
-  }
-
-  return [
-    `${quote.provider} estimate ${transitLabel}`,
-    quote.serviceName,
-    quote.estimatedDelivery ? `ETA ${quote.estimatedDelivery}` : "",
-  ]
-    .filter(Boolean)
-    .join(" / ");
 }

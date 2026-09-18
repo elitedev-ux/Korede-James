@@ -1,10 +1,17 @@
 import { requireAdmin } from "../admin-workspace/utils/workspaceStore.js";
 import { sendTransactionalEmail } from "../utils/email.js";
-import { assertRateLimit, fail, ok, readBody } from "../utils/supabaseRest.js";
+import {
+  assertRateLimit,
+  assertSameOrigin,
+  fail,
+  ok,
+  readBody,
+} from "../utils/supabaseRest.js";
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "email-test", { limit: 5 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "email-test", { limit: 5 });
     const role = requireAdmin(request);
     if (role !== "owner") {
       return fail("Owner access is required.", 403);

@@ -467,12 +467,13 @@ function normalizeCurrency(currency) {
 }
 
 function quoteSecret() {
-  return (
-    process.env.CUSTOMER_AUTH_SECRET ||
-    process.env.AUTH_SECRET ||
-    process.env.PAYSTACK_SECRET_KEY ||
-    "korede-james-local-quote-secret"
-  );
+  const secret = String(process.env.SHIPPING_QUOTE_SECRET || "");
+  if (Buffer.byteLength(secret, "utf8") < 32) {
+    const error = new Error("Shipping quote signing is not configured.");
+    error.status = 503;
+    throw error;
+  }
+  return secret;
 }
 
 function setParam(url, key, value) {

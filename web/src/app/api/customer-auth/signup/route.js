@@ -1,19 +1,36 @@
 import {
+  buildVerificationUrl,
   createCustomer,
-  createSessionResponse,
   assertRateLimit,
+  assertSameOrigin,
   fail,
+  ok,
   readBody,
 } from "../utils/customerAuth.js";
-import { sendWelcomeEmail } from "../../utils/email.js";
+import { sendEmailVerificationEmail } from "../../utils/email.js";
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "customer-signup", { limit: 8 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "customer-signup", { limit: 8 });
     const body = await readBody(request, { maxBytes: 16 * 1024 });
-    const customer = await createCustomer(body);
-    await sendWelcomeEmail(customer);
-    return createSessionResponse(customer, request);
+    const registration = await createCustomer(body);
+    const verificationUrl = buildVerificationUrl(
+      request,
+      registration.verificationToken,
+    );
+    await sendEmailVerificationEmail({
+      customer: registration.customer,
+      verificationUrl,
+    });
+    return ok(
+      {
+        success: true,
+        requiresVerification: true,
+        message: "Check your email to verify your account before signing in.",
+      },
+      { status: 201 },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create account.";
     const status =

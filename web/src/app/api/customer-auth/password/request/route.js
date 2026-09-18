@@ -1,5 +1,6 @@
 import {
   assertRateLimit,
+  assertSameOrigin,
   buildResetUrl,
   fail,
   ok,
@@ -11,24 +12,20 @@ import {
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "customer-password-request", { limit: 5 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "customer-password-request", { limit: 5 });
     const body = await readBody(request, { maxBytes: 8 * 1024 });
     const email = validateEmail(body.email);
     const reset = await setCustomerResetToken(email);
-    let devResetUrl = null;
 
     if (reset) {
       const resetUrl = buildResetUrl(request, reset.token);
-      const result = await sendPasswordResetEmail({ email, resetUrl });
-      if (!result.sent) {
-        devResetUrl = resetUrl;
-      }
+      await sendPasswordResetEmail({ email, resetUrl });
     }
 
     return ok({
       success: true,
       message: "If an account exists for that email, a reset link will be sent.",
-      devResetUrl: process.env.NODE_ENV === "production" ? null : devResetUrl,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to request reset.";

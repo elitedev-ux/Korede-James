@@ -26,12 +26,12 @@ import {
   Workflow,
 } from "lucide-react";
 import {
-  ADMIN_ACCESS_SECRET_KEY,
-  ADMIN_WORKSPACE_STORAGE_KEY,
   authenticateAdminAccess,
   createEmptyAdminWorkspace,
+  fetchAdminAccessSession,
   fetchNewsletterSubscribers,
   fetchAdminWorkspace,
+  logoutAdminAccess,
   saveAdminWorkspace,
   sendNewsletterCampaign,
   updateAdminErrorReport,
@@ -40,10 +40,6 @@ import {
 import { seedWorkspaceProducts } from "../../utils/productCatalog";
 import { uploadSiteFile } from "../../utils/uploads";
 import "./page.css";
-
-const STORAGE_KEY = ADMIN_WORKSPACE_STORAGE_KEY;
-const ACCESS_KEY = "korede-james-admin-unlocked";
-const ACCESS_ROLE_KEY = "korede-james-admin-role";
 
 const requestStatuses = [
   "Inquiry received",
@@ -494,19 +490,6 @@ function productFormToPiece(form, id) {
   };
 }
 
-function readWorkspace() {
-  if (typeof window === "undefined") {
-    return defaultWorkspace;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored ? normalizeWorkspace(JSON.parse(stored)) : defaultWorkspace;
-  } catch {
-    return defaultWorkspace;
-  }
-}
-
 function normalizeWorkspace(workspace) {
   return {
     ...defaultWorkspace,
@@ -543,7 +526,7 @@ function ensureProductCatalogue(workspace) {
 }
 
 async function persistWorkspace(workspace) {
-  return saveAdminWorkspace(workspace, { strict: true });
+  return saveAdminWorkspace(workspace);
 }
 
 function ProductEditorForm({
@@ -788,6 +771,7 @@ function ProductEditorForm({
 
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [accessError, setAccessError] = useState("");
   const [workspace, setWorkspace] = useState(defaultWorkspace);
@@ -816,30 +800,27 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    const localCatalogue = ensureProductCatalogue(readWorkspace());
-    setWorkspace(localCatalogue.workspace);
-    const storedRole = window.sessionStorage.getItem(ACCESS_ROLE_KEY);
-    const hasSessionCode = Boolean(
-      window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY),
-    );
-    if (hasSessionCode && roleProfiles[storedRole]) {
-      setSessionRole(storedRole);
-      setCurrentRole(storedRole);
-      setActiveView(storedRole === "editor" ? "pieces" : "overview");
-      setUnlocked(true);
-      setSaveState("Connecting workspace...");
-      fetchAdminWorkspace({ strict: true })
-        .then((remoteWorkspace) => {
-          const seededCatalogue = ensureProductCatalogue(remoteWorkspace);
-          setWorkspace(seededCatalogue.workspace);
-          setSaveState("Workspace connected");
-          if (seededCatalogue.seeded) {
-            saveAdminWorkspace(seededCatalogue.workspace).then(setWorkspace);
-          }
-        })
-        .catch(() => setSaveState("Workspace offline"));
-      loadNewsletterSubscribers();
-    }
+    setIsConnecting(true);
+    fetchAdminAccessSession()
+      .then(async (role) => {
+        if (!roleProfiles[role]) {
+          return;
+        }
+        setSessionRole(role);
+        setCurrentRole(role);
+        setActiveView(role === "editor" ? "pieces" : "overview");
+        const remoteWorkspace = await fetchAdminWorkspace();
+        const seededCatalogue = ensureProductCatalogue(remoteWorkspace);
+        const liveWorkspace = seededCatalogue.seeded
+          ? await saveAdminWorkspace(seededCatalogue.workspace)
+          : seededCatalogue.workspace;
+        setWorkspace(liveWorkspace);
+        setSaveState("Workspace connected");
+        setUnlocked(true);
+        loadNewsletterSubscribers();
+      })
+      .catch(() => undefined)
+      .finally(() => setIsConnecting(false));
   }, []);
 
   useEffect(() => {
@@ -1008,6 +989,7 @@ export default function AdminPage() {
     nextWorkspace,
     { onSuccess, onError, throwOnError = false } = {},
   ) => {
+    const previousWorkspace = workspace;
     setWorkspace(nextWorkspace);
     setSaveState("Saving...");
 
@@ -1026,6 +1008,7 @@ export default function AdminPage() {
         const message =
           error instanceof Error ? error.message : "Workspace could not be saved.";
         setSaveState("Save failed");
+        setWorkspace(previousWorkspace);
         onError?.(message);
 
         if (throwOnError) {
@@ -1477,44 +1460,39 @@ export default function AdminPage() {
       return;
     }
 
+    setIsConnecting(true);
+    setAccessError("");
     try {
-      window.sessionStorage.setItem(ADMIN_ACCESS_SECRET_KEY, code);
       const role = await authenticateAdminAccess(code);
 
       if (!roleProfiles[role]) {
         throw new Error("Invalid access code.");
       }
 
-      window.sessionStorage.setItem(ACCESS_KEY, "true");
-      window.sessionStorage.setItem(ACCESS_ROLE_KEY, role);
+      const remoteWorkspace = await fetchAdminWorkspace();
+      const seededCatalogue = ensureProductCatalogue(remoteWorkspace);
+      const liveWorkspace = seededCatalogue.seeded
+        ? await saveAdminWorkspace(seededCatalogue.workspace)
+        : seededCatalogue.workspace;
+
       setSessionRole(role);
       setCurrentRole(role);
-      setWorkspace(ensureProductCatalogue(readWorkspace()).workspace);
+      setActiveView(role === "editor" ? "pieces" : "overview");
+      setWorkspace(liveWorkspace);
       setUnlocked(true);
+      setAccessCode("");
       setAccessError("");
-      setSaveState("Connecting workspace...");
-      fetchAdminWorkspace({ strict: true })
-        .then((remoteWorkspace) => {
-          setWorkspace(ensureProductCatalogue(remoteWorkspace).workspace);
-          setSaveState("Workspace connected");
-        })
-        .catch(() => setSaveState("Workspace offline"));
+      setSaveState("Workspace connected");
       loadNewsletterSubscribers();
     } catch (error) {
-      window.sessionStorage.removeItem(ACCESS_KEY);
-      window.sessionStorage.removeItem(ACCESS_ROLE_KEY);
-      window.sessionStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
       setAccessError(error instanceof Error ? error.message : "Invalid access code.");
+    } finally {
+      setIsConnecting(false);
     }
   };
 
-  const handleLogout = () => {
-    window.localStorage.removeItem(ACCESS_KEY);
-    window.localStorage.removeItem(ACCESS_ROLE_KEY);
-    window.localStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
-    window.sessionStorage.removeItem(ACCESS_KEY);
-    window.sessionStorage.removeItem(ACCESS_ROLE_KEY);
-    window.sessionStorage.removeItem(ADMIN_ACCESS_SECRET_KEY);
+  const handleLogout = async () => {
+    await logoutAdminAccess().catch(() => undefined);
     setUnlocked(false);
     setSessionRole("owner");
     setCurrentRole("owner");
@@ -1543,9 +1521,9 @@ export default function AdminPage() {
             {accessError ? (
               <p className="admin-access__error">{accessError}</p>
             ) : null}
-            <button type="submit">
-              <LockKeyhole size={15} />
-              <span>Enter Admin</span>
+            <button type="submit" disabled={isConnecting}>
+              {isConnecting ? <Clock size={15} /> : <LockKeyhole size={15} />}
+              <span>{isConnecting ? "Connecting..." : "Enter Admin"}</span>
             </button>
           </form>
         </section>

@@ -29,8 +29,8 @@ export default function CreateAccountPage() {
     event.preventDefault();
     setError("");
 
-    if (form.password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (form.password.length < 12) {
+      setError("Password must be at least 12 characters.");
       return;
     }
 
@@ -76,12 +76,12 @@ export default function CreateAccountPage() {
               <>
                 <CheckCircle2 size={42} strokeWidth={1.3} />
                 <div>
-                  <p className="account-kicker">Account Ready</p>
-                  <h2>Welcome</h2>
+                  <p className="account-kicker">Verification Required</p>
+                  <h2>Check Your Email</h2>
                 </div>
                 <p>
-                  Your client account has been created. Email verification will be
-                  connected when Resend is added.
+                  We sent a verification link to your email address. Verify it
+                  before signing in to your private account.
                 </p>
                 <div className="account-actions">
                   <a className="account-link-button" href="/account">

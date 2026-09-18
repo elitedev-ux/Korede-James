@@ -1,12 +1,9 @@
-import { POST } from "./route.js";
+import { GET, POST } from "./route.js";
+
+export function loader({ request }) {
+  return GET(request);
+}
 
 export function action({ request }) {
   return POST(request);
-}
-
-export async function loader() {
-  return Response.json(
-    { error: "Method not allowed." },
-    { status: 405, headers: { Allow: "POST" } },
-  );
 }

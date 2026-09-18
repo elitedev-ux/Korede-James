@@ -5,6 +5,10 @@ const DEFAULT_PRODUCT_PRICE = 2000;
 
 export function seedWorkspaceProducts(workspace) {
   const currentWorkspace = workspace && typeof workspace === "object" ? workspace : {};
+  if (currentWorkspace.catalogSeededAt) {
+    return { workspace: currentWorkspace, seeded: false };
+  }
+
   const pieces = Array.isArray(currentWorkspace.pieces) ? currentWorkspace.pieces : [];
   const existingIds = new Set(pieces.map((piece) => String(piece.id || "")));
   const missingPieces = lineSheetProducts
@@ -12,10 +16,6 @@ export function seedWorkspaceProducts(workspace) {
     .map(productToAdminPiece);
 
   if (!missingPieces.length) {
-    if (currentWorkspace.catalogSeededAt) {
-      return { workspace: currentWorkspace, seeded: false };
-    }
-
     return {
       workspace: {
         ...currentWorkspace,
@@ -36,12 +36,11 @@ export function seedWorkspaceProducts(workspace) {
 }
 
 export function getPublicProductsFromWorkspace(workspace) {
-  const { workspace: seededWorkspace } = seedWorkspaceProducts(workspace);
-  const pieces = Array.isArray(seededWorkspace.pieces) ? seededWorkspace.pieces : [];
+  const pieces = Array.isArray(workspace?.pieces) ? workspace.pieces : [];
 
   return pieces
     .filter((piece) => piece.visibility !== "Hidden")
-    .filter((piece) => piece.availability !== "Archived")
+    .filter((piece) => piece.availability === "Available")
     .map(pieceToPublicProduct);
 }
 

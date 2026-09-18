@@ -1,5 +1,6 @@
 import {
   assertRateLimit,
+  assertSameOrigin,
   fail,
   ok,
   readBody,
@@ -8,7 +9,8 @@ import {
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "customer-password-confirm", { limit: 8 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "customer-password-confirm", { limit: 8 });
     const body = await readBody(request, { maxBytes: 8 * 1024 });
     await updatePasswordWithToken(body.token, body.password);
     return ok({ success: true });

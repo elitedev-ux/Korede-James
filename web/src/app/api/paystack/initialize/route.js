@@ -1,47 +1,77 @@
-import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js";
-import { DEFAULT_MARKET, getLineItemPrice } from "../../../../utils/pricing.js";
+import {
+  assertRateLimit,
+  assertSameOrigin,
+  fail,
+  ok,
+  readBody,
+} from "../../utils/supabaseRest.js";
+import {
+  DEFAULT_MARKET,
+  getLineItemPrice,
+} from "../../../../utils/pricing.js";
+import { getPublicProductsFromWorkspace } from "../../../../utils/productCatalog.js";
 import {
   appendErrorReport,
   appendOrder,
+  readWorkspace,
 } from "../../admin-workspace/utils/workspaceStore.js";
 import {
   createPendingShippingQuote,
   resolveTrustedShippingQuote,
 } from "../../shipping/rates/shippingQuote.js";
+import {
+  PAYSTACK_CHECKOUT_SOURCE,
+  publicOrderReceipt,
+} from "../utils/paymentVerification.js";
 
 const PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize";
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "paystack-initialize", { limit: 20 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "paystack-initialize", { limit: 20 });
     const secretKey = getPaystackSecretKey();
     const body = await readBody(request, { maxBytes: 64 * 1024 });
+    const customer = resolveCustomer(body?.customer);
+    const shippingAddress = resolveShippingAddress(body?.shippingAddress);
     const displayCurrency = resolveDisplayCurrency(body);
     const paymentCurrency = resolvePaystackCurrency();
-    const subtotal = sumItems(body?.items, paymentCurrency);
+    const items = await resolveCatalogItems(body?.items);
+    const subtotal = sumItems(items, paymentCurrency);
     const shippingQuote = isDhlCheckoutEnabled()
       ? await resolveTrustedShippingQuote({
           quote: body?.payment?.shippingQuote,
-          destination: body?.shippingAddress,
-          items: body?.items,
+          destination: shippingAddress,
+          items,
           currency: paymentCurrency,
         })
       : createPendingShippingQuote({
-          destination: body?.shippingAddress,
-          items: body?.items,
+          destination: shippingAddress,
+          items,
           currency: paymentCurrency,
         });
     const shipping = Number(shippingQuote?.amount || 0);
-    const amount = resolvePaymentAmount({
-      body,
-      subtotal,
-      shipping,
-    });
-    const email = String(body.customer?.email || "").trim();
-
-    if (!email) {
-      return fail("Customer email is required for payment.", 400);
-    }
+    const amount = subtotal + shipping;
+    const email = customer.email;
+    const orderPayload = {
+      customer,
+      contact: customer.preferredContact,
+      shipping: formatShippingAddress(shippingAddress),
+      shippingAddress,
+      items,
+      payment: {
+        displayCurrency,
+        chargedCurrency: paymentCurrency,
+        currency: paymentCurrency,
+        subtotal,
+        shipping,
+        shippingQuote,
+        total: amount,
+        method: "Paystack",
+        source: PAYSTACK_CHECKOUT_SOURCE,
+        status: "pending",
+      },
+    };
 
     if (!amount || amount <= 0) {
       return fail("Payment amount is invalid.", 400);
@@ -53,20 +83,7 @@ export async function POST(request) {
       currency: paymentCurrency,
       callback_url: `${siteOrigin()}/checkout?payment=paystack`,
       metadata: {
-        orderPayload: {
-          ...body,
-          payment: {
-            ...(body.payment || {}),
-            displayCurrency,
-            chargedCurrency: paymentCurrency,
-            currency: paymentCurrency,
-            subtotal,
-            shipping,
-            shippingQuote,
-            total: amount,
-          },
-        },
-        source: "korede-james-checkout",
+        source: PAYSTACK_CHECKOUT_SOURCE,
       },
     };
     const { response, data } = await initializePaystackTransaction({
@@ -85,26 +102,17 @@ export async function POST(request) {
           amount,
         }),
       });
-      return fail(providerMessage, 400);
+      return fail("Unable to initialize payment. Please try again.", 502);
     }
 
     const reference = data.data?.reference;
     let pendingOrder = null;
     try {
       pendingOrder = await appendOrder({
-        ...body,
+        ...orderPayload,
         payment: {
-          ...(body.payment || {}),
-          displayCurrency,
-          chargedCurrency: paymentCurrency,
-          currency: paymentCurrency,
-          subtotal,
-          shipping,
-          shippingQuote,
-          total: amount,
-          method: "Paystack",
+          ...orderPayload.payment,
           reference,
-          status: "pending",
         },
       });
     } catch (workspaceError) {
@@ -112,13 +120,19 @@ export async function POST(request) {
         error: workspaceError,
         reference,
       });
+      return fail(
+        "Checkout is temporarily unavailable. No payment has been taken. Please try again shortly.",
+        503,
+      );
     }
 
     return ok({
       authorizationUrl: data.data?.authorization_url,
       accessCode: data.data?.access_code,
       reference,
-      order: pendingOrder?.order || null,
+      order: pendingOrder?.order
+        ? publicOrderReceipt(pendingOrder.order)
+        : null,
     });
   } catch (error) {
     const message =
@@ -234,28 +248,145 @@ function toMinorUnits(amount) {
   return Math.round(Number(amount || 0) * 100);
 }
 
-function resolvePaymentAmount({ body, subtotal, shipping }) {
-  const computedTotal = Number(subtotal || 0) + Number(shipping || 0);
-
-  if (computedTotal > 0) {
-    return computedTotal;
-  }
-
-  const explicitTotal = Number(body?.payment?.total ?? body?.total ?? 0);
-
-  if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
-    return explicitTotal;
-  }
-
-  return 0;
-}
-
 function sumItems(items = [], currency) {
   return items.reduce((sum, item) => {
     const price = getLineItemPrice(item, currency);
     const quantity = Number(item?.quantity) || 1;
     return sum + price * quantity;
   }, 0);
+}
+
+async function resolveCatalogItems(requestedItems) {
+  if (!Array.isArray(requestedItems) || requestedItems.length < 1) {
+    throw badRequest("Your cart is empty.");
+  }
+
+  if (requestedItems.length > 20) {
+    throw badRequest("Too many separate items were submitted.");
+  }
+
+  const workspace = await readWorkspace();
+  const productById = new Map(
+    getPublicProductsFromWorkspace(workspace).map((product) => [
+      String(product.id),
+      product,
+    ]),
+  );
+  let totalQuantity = 0;
+
+  const items = requestedItems.map((requestedItem) => {
+    const id = String(requestedItem?.id || "").trim();
+    const product = productById.get(id);
+
+    if (!product) {
+      throw badRequest("One or more products are unavailable.");
+    }
+
+    const quantity = Number(requestedItem?.quantity);
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 10) {
+      throw badRequest("Each product quantity must be between 1 and 10.");
+    }
+
+    totalQuantity += quantity;
+    if (totalQuantity > 20) {
+      throw badRequest("The maximum checkout quantity is 20 pieces.");
+    }
+
+    const size = requireCatalogOption(
+      requestedItem?.size,
+      product.sizes,
+      "size",
+    );
+    const color = requireCatalogOption(
+      requestedItem?.color,
+      product.colors,
+      "colour",
+    );
+
+    return {
+      ...product,
+      size,
+      color,
+      quantity,
+      tailoringNotes: limitedText(requestedItem?.tailoringNotes, 1_000),
+      archivalNotes: limitedText(requestedItem?.archivalNotes, 1_000),
+    };
+  });
+
+  return items;
+}
+
+function requireCatalogOption(value, options, label) {
+  const normalizedValue = String(value || "").trim();
+  const allowedOptions = Array.isArray(options)
+    ? options.map((option) => String(option))
+    : [];
+
+  if (!normalizedValue || !allowedOptions.includes(normalizedValue)) {
+    throw badRequest(`Please select a valid ${label}.`);
+  }
+
+  return normalizedValue;
+}
+
+function limitedText(value, maxLength) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function resolveCustomer(value) {
+  const customer = value && typeof value === "object" ? value : {};
+  const name = requiredText(customer.name, "Customer name", 120);
+  const email = requiredText(customer.email, "Customer email", 254).toLowerCase();
+  const phone = requiredText(customer.phone, "Customer phone", 32);
+  const preferredContact = requiredText(
+    customer.preferredContact || email,
+    "Preferred contact",
+    200,
+  );
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw badRequest("Please enter a valid customer email.");
+  }
+  if (!/^\+?[0-9() .-]{7,32}$/.test(phone)) {
+    throw badRequest("Please enter a valid customer phone number.");
+  }
+
+  return { name, email, phone, preferredContact };
+}
+
+function resolveShippingAddress(value) {
+  const address = value && typeof value === "object" ? value : {};
+  return {
+    address: requiredText(address.address, "Street address", 200),
+    city: requiredText(address.city, "City", 100),
+    region: requiredText(address.region, "State or region", 100),
+    postalCode: requiredText(address.postalCode, "Postal code", 24),
+    country: requiredText(address.country, "Country", 100),
+  };
+}
+
+function requiredText(value, label, maxLength) {
+  const normalized = String(value || "").trim();
+  if (!normalized || normalized.length > maxLength) {
+    throw badRequest(`${label} is required and must be ${maxLength} characters or fewer.`);
+  }
+  return normalized;
+}
+
+function formatShippingAddress(destination) {
+  return [
+    destination.address,
+    destination.city,
+    destination.region,
+    destination.postalCode,
+    destination.country,
+  ].join(", ");
+}
+
+function badRequest(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
 }
 
 function resolveDisplayCurrency(body) {

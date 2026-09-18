@@ -392,7 +392,7 @@ export default function CommissionPage() {
                     <input
                       type="file"
                       multiple
-                      accept="image/*,.pdf"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
                       className="sr-only"
                       onChange={(event) => handleReferenceFiles(event.target.files)}
                     />

@@ -119,6 +119,7 @@ if (import.meta.env.DEV) {
 }
 const tree = buildRouteTree(__dirname);
 const apiRoutes = [
+	route('api/admin-auth/session', './api/admin-auth/session/resource.js'),
 	route('api/admin-workspace', './api/admin-workspace/resource.js'),
 	route('api/commissions', './api/commissions/resource.js'),
 	route('api/commissions/track', './api/commissions/track/resource.js'),
@@ -128,6 +129,7 @@ const apiRoutes = [
 	route('api/region', './api/region/resource.js'),
 	route('api/public-products', './api/public-products/resource.js'),
 	route('api/newsletter', './api/newsletter/resource.js'),
+	route('api/newsletter/confirm', './api/newsletter/confirm/resource.js'),
 	route('api/uploads', './api/uploads/resource.js'),
 	route('api/email-test', './api/email-test/resource.js'),
 	route('api/errors/report', './api/errors/report/resource.js'),
@@ -137,6 +139,14 @@ const apiRoutes = [
 	route('api/customer-auth/session', './api/customer-auth/session/resource.js'),
 	route('api/customer-auth/commissions', './api/customer-auth/commissions/resource.js'),
 	route('api/customer-auth/logout', './api/customer-auth/logout/resource.js'),
+	route(
+		'api/customer-auth/email/verify',
+		'./api/customer-auth/email/verify/resource.js'
+	),
+	route(
+		'api/customer-auth/email/resend',
+		'./api/customer-auth/email/resend/resource.js'
+	),
 	route(
 		'api/customer-auth/password/request',
 		'./api/customer-auth/password/request/resource.js'

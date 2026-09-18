@@ -1,9 +1,13 @@
 create table if not exists public.admin_workspaces (
   id text primary key,
   data jsonb not null default '{}'::jsonb,
+  version bigint not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.admin_workspaces
+  add column if not exists version bigint not null default 1;
 
 create or replace function public.set_admin_workspaces_updated_at()
 returns trigger
@@ -23,6 +27,37 @@ for each row
 execute function public.set_admin_workspaces_updated_at();
 
 alter table public.admin_workspaces enable row level security;
+
+create or replace function public.replace_admin_workspace(
+  p_id text,
+  p_data jsonb,
+  p_expected_version bigint
+)
+returns table(workspace_data jsonb, workspace_version bigint)
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+begin
+  return query
+  update public.admin_workspaces as workspace
+  set data = p_data,
+      version = workspace.version + 1
+  where workspace.id = p_id
+    and workspace.version = p_expected_version
+  returning workspace.data, workspace.version;
+
+  if not found then
+    raise exception 'Workspace changed before it could be saved.'
+      using errcode = '40001';
+  end if;
+end;
+$$;
+
+revoke all on function public.replace_admin_workspace(text, jsonb, bigint)
+  from public, anon, authenticated;
+grant execute on function public.replace_admin_workspace(text, jsonb, bigint)
+  to service_role;
 
 insert into public.admin_workspaces (id, data)
 values (

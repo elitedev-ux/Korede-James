@@ -1,25 +1,15 @@
-const ADMIN_ACCESS_SECRET_KEY = "korede-james-admin-secret";
-
 export async function uploadSiteFile(
   file,
-  { scope = "commission-reference", admin = false, optimizeImage = false } = {},
+  { scope = "commission-reference", optimizeImage = false } = {},
 ) {
   const uploadFile = optimizeImage ? await optimizeImageForUpload(file) : file;
   const formData = new FormData();
   formData.append("file", uploadFile, file.name || "upload");
   formData.append("scope", scope);
 
-  const headers = {};
-  if (admin && typeof window !== "undefined") {
-    const adminCode = window.sessionStorage.getItem(ADMIN_ACCESS_SECRET_KEY);
-    if (adminCode) {
-      headers["x-kj-admin-code"] = adminCode;
-    }
-  }
-
   const response = await fetch("/api/uploads", {
     method: "POST",
-    headers,
+    credentials: "same-origin",
     body: formData,
   });
   const data = await response.json().catch(() => ({}));

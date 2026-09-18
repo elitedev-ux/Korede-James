@@ -86,6 +86,34 @@ export function sendWelcomeEmail(customer) {
   });
 }
 
+export function sendEmailVerificationEmail({ customer, verificationUrl }) {
+  const name = customerName(customer);
+
+  return sendTransactionalEmail({
+    to: customer?.email,
+    subject: "Verify your Korede James email",
+    preview: "Confirm your email address to activate your private account.",
+    html: brandedMessage({
+      eyebrow: "Account Security",
+      title: "Verify Your Email",
+      greeting: `Hello ${name},`,
+      body: [
+        "Confirm that you own this email address before accessing your private client account.",
+        "This verification link expires in 24 hours. If you did not create this account, you can ignore this email.",
+      ],
+      details: [
+        ["Request", "Email verification"],
+        ["Expiry", "24 hours"],
+      ],
+      action: {
+        label: "Verify Email",
+        href: verificationUrl,
+      },
+      fallbackUrl: verificationUrl,
+    }),
+  });
+}
+
 export function sendPasswordResetEmail({ email, resetUrl }) {
   return sendTransactionalEmail({
     to: email,
@@ -111,27 +139,28 @@ export function sendPasswordResetEmail({ email, resetUrl }) {
   });
 }
 
-export function sendNewsletterConfirmationEmail({ email }) {
+export function sendNewsletterConfirmationEmail({ email, confirmationUrl }) {
   return sendTransactionalEmail({
     to: email,
-    subject: "Welcome to the Korede James inner circle",
-    preview: "You are now subscribed to Korede James atelier notes.",
+    subject: "Confirm your Korede James subscription",
+    preview: "Confirm your email before receiving atelier notes.",
     html: brandedMessage({
       eyebrow: "Inner Circle",
-      title: "Subscription Confirmed",
+      title: "Confirm Your Subscription",
       greeting: "Hello,",
       body: [
-        "Thank you for joining the Korede James inner circle.",
-        "You will receive collection notes, atelier updates, and private invitations when the studio has something considered to share.",
+        "Someone requested atelier notes for this email address.",
+        "Confirm below within 24 hours. If this was not you, no action is needed and you will not be subscribed.",
       ],
       details: [
-        ["Subscription", "Active"],
+        ["Subscription", "Awaiting confirmation"],
         ["Frequency", "Occasional atelier notes"],
       ],
       action: {
-        label: "Visit Korede James",
-        href: siteOrigin(),
+        label: "Confirm Subscription",
+        href: confirmationUrl,
       },
+      fallbackUrl: confirmationUrl,
     }),
   });
 }

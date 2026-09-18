@@ -1,9 +1,16 @@
-import { assertRateLimit, fail, ok, readBody } from "../../utils/supabaseRest.js";
+import {
+  assertRateLimit,
+  assertSameOrigin,
+  fail,
+  ok,
+  readBody,
+} from "../../utils/supabaseRest.js";
 import { getEstimatedShippingQuote } from "./shippingQuote.js";
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "shipping-rates", { limit: 40 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "shipping-rates", { limit: 40 });
     const body = await readBody(request, { maxBytes: 64 * 1024 });
     const quote = await getEstimatedShippingQuote({
       destination: body.destination,

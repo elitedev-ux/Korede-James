@@ -1,5 +1,6 @@
 import {
   assertRateLimit,
+  assertSameOrigin,
   createSessionResponse,
   fail,
   readBody,
@@ -8,7 +9,8 @@ import {
 
 export async function POST(request) {
   try {
-    assertRateLimit(request, "customer-signin", { limit: 10 });
+    assertSameOrigin(request);
+    await assertRateLimit(request, "customer-signin", { limit: 10 });
     const body = await readBody(request, { maxBytes: 8 * 1024 });
     const customer = await verifyCustomer(body.email, body.password);
     return createSessionResponse(customer, request);
