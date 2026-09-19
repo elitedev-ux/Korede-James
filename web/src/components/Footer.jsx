@@ -1,5 +1,5 @@
 import React from "react";
-import { Instagram, Twitter, Mail, MapPin, Phone } from "lucide-react";
+import { Headphones, Instagram, Mail, MapPin, Phone } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -79,7 +79,7 @@ export default function Footer() {
             </li>
             <li>
               <a
-                href="#"
+                href="/shipping-returns"
                 className="text-sm text-gray-600 hover:text-amber-600 transition-colors"
               >
                 Shipping & Returns
@@ -87,7 +87,7 @@ export default function Footer() {
             </li>
             <li>
               <a
-                href="#"
+                href="/size-guide"
                 className="text-sm text-gray-600 hover:text-amber-600 transition-colors"
               >
                 Size Guide
@@ -102,19 +102,24 @@ export default function Footer() {
           </h4>
           <div className="flex space-x-4 mb-6">
             <a
-              href="#"
+              href="https://www.instagram.com/korede.james/"
+              aria-label="Instagram"
+              target="_blank"
+              rel="noreferrer"
               className="p-2 bg-white rounded-full border border-gray-100 hover:border-amber-600 transition-all"
             >
               <Instagram size={18} strokeWidth={1.5} />
             </a>
             <a
-              href="#"
+              href="/contact"
+              aria-label="Support care"
               className="p-2 bg-white rounded-full border border-gray-100 hover:border-amber-600 transition-all"
             >
-              <Twitter size={18} strokeWidth={1.5} />
+              <Headphones size={18} strokeWidth={1.5} />
             </a>
             <a
-              href="#"
+              href="mailto:hello@koredejames.com"
+              aria-label="Email Korede James"
               className="p-2 bg-white rounded-full border border-gray-100 hover:border-amber-600 transition-all"
             >
               <Mail size={18} strokeWidth={1.5} />
@@ -127,22 +132,27 @@ export default function Footer() {
             </div>
             <div className="flex items-center space-x-3 text-sm text-gray-500">
               <Phone size={16} strokeWidth={1.5} />
-              <span>By appointment only</span>
+              <a
+                href="tel:+2349164900646"
+                className="hover:text-amber-600 transition-colors"
+              >
+                +234 916 490 0646
+              </a>
             </div>
           </div>
         </div>
       </div>
 
       <div className="w-full px-8 lg:px-16 pt-10 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center text-[10px] uppercase tracking-widest text-gray-400 font-medium">
-        <p>© 2026 Korede-james. All rights reserved.</p>
+        <p>© 2026 Korede James. All rights reserved.</p>
         <div className="flex space-x-8 mt-4 md:mt-0">
-          <a href="#" className="hover:text-black">
+          <a href="/privacy-policy" className="hover:text-black">
             Privacy Policy
           </a>
-          <a href="#" className="hover:text-black">
+          <a href="/terms-of-service" className="hover:text-black">
             Terms of Service
           </a>
-          <a href="#" className="hover:text-black">
+          <a href="/accessibility" className="hover:text-black">
             Accessibility
           </a>
         </div>

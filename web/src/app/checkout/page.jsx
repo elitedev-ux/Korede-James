@@ -1,29 +1,159 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, CheckCircle2, Lock, ShoppingBag } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShoppingBag } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
+import { getCustomerSession } from "../../utils/customerAccount";
+import { useRegion } from "../../context/RegionContext";
+import { formatMoney, sumLineItems } from "../../utils/pricing";
+import {
+  CONTACT_METHODS,
+  formatPreferredContact,
+  getContactMethod,
+} from "../../utils/contactPreferences";
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
+  const { currency } = useRegion();
   const [orderId, setOrderId] = useState("");
+  const [customerSession, setCustomerSession] = useState(null);
   const [submittedBlueprint, setSubmittedBlueprint] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [contactMethod, setContactMethod] = useState(CONTACT_METHODS[0].value);
+  const subtotal = sumLineItems(cart, currency);
+  const total = subtotal;
 
-  const subtotal = cart.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0,
-  );
-  const shipping = subtotal > 2000 || subtotal === 0 ? 0 : 50;
-  const total = subtotal + shipping;
+  useEffect(() => {
+    let isMounted = true;
 
-  const handleSubmit = (event) => {
+    getCustomerSession()
+      .then((customer) => {
+        if (isMounted) {
+          setCustomerSession(customer);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference") || params.get("trxref");
+
+    if (!reference) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsSubmitting(true);
+    setPaymentError("");
+
+    fetch(`/api/paystack/verify?reference=${encodeURIComponent(reference)}`)
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to verify Paystack payment.");
+        }
+        return data;
+      })
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setSubmittedBlueprint(data.orderPayload?.items || cart);
+        setOrderId(data.order?.id || window.sessionStorage.getItem("kj_pending_order_id") || "");
+        window.sessionStorage.removeItem("kj_pending_order_id");
+        clearCart();
+        window.history.replaceState({}, "", "/checkout");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setPaymentError(
+            error instanceof Error
+              ? error.message
+              : "Unable to verify Paystack payment.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsSubmitting(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cart, clearCart]);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setSubmittedBlueprint(cart);
-    setOrderId(`KJ-${Date.now().toString().slice(-6)}`);
-    clearCart();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const form = new FormData(event.currentTarget);
+    const firstName = String(form.get("firstName") || "").trim();
+    const lastName = String(form.get("lastName") || "").trim();
+    const preferredContact = formatPreferredContact(
+      form.get("contactMethod"),
+      form.get("contactDetail"),
+    );
+    setIsSubmitting(true);
+    setPaymentError("");
+
+    try {
+      const destination = getShippingDestination(form);
+      const orderPayload = {
+        customer: {
+          name: [firstName, lastName].filter(Boolean).join(" ") || "Website Client",
+          email: String(form.get("email") || "").trim(),
+          phone: String(form.get("phone") || "").trim(),
+          preferredContact,
+        },
+        contact: preferredContact,
+        shipping: formatShippingAddress(destination),
+        shippingAddress: destination,
+        items: cart,
+        payment: {
+          subtotal,
+          shipping: 0,
+          shippingQuote: null,
+          total: subtotal,
+          method: "Paystack",
+          currency,
+        },
+      };
+      const response = await fetch("/api/paystack/initialize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderPayload),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.authorizationUrl) {
+        throw new Error(data.error || "Unable to start Paystack checkout.");
+      }
+
+      if (data.order?.id) {
+        window.sessionStorage.setItem("kj_pending_order_id", data.order.id);
+      }
+
+      window.location.href = data.authorizationUrl;
+    } catch (error) {
+      console.error("Checkout initialization failed.", error);
+      setPaymentError(
+        error instanceof Error ? error.message : "Unable to start Paystack checkout.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (orderId) {
@@ -42,7 +172,7 @@ export default function CheckoutPage() {
           <p className="text-gray-500 font-light leading-relaxed mb-12 text-center max-w-2xl mx-auto">
             Thank you. Your commission request has been received. A member of the
             Korede James team will contact you to confirm measurements, delivery
-            details, and final payment.
+            details, payment status, and the next atelier steps.
           </p>
           <div className="space-y-8 mb-12">
             {submittedBlueprint.map((item, index) => (
@@ -51,7 +181,7 @@ export default function CheckoutPage() {
           </div>
           <div className="text-center">
             <a
-              href="/track"
+              href={`/track?commission=${encodeURIComponent(orderId)}`}
               className="inline-flex items-center justify-center bg-black text-white px-12 py-5 text-[10px] uppercase tracking-[0.35em] font-semibold hover:bg-amber-800 transition-colors"
             >
               Track Commission
@@ -101,63 +231,117 @@ export default function CheckoutPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
             <form
+              key={customerSession?.email || "guest-checkout"}
               onSubmit={handleSubmit}
               className="lg:col-span-2 space-y-12"
             >
               <CheckoutSection title="Custodian Details">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="First Name" name="firstName" required />
-                  <Field label="Last Name" name="lastName" required />
+                  <Field
+                    label="First Name"
+                    name="firstName"
+                    defaultValue={customerSession?.firstName || ""}
+                    required
+                  />
+                  <Field
+                    label="Last Name"
+                    name="lastName"
+                    defaultValue={customerSession?.lastName || ""}
+                    required
+                  />
                   <Field
                     label="Email Address"
                     name="email"
                     type="email"
+                    defaultValue={customerSession?.email || ""}
                     required
                   />
                   <Field label="Phone Number" name="phone" required />
                 </div>
               </CheckoutSection>
 
-              <CheckoutSection title="Transit Information">
-                <div className="grid grid-cols-1 gap-4">
-                  <Field label="Address" name="address" required />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Field label="City" name="city" required />
-                    <Field label="State / Region" name="region" required />
-                    <Field label="Postal Code" name="postalCode" required />
-                  </div>
-                  <Field label="Country" name="country" required />
+              <CheckoutSection title="Atelier Communication">
+                <p className="mb-6 text-xs font-light leading-loose text-gray-500">
+                  Choose where the atelier should send consultation and commission updates.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <SelectField
+                    label="Preferred Method"
+                    name="contactMethod"
+                    value={contactMethod}
+                    onChange={(event) => setContactMethod(event.target.value)}
+                    options={CONTACT_METHODS}
+                  />
+                  <Field
+                    label="Contact Details"
+                    name="contactDetail"
+                    type={contactMethod === "email" ? "email" : "text"}
+                    placeholder={getContactMethod(contactMethod).placeholder}
+                    required
+                  />
                 </div>
               </CheckoutSection>
 
-              <CheckoutSection title="Payment Registration">
+              <CheckoutSection title="Transit Information">
                 <div className="grid grid-cols-1 gap-4">
-                  <Field label="Name on Card" name="cardName" required />
                   <Field
-                    label="Card Number"
-                    name="cardNumber"
-                    inputMode="numeric"
-                    placeholder="0000 0000 0000 0000"
+                    label="Address"
+                    name="address"
                     required
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Expiry" name="expiry" placeholder="MM/YY" required />
-                    <Field label="CVC" name="cvc" inputMode="numeric" required />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Field
+                      label="City"
+                      name="city"
+                      required
+                    />
+                    <Field
+                      label="State / Region"
+                      name="region"
+                      required
+                    />
+                    <Field
+                      label="Postal Code"
+                      name="postalCode"
+                      required
+                    />
                   </div>
+                  <Field
+                    label="Country"
+                    name="country"
+                    required
+                  />
                 </div>
-                <p className="mt-5 flex items-center gap-2 text-[9px] uppercase tracking-widest text-gray-400">
-                  <Lock size={12} />
-                  Secure commission preview. Payment is confirmed after team
-                  review.
+              </CheckoutSection>
+
+              <CheckoutSection title="Payment Details">
+                <p className="text-xs font-light leading-loose text-gray-500">
+                  Secure payment is handled by Paystack. The website does not
+                  collect or store card details. Delivery arrangements will be
+                  confirmed directly by the atelier.
+                </p>
+              </CheckoutSection>
+
+              <CheckoutSection title="Submission">
+                <p className="text-xs font-light leading-loose text-gray-500">
+                  Your payment details are attached to the commission request for
+                  atelier review. Final capture and fulfillment status will be
+                  confirmed by the studio desk.
                 </p>
               </CheckoutSection>
 
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all"
               >
-                Submit Commission
+                {isSubmitting ? "Opening Paystack..." : "Pay With Paystack"}
               </button>
+              {paymentError ? (
+                <p className="border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+                  {paymentError}
+                </p>
+              ) : null}
             </form>
 
             <aside className="lg:col-span-1">
@@ -180,14 +364,14 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-5 text-xs tracking-widest border-t border-gray-200 pt-6">
-                  <SummaryLine label="Registered Value" value={`$${subtotal.toLocaleString()}`} />
-                  <SummaryLine label="Transit" value={shipping === 0 ? "Complimentary" : `$${shipping}`} />
-                  <SummaryLine label="Tax" value="$0.00" />
-                  <SummaryLine label="Total Due" value={`$${total.toLocaleString()}`} />
+                  <SummaryLine label="Registered Value" value={formatMoney(subtotal, currency)} />
+                  <SummaryLine label="Payment" value="Paystack" />
+                  <SummaryLine label="Total Due" value={formatMoney(total, currency)} />
                 </div>
 
                 <p className="mt-8 text-[9px] uppercase tracking-widest text-gray-400 leading-loose">
                   Workshop timeline: 1 - 4 weeks from commission submission.
+                  Delivery details are confirmed directly by the atelier.
                 </p>
               </div>
             </aside>
@@ -229,6 +413,26 @@ function Field({ label, ...props }) {
   );
 }
 
+function SelectField({ label, options, ...props }) {
+  return (
+    <label className="block">
+      <span className="block text-[9px] uppercase tracking-[0.3em] text-gray-400 mb-3">
+        {label}
+      </span>
+      <select
+        {...props}
+        className="w-full bg-white border border-gray-200 px-5 py-4 text-sm focus:outline-none focus:border-black transition-colors"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function SummaryLine({ label, value }) {
   return (
     <div className="flex justify-between">
@@ -236,6 +440,28 @@ function SummaryLine({ label, value }) {
       <span className="font-bold">{value}</span>
     </div>
   );
+}
+
+function getShippingDestination(form) {
+  return {
+    address: String(form.get("address") || "").trim(),
+    city: String(form.get("city") || "").trim(),
+    region: String(form.get("region") || "").trim(),
+    postalCode: String(form.get("postalCode") || "").trim(),
+    country: String(form.get("country") || "").trim(),
+  };
+}
+
+function formatShippingAddress(destination) {
+  return [
+    destination.address,
+    destination.city,
+    destination.region,
+    destination.postalCode,
+    destination.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
 }
 
 function ArtifactBlueprint({ item }) {

@@ -1,51 +1,20 @@
 import * as React from 'react';
+import { uploadSiteFile } from "./uploads";
 
 function useUpload() {
   const [loading, setLoading] = React.useState(false);
   const upload = React.useCallback(async (input) => {
     try {
       setLoading(true);
-      let response;
       if ("file" in input && input.file) {
-        const formData = new FormData();
-        formData.append("file", input.file);
-        response = await fetch("/_create/api/upload/", {
-          method: "POST",
-          body: formData
+        const uploadedFile = await uploadSiteFile(input.file, {
+          scope: input.scope || "site-upload",
+          admin: Boolean(input.admin),
+          optimizeImage: input.optimizeImage ?? input.file.type?.startsWith("image/"),
         });
-      } else if ("url" in input) {
-        response = await fetch("/_create/api/upload/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ url: input.url })
-        });
-      } else if ("base64" in input) {
-        response = await fetch("/_create/api/upload/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ base64: input.base64 })
-        });
-      } else {
-        response = await fetch("/_create/api/upload/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/octet-stream"
-          },
-          body: input.buffer
-        });
+        return { url: uploadedFile.url, mimeType: uploadedFile.mimeType || null };
       }
-      if (!response.ok) {
-        if (response.status === 413) {
-          throw new Error("Upload failed: File too large.");
-        }
-        throw new Error("Upload failed");
-      }
-      const data = await response.json();
-      return { url: data.url, mimeType: data.mimeType || null };
+      throw new Error("Upload failed: please select a file.");
     } catch (uploadError) {
       if (uploadError instanceof Error) {
         return { error: uploadError.message };
