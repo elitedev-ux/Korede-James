@@ -19,7 +19,7 @@ export default function CollectionsPage() {
             {collections.map((collection, index) => (
               <motion.div
                 key={collection.id}
-                initial={{ opacity: 0, y: 50 }}
+                initial={false}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}

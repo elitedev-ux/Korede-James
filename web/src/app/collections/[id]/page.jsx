@@ -102,7 +102,7 @@ export default function CollectionDetailsPage({ params }) {
             {galleryLayout.map((item, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 28 }}
+                initial={false}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.7, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}

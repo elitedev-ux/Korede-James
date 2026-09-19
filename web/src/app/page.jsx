@@ -399,7 +399,7 @@ export default function HomePage() {
           ) : null}
         </div>
         <motion.div
-          initial={{ opacity: 0, x: 24 }}
+          initial={false}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.9 }}
