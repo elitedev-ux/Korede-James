@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { assertSameOrigin, readBody } from "../src/app/api/utils/supabaseRest.js";
+import { createCustomer } from "../src/app/api/customer-auth/utils/customerAuth.js";
 import { createPendingShippingQuote } from "../src/app/api/shipping/rates/shippingQuote.js";
 import { POST as subscribe } from "../src/app/api/newsletter/route.js";
 import { POST as confirm } from "../src/app/api/newsletter/confirm/route.js";
@@ -46,6 +47,22 @@ test("production rejects cross-site and malformed origins", () => {
     request.headers.set("Origin", origin);
     assert.throws(() => assertSameOrigin(request), { status: 403 });
   }
+});
+
+test("signup clearly identifies an email that already has an account", async () => {
+  mockBackend((url) => {
+    assert.ok(url.includes("customer_accounts?"));
+    return Response.json([{ id: "existing-customer" }]);
+  });
+  await assert.rejects(
+    createCustomer({
+      firstName: "Existing",
+      lastName: "Customer",
+      email: "existing@example.com",
+      password: "not-used-for-an-existing-account",
+    }),
+    { message: "An account already exists for this email address." },
+  );
 });
 
 test("development accepts localhost rather than the configured production site", () => {

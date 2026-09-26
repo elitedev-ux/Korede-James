@@ -139,7 +139,7 @@ export async function createCustomer({ firstName, lastName, email, password }) {
 
   const existing = await findCustomerByEmail(normalizedEmail);
   if (existing) {
-    throw new Error("Unable to create an account with those details.");
+    throw new Error("An account already exists for this email address.");
   }
 
   const salt = randomBytes(16).toString("hex");
