@@ -18,7 +18,7 @@ security definer
 set search_path = pg_catalog, public
 as $$
 declare
-  current_time timestamptz := clock_timestamp();
+  v_current_time timestamptz := clock_timestamp();
   current_count integer;
 begin
   insert into public.rate_limit_buckets as bucket (
@@ -29,22 +29,22 @@ begin
   )
   values (
     p_key_hash,
-    current_time,
+    v_current_time,
     1,
-    current_time + make_interval(secs => p_window_seconds)
+    v_current_time + make_interval(secs => p_window_seconds)
   )
   on conflict (key_hash) do update
   set request_count = case
-        when bucket.expires_at <= current_time then 1
+        when bucket.expires_at <= v_current_time then 1
         else bucket.request_count + 1
       end,
       window_started_at = case
-        when bucket.expires_at <= current_time then current_time
+        when bucket.expires_at <= v_current_time then v_current_time
         else bucket.window_started_at
       end,
       expires_at = case
-        when bucket.expires_at <= current_time
-          then current_time + make_interval(secs => p_window_seconds)
+        when bucket.expires_at <= v_current_time
+          then v_current_time + make_interval(secs => p_window_seconds)
         else bucket.expires_at
       end
   returning request_count into current_count;
