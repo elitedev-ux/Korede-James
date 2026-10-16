@@ -5,14 +5,14 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import useStore from "../../store/useStore";
+import { useRegion } from "../../context/RegionContext";
+import { formatMoney, getLineItemPrice, sumLineItems } from "../../utils/pricing";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity } = useStore();
-  const subtotal = cart.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0,
-  );
-  const shipping = subtotal > 2000 ? 0 : 50;
+  const { currency } = useRegion();
+  const subtotal = sumLineItems(cart, currency);
+  const shipping = 0;
   const total = subtotal + shipping;
 
   return (
@@ -51,8 +51,11 @@ export default function CartPage() {
                           {item.category}
                         </p>
                       </div>
-                      <p className="text-lg font-serif font-light">
-                        ${item.price.toLocaleString()}
+                      <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400">
+                        {formatMoney(
+                          getLineItemPrice(item, currency) * item.quantity,
+                          currency,
+                        )}
                       </p>
                     </div>
 
@@ -124,27 +127,27 @@ export default function CartPage() {
                   <div className="flex justify-between text-xs tracking-widest">
                     <span className="text-gray-400 uppercase">Subtotal</span>
                     <span className="font-bold">
-                      ${subtotal.toLocaleString()}
+                      {formatMoney(subtotal, currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
-                    <span className="text-gray-400 uppercase">Shipping</span>
+                    <span className="text-gray-400 uppercase">Transit</span>
                     <span className="font-bold">
-                      {shipping === 0 ? "Complimentary" : `$${shipping}`}
+                      {formatMoney(shipping, currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs tracking-widest">
                     <span className="text-gray-400 uppercase">
-                      Estimated Tax
+                      Payment
                     </span>
-                    <span className="font-bold">$0.00</span>
+                    <span className="font-bold">Due at checkout</span>
                   </div>
                   <div className="pt-6 border-t border-gray-200 flex justify-between items-end">
                     <span className="text-xs uppercase tracking-widest font-bold">
                       Total
                     </span>
                     <span className="text-2xl font-serif">
-                      ${total.toLocaleString()}
+                      {formatMoney(total, currency)}
                     </span>
                   </div>
                 </div>
@@ -161,8 +164,8 @@ export default function CartPage() {
                 </a>
 
                 <p className="mt-8 text-center text-[8px] uppercase tracking-widest text-gray-400 leading-loose">
-                  Final pricing, delivery, and atelier details are confirmed
-                  after your commission request is reviewed.
+                  Payment is captured with your commission request and reviewed
+                  by the atelier desk.
                 </p>
               </div>
             </div>

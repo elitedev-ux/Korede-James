@@ -1,25 +1,143 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Upload, Calendar, Ruler, Send, CheckCircle2 } from "lucide-react";
+import { Upload, Calendar, Send, CheckCircle2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
+import { recordAdminInquiry } from "../../utils/adminWorkspace";
+import { getCustomerSession } from "../../utils/customerAccount";
+import { uploadSiteFile } from "../../utils/uploads";
+import { useRegion } from "../../context/RegionContext";
+import { formatMoney } from "../../utils/pricing";
+import {
+  CONTACT_METHODS,
+  formatPreferredContact,
+  getContactMethod,
+} from "../../utils/contactPreferences";
+
+const BUDGET_OPTIONS = [
+  {
+    id: "signature",
+    minimum: { NGN: 5_000_000, USD: 5_000 },
+    maximum: { NGN: 10_000_000, USD: 10_000 },
+  },
+  {
+    id: "couture",
+    minimum: { NGN: 10_000_000, USD: 10_000 },
+    maximum: { NGN: 25_000_000, USD: 25_000 },
+  },
+  {
+    id: "collector",
+    minimum: { NGN: 25_000_000, USD: 25_000 },
+  },
+];
+
+function formatBudgetOption(option, currency) {
+  const minimum = formatMoney(option.minimum[currency], currency);
+  return option.maximum
+    ? `${minimum} - ${formatMoney(option.maximum[currency], currency)}`
+    : `${minimum}+`;
+}
 
 export default function CommissionPage() {
+  const { currency } = useRegion();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedId, setSubmittedId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [referenceFiles, setReferenceFiles] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     type: "Evening Wear",
-    budget: "$5,000 - $10,000",
+    budget: BUDGET_OPTIONS[0].id,
+    contactMethod: CONTACT_METHODS[0].value,
+    contactDetail: "",
     date: "",
     measurements: "",
     notes: "",
   });
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    getCustomerSession()
+      .then((customer) => {
+        if (!isMounted || !customer) {
+          return;
+        }
+
+        setFormData((current) => ({
+          ...current,
+          name:
+            current.name ||
+            [customer.firstName, customer.lastName].filter(Boolean).join(" "),
+          email: current.email || customer.email,
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const selectedBudget =
+        BUDGET_OPTIONS.find((option) => option.id === formData.budget) ||
+        BUDGET_OPTIONS[0];
+      const attachments = await Promise.all(
+        referenceFiles.map((file) =>
+          uploadSiteFile(file, {
+            scope: "commission-reference",
+            optimizeImage: file.type?.startsWith("image/"),
+          }),
+        ),
+      );
+      const request = await recordAdminInquiry({
+        client: formData.name,
+        email: formData.email,
+        artifact: formData.type,
+        budget: formatBudgetOption(selectedBudget, currency),
+        due: formData.date,
+        source: "Bespoke enquiry",
+        notes: [
+          `Preferred contact: ${formatPreferredContact(
+            formData.contactMethod,
+            formData.contactDetail,
+          )}`,
+          formData.measurements ? `Measurements: ${formData.measurements}` : "",
+          attachments.length
+            ? `Reference files:\n${attachments
+                .map((file) => `${file.name}: ${file.url}`)
+                .join("\n")}`
+            : "",
+          formData.notes,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+        attachments,
+      });
+      setSubmittedId(request.id);
+      setIsSubmitted(true);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Unable to send inquiry. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReferenceFiles = (files) => {
+    setReferenceFiles(Array.from(files || []));
   };
 
   return (
@@ -110,6 +228,9 @@ export default function CommissionPage() {
                 <h3 className="text-2xl font-serif tracking-widest uppercase mb-4">
                   Inquiry Received
                 </h3>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-amber-700 mb-5">
+                  {submittedId}
+                </p>
                 <p className="text-gray-500 font-light text-sm tracking-wide mb-8">
                   A design consultant will contact you within 48 hours to
                   schedule your initial consultation.
@@ -170,6 +291,7 @@ export default function CommissionPage() {
                       <option>Bridal</option>
                       <option>Outerwear</option>
                       <option>Bespoke Suit</option>
+                      <option>Others</option>
                     </select>
                   </div>
                   <div className="space-y-2">
@@ -183,10 +305,55 @@ export default function CommissionPage() {
                         setFormData({ ...formData, budget: e.target.value })
                       }
                     >
-                      <option>$5,000 - $10,000</option>
-                      <option>$10,000 - $25,000</option>
-                      <option>$25,000+</option>
+                      {BUDGET_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {formatBudgetOption(option, currency)}
+                        </option>
+                      ))}
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+                      Preferred Communication
+                    </label>
+                    <select
+                      className="w-full bg-white border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
+                      value={formData.contactMethod}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contactMethod: e.target.value,
+                          contactDetail: "",
+                        })
+                      }
+                    >
+                      {CONTACT_METHODS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+                      Contact Details
+                    </label>
+                    <input
+                      required
+                      type={formData.contactMethod === "email" ? "email" : "text"}
+                      className="w-full bg-white border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
+                      placeholder={getContactMethod(formData.contactMethod).placeholder}
+                      value={formData.contactDetail}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contactDetail: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
 
@@ -214,7 +381,21 @@ export default function CommissionPage() {
                   <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
                     Reference / Inspiration
                   </label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center bg-white hover:border-black transition-colors cursor-pointer group">
+                  <label
+                    className="block border-2 border-dashed border-gray-200 rounded-lg p-8 text-center bg-white hover:border-black transition-colors cursor-pointer group"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleReferenceFiles(event.dataTransfer.files);
+                    }}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={(event) => handleReferenceFiles(event.target.files)}
+                    />
                     <Upload
                       size={24}
                       className="mx-auto text-gray-300 group-hover:text-black mb-4 transition-colors"
@@ -222,7 +403,19 @@ export default function CommissionPage() {
                     <p className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-black transition-colors">
                       Drag files here or click to upload
                     </p>
-                  </div>
+                    {referenceFiles.length ? (
+                      <div className="mt-5 space-y-2 text-left">
+                        {referenceFiles.map((file) => (
+                          <p
+                            className="truncate text-[10px] uppercase tracking-widest text-black"
+                            key={`${file.name}-${file.size}`}
+                          >
+                            {file.name}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </label>
                 </div>
 
                 <div className="space-y-2">
@@ -242,14 +435,20 @@ export default function CommissionPage() {
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-black text-white py-5 text-[10px] uppercase tracking-[0.4em] font-semibold hover:bg-amber-800 transition-all flex items-center justify-center space-x-4 group"
                 >
                   <Send
                     size={16}
                     className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform"
                   />
-                  <span>Send Inquiry</span>
+                  <span>{isSubmitting ? "Sending..." : "Send Inquiry"}</span>
                 </button>
+                {submitError ? (
+                  <p className="border border-red-100 bg-red-50 px-5 py-4 text-xs text-red-800">
+                    {submitError}
+                  </p>
+                ) : null}
               </form>
             )}
           </div>

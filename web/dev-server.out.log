@@ -2,7 +2,18 @@
 > dev
 > react-router dev
 
-  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m4000[22m/[39m
-  [32m➜[39m  [1mNetwork[22m: [36mhttp://10.249.245.168:[1m4000[22m/[39m
+  ➜  Local:   http://localhost:4000/
+  ➜  Network: http://192.168.0.20:4000/
 🚧 Dev server started
-[vite] Detected change in .env. Exiting for restart...
+2:52:26 AM [vite] (client) hmr update /src/app/commission/page.jsx, /src/app/global.css
+2:52:26 AM [vite] (client) hmr update /src/app/commission/page.jsx?noLayout.jsx
+2:52:26 AM [vite] (client) hmr update /src/app/contact/page.jsx, /src/app/global.css
+2:52:26 AM [vite] (client) hmr update /src/app/contact/page.jsx?noLayout.jsx
+2:52:27 AM [vite] (client) hmr update /src/app/contact/page.jsx, /src/app/global.css
+2:52:27 AM [vite] (client) hmr update /src/app/contact/page.jsx?noLayout.jsx
+2:52:27 AM [vite] (client) hmr update /src/app/contact/page.jsx, /src/app/global.css, /src/app/contact/page.jsx?noLayout.jsx
+2:52:27 AM [vite] (ssr) page reload src/app/contact/page.jsx
+2:52:27 AM [vite] (client) hmr update /src/app/commission/page.jsx, /src/app/global.css
+2:52:27 AM [vite] (client) hmr update /src/app/commission/page.jsx?noLayout.jsx
+2:52:27 AM [vite] (client) hmr update /src/app/commission/page.jsx, /src/app/global.css, /src/app/commission/page.jsx?noLayout.jsx
+2:52:27 AM [vite] (ssr) page reload src/app/commission/page.jsx

@@ -1,65 +1,79 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
   Package,
-  MapPin,
   Calendar,
   Clock,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SectionTitle from "../../components/SectionTitle";
+import { trackAdminCommission } from "../../utils/adminWorkspace";
+import { getCustomerSession } from "../../utils/customerAccount";
 
 export default function OrderTrackingPage() {
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return new URLSearchParams(window.location.search).get("commission") || "";
+  });
   const [email, setEmail] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [showResult, setShowResult] = useState(false);
+  const [trackingResult, setTrackingResult] = useState(null);
+  const [trackError, setTrackError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getCustomerSession()
+      .then((customer) => {
+        if (isMounted && customer?.email) {
+          setEmail((current) => current || customer.email);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleTrack = (e) => {
     e.preventDefault();
     setIsSearching(true);
-    // Mock search delay
+    setTrackError("");
+    setTrackingResult(null);
+
     setTimeout(() => {
-      setIsSearching(false);
-      setShowResult(true);
+      trackAdminCommission({ commissionId: orderId, email })
+        .then((result) => {
+          if (!result) {
+            setTrackError(
+              "No matching commission found. Check the commission number and email used for the request."
+            );
+            return;
+          }
+
+          setTrackingResult({
+            ...result,
+            steps: buildTrackingSteps(result.request),
+          });
+        })
+        .catch(() => {
+          setTrackError(
+            "No matching commission found. Check the commission number and email used for the request."
+          );
+        })
+        .finally(() => {
+          setIsSearching(false);
+        });
     }, 1500);
   };
-
-  const steps = [
-    {
-      phase: "Phase 01",
-      status: "Commission Logged",
-      text: "Your directives, measurements, and palette selections have been archived. The atelier is preparing the foundational design forms.",
-      completed: true,
-    },
-    {
-      phase: "Phase 02",
-      status: "Material Selection & Curation",
-      text: "Our artisans are sourcing and inspecting the exact textiles or premium leathers for you.",
-      completed: true,
-    },
-    {
-      phase: "Phase 03",
-      status: "The Cutting & Hand-Assembly",
-      text: "The raw canvas and leather are being individually hand-cut and pieced together. The artifact is taking physical form in the workshop.",
-      completed: true,
-    },
-    {
-      phase: "Phase 04",
-      status: "Archival Inspection & Numbering",
-      text: "Korede James and the head couturiers review the final construction against your custom measurements. The piece is assigned its official archive serial number.",
-      completed: false,
-    },
-    {
-      phase: "Phase 05",
-      status: "Transit to Custodian",
-      text: "The finished artifact has left the atelier in its protective casing. It is currently en route to its permanent home.",
-      completed: false,
-    },
-  ];
 
   return (
     <main className="min-h-screen bg-white">
@@ -77,7 +91,7 @@ export default function OrderTrackingPage() {
               <input
                 required
                 type="text"
-                placeholder="LA-2026-XXXX"
+                placeholder="KJ-123456 or REQ-123456"
                 className="w-full bg-white border border-gray-200 px-6 py-4 text-sm focus:outline-none focus:border-black transition-colors"
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
@@ -114,11 +128,17 @@ export default function OrderTrackingPage() {
                 {isSearching ? "Accessing Archives..." : "Track Commission"}
               </span>
             </button>
+            {trackError ? (
+              <div className="border border-red-100 bg-red-50 text-red-800 px-5 py-4 text-xs font-light leading-relaxed flex items-start gap-3">
+                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                <span>{trackError}</span>
+              </div>
+            ) : null}
           </form>
         </div>
 
         <AnimatePresence>
-          {showResult && (
+          {trackingResult && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -127,21 +147,22 @@ export default function OrderTrackingPage() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-8 border-b border-gray-100 gap-4">
                 <div>
                   <h3 className="text-xl font-serif tracking-widest uppercase mb-2">
-                    Commission #KJ-2026-4812
+                    Commission #{trackingResult.displayId}
                   </h3>
                   <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-                    Estimated atelier timeline: 1 - 4 weeks
+                    {trackingResult.request.artifact} / Updated{" "}
+                    {trackingResult.request.updated || "recently"}
                   </p>
                 </div>
                 <div className="bg-amber-50 text-amber-800 px-4 py-2 rounded-full text-[10px] uppercase tracking-widest font-bold">
-                  In Workshop
+                  {trackingResult.request.status}
                 </div>
               </div>
 
               {/* Timeline */}
               <div className="relative pl-8 space-y-12">
                 <div className="absolute top-0 bottom-0 left-[11px] w-px bg-gray-100" />
-                {steps.map((step, i) => (
+                {trackingResult.steps.map((step, i) => (
                   <div key={i} className="relative">
                     <div
                       className={`absolute -left-[28px] top-1 w-6 h-6 rounded-full border-4 border-white flex items-center justify-center ${step.completed ? "bg-black text-white" : "bg-gray-100 text-gray-400"}`}
@@ -163,6 +184,11 @@ export default function OrderTrackingPage() {
                         <p className="text-xs text-gray-500 font-light leading-loose max-w-xl">
                           {step.text}
                         </p>
+                        {step.active ? (
+                          <p className="mt-3 text-[9px] uppercase tracking-[0.28em] text-amber-700 font-semibold">
+                            Current atelier stage
+                          </p>
+                        ) : null}
                       </div>
                       <div className="text-right flex items-center space-x-2 text-gray-400">
                         <Calendar size={12} />
@@ -206,4 +232,94 @@ export default function OrderTrackingPage() {
       <Footer />
     </main>
   );
+}
+
+const trackingStages = [
+  {
+    key: "Inquiry received",
+    status: "Inquiry Received",
+    text: "Your commission request has entered the atelier desk. The team is reviewing the project details and contact information.",
+  },
+  {
+    key: "Quoted",
+    status: "Quote Prepared",
+    text: "The atelier is preparing or has sent scope, pricing, and timeline details for review.",
+  },
+  {
+    key: "Accepted / deposit paid",
+    status: "Accepted",
+    text: "The commission has been accepted and is ready for production planning.",
+  },
+  {
+    key: "Consultation",
+    status: "Consultation",
+    text: "The team is refining silhouettes, measurements, and design decisions with the client.",
+  },
+  {
+    key: "Toile & Fittings",
+    status: "Toile & Fittings",
+    text: "Studio work is underway. Toile, fitting notes, and construction adjustments are being logged.",
+  },
+  {
+    key: "Revisions requested",
+    status: "Revisions Requested",
+    text: "Requested revisions are being reviewed and folded into the commission process.",
+  },
+  {
+    key: "Completed / delivered",
+    status: "Completed / Delivered",
+    text: "Final atelier review is complete and the commission is ready, delivered, or archived.",
+  },
+];
+
+function buildTrackingSteps(request) {
+  const currentStage = normalizeStage(request.stage || request.status);
+  const currentStatus = normalizeStage(request.status);
+  const currentIndex = Math.max(
+    trackingStages.findIndex((step) => step.key === currentStage),
+    trackingStages.findIndex((step) => step.key === currentStatus),
+    0
+  );
+
+  return trackingStages.map((step, index) => ({
+    phase: `Phase ${String(index + 1).padStart(2, "0")}`,
+    status: step.status,
+    text: step.text,
+    completed: index <= currentIndex,
+    active: index === currentIndex,
+  }));
+}
+
+function normalizeStage(value = "") {
+  const stage = String(value)
+    .replace(/^In progress\s*-\s*/i, "")
+    .replace(/&/g, "and")
+    .trim()
+    .toLowerCase();
+
+  if (stage.includes("archived") || stage.includes("completed") || stage.includes("delivered")) {
+    return "Completed / delivered";
+  }
+
+  if (stage.includes("revision")) {
+    return "Revisions requested";
+  }
+
+  if (stage.includes("toile") || stage.includes("fitting")) {
+    return "Toile & Fittings";
+  }
+
+  if (stage.includes("consultation")) {
+    return "Consultation";
+  }
+
+  if (stage.includes("accepted") || stage.includes("deposit")) {
+    return "Accepted / deposit paid";
+  }
+
+  if (stage.includes("quoted")) {
+    return "Quoted";
+  }
+
+  return "Inquiry received";
 }

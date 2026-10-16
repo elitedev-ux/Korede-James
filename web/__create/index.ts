@@ -1,10 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import nodeConsole from 'node:console';
-import { skipCSRFCheck } from '@auth/core';
-import Credentials from '@auth/core/providers/credentials';
-import { authHandler, initAuthConfig } from '@hono/auth-js';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { hash, verify } from 'argon2';
 import { Hono } from 'hono';
 import { contextStorage, getContext } from 'hono/context-storage';
 import { cors } from 'hono/cors';
@@ -12,13 +7,7 @@ import { proxy } from 'hono/proxy';
 import { bodyLimit } from 'hono/body-limit';
 import { requestId } from 'hono/request-id';
 import { createHonoServer } from 'react-router-hono-server/node';
-import { serializeError } from 'serialize-error';
-import ws from 'ws';
-import NeonAdapter from './adapter';
-import { getHTMLForErrorPage } from './get-html-for-error-page';
-import { isAuthAction } from './is-auth-action';
 import { API_BASENAME, api } from './route-builder';
-neonConfig.webSocketConstructor = ws;
 
 const als = new AsyncLocalStorage<{ requestId: string }>();
 
@@ -35,11 +24,6 @@ for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
   };
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-const adapter = NeonAdapter(pool);
-
 const app = new Hono();
 
 app.use('*', requestId());
@@ -52,16 +36,14 @@ app.use('*', (c, next) => {
 app.use(contextStorage());
 
 app.onError((err, c) => {
-  if (c.req.method !== 'GET') {
-    return c.json(
-      {
-        error: 'An error occurred in your app',
-        details: serializeError(err),
-      },
-      500
-    );
-  }
-  return c.html(getHTMLForErrorPage(err), 200);
+  console.error('Unhandled application error:', err);
+  return c.json(
+    {
+      error: 'Service temporarily unavailable. Please try again later.',
+      requestId: c.get('requestId'),
+    },
+    500
+  );
 });
 
 if (process.env.CORS_ORIGINS) {
@@ -84,213 +66,72 @@ for (const method of ['post', 'put', 'patch'] as const) {
   );
 }
 
-if (process.env.AUTH_SECRET) {
-  app.use(
-    '*',
-    initAuthConfig((c) => ({
-      secret: c.env.AUTH_SECRET,
-      pages: {
-        signIn: '/account/signin',
-        signOut: '/account/logout',
-      },
-      skipCSRFCheck,
-      session: {
-        strategy: 'jwt',
-      },
-      callbacks: {
-        session({ session, token }) {
-          if (token.sub) {
-            session.user.id = token.sub;
-          }
-          return session;
-        },
-      },
-      cookies: {
-        csrfToken: {
-          options: {
-            secure: true,
-            sameSite: 'none',
-          },
-        },
-        sessionToken: {
-          options: {
-            secure: true,
-            sameSite: 'none',
-          },
-        },
-        callbackUrl: {
-          options: {
-            secure: true,
-            sameSite: 'none',
-          },
-        },
-      },
-      providers: [
-        // Dev-only provider for simulated social sign-in (Google, Facebook, etc.)
-        // Creates or finds a user by email without requiring a password.
-        ...(process.env.NEXT_PUBLIC_CREATE_ENV === 'DEVELOPMENT'
-          ? [
-              Credentials({
-                id: 'dev-social',
-                name: 'Development Social Sign-in',
-                credentials: {
-                  email: { label: 'Email', type: 'email' },
-                  name: { label: 'Name', type: 'text' },
-                  provider: { label: 'Provider', type: 'text' },
-                },
-                authorize: async (credentials) => {
-                  const { email, name, provider } = credentials;
-                  if (!email || typeof email !== 'string') return null;
+app.all('/integrations/:path{.+}', async (c) => {
+  const integrationBase = process.env.CREATE_INTEGRATIONS_BASE_URL;
+  const integrationToken = process.env.CREATE_INTEGRATIONS_TOKEN;
+  if (!integrationBase || !integrationToken) {
+    return c.json({ error: 'Integration service is not configured.' }, 503);
+  }
 
-                  const existing = await adapter.getUserByEmail(email);
-                  if (existing) return existing;
+  let baseUrl: URL;
+  try {
+    baseUrl = new URL(integrationBase);
+    if (baseUrl.protocol !== 'https:') {
+      throw new Error('HTTPS is required.');
+    }
+  } catch {
+    return c.json({ error: 'Integration service is not configured.' }, 503);
+  }
 
-                  const allowedProviders = new Set(['google', 'facebook', 'twitter', 'apple']);
-                  const providerName =
-                    typeof provider === 'string' && allowedProviders.has(provider.toLowerCase())
-                      ? provider.toLowerCase()
-                      : 'google';
-                  const newUser = await adapter.createUser({
-                    emailVerified: null,
-                    email,
-                    name:
-                      typeof name === 'string' && name.length > 0
-                        ? name
-                        : undefined,
-                  });
-                  await adapter.linkAccount({
-                    type: 'oauth',
-                    userId: newUser.id,
-                    provider: providerName,
-                    providerAccountId: `dev-${newUser.id}`,
-                  });
-                  return newUser;
-                },
-              }),
-            ]
-          : []),
-        Credentials({
-          id: 'credentials-signin',
-          name: 'Credentials Sign in',
-          credentials: {
-            email: {
-              label: 'Email',
-              type: 'email',
-            },
-            password: {
-              label: 'Password',
-              type: 'password',
-            },
-          },
-          authorize: async (credentials) => {
-            const { email, password } = credentials;
-            if (!email || !password) {
-              return null;
-            }
-            if (typeof email !== 'string' || typeof password !== 'string') {
-              return null;
-            }
+  const requestedPath = c.req.param('path');
+  if (!requestedPath || requestedPath.includes('..') || requestedPath.includes('\\')) {
+    return c.json({ error: 'Invalid integration path.' }, 400);
+  }
 
-            // logic to verify if user exists
-            const user = await adapter.getUserByEmail(email);
-            if (!user) {
-              return null;
-            }
-            const matchingAccount = user.accounts.find(
-              (account) => account.provider === 'credentials'
-            );
-            const accountPassword = matchingAccount?.password;
-            if (!accountPassword) {
-              return null;
-            }
-
-            const isValid = await verify(accountPassword, password);
-            if (!isValid) {
-              return null;
-            }
-
-            // return user object with the their profile data
-            return user;
-          },
-        }),
-        Credentials({
-          id: 'credentials-signup',
-          name: 'Credentials Sign up',
-          credentials: {
-            email: {
-              label: 'Email',
-              type: 'email',
-            },
-            password: {
-              label: 'Password',
-              type: 'password',
-            },
-            name: { label: 'Name', type: 'text' },
-            image: { label: 'Image', type: 'text', required: false },
-          },
-          authorize: async (credentials) => {
-            const { email, password, name, image } = credentials;
-            if (!email || !password) {
-              return null;
-            }
-            if (typeof email !== 'string' || typeof password !== 'string') {
-              return null;
-            }
-
-            // logic to verify if user exists
-            const user = await adapter.getUserByEmail(email);
-            if (!user) {
-              const newUser = await adapter.createUser({
-                emailVerified: null,
-                email,
-                name: typeof name === 'string' && name.length > 0 ? name : undefined,
-                image: typeof image === 'string' && image.length > 0 ? image : undefined,
-              });
-              await adapter.linkAccount({
-                extraData: {
-                  password: await hash(password),
-                },
-                type: 'credentials',
-                userId: newUser.id,
-                providerAccountId: newUser.id,
-                provider: 'credentials',
-              });
-              return newUser;
-            }
-            return null;
-          },
-        }),
-      ],
-    }))
-  );
-}
-app.all('/integrations/:path{.+}', async (c, next) => {
   const queryParams = c.req.query();
-  const url = `${process.env.NEXT_PUBLIC_CREATE_BASE_URL ?? 'https://www.create.xyz'}/integrations/${c.req.param('path')}${Object.keys(queryParams).length > 0 ? `?${new URLSearchParams(queryParams).toString()}` : ''}`;
+  const safePath = requestedPath
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  const url = new URL(`integrations/${safePath}`, `${baseUrl.toString().replace(/\/$/, '')}/`);
+  Object.entries(queryParams).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
 
-  return proxy(url, {
+  const headers = new Headers({
+    Authorization: `Bearer ${integrationToken}`,
+    Accept: c.req.header('accept') || 'application/json',
+  });
+  const contentType = c.req.header('content-type');
+  if (contentType) {
+    headers.set('Content-Type', contentType);
+  }
+  if (process.env.CREATE_HOST) {
+    headers.set('x-createxyz-host', process.env.CREATE_HOST);
+  }
+  if (process.env.CREATE_PROJECT_GROUP_ID) {
+    headers.set('x-createxyz-project-group-id', process.env.CREATE_PROJECT_GROUP_ID);
+  }
+
+  const response = await proxy(url, {
     method: c.req.method,
     body: c.req.raw.body ?? null,
     // @ts-expect-error -- duplex is accepted by the runtime even though the
     // type declarations don't include it; required for streaming integrations
     duplex: 'half',
     redirect: 'manual',
-    headers: {
-      ...c.req.header(),
-      'X-Forwarded-For': process.env.NEXT_PUBLIC_CREATE_HOST,
-      'x-createxyz-host': process.env.NEXT_PUBLIC_CREATE_HOST,
-      Host: process.env.NEXT_PUBLIC_CREATE_HOST,
-      'x-createxyz-project-group-id': process.env.NEXT_PUBLIC_PROJECT_GROUP_ID,
-    },
+    headers,
+  });
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.delete('set-cookie');
+  responseHeaders.set('Cache-Control', 'no-store');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: responseHeaders,
   });
 });
 
-app.use('/api/auth/*', async (c, next) => {
-  if (isAuthAction(c.req.path)) {
-    return authHandler()(c, next);
-  }
-  return next();
-});
 app.route(API_BASENAME, api);
 
 export default await createHonoServer({

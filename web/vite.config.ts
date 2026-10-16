@@ -24,12 +24,7 @@ export default defineConfig({
     // don't want that to cause a re-bundle.
     include: ['fast-glob', 'lucide-react'],
     exclude: [
-      '@hono/auth-js/react',
-      '@hono/auth-js',
-      '@auth/core',
-      '@hono/auth-js',
       'hono/context-storage',
-      '@auth/core/errors',
       'fsevents',
       'lightningcss',
     ],
@@ -75,20 +70,16 @@ export default defineConfig({
       lodash: 'lodash-es',
       'npm:stripe': 'stripe',
       stripe: path.resolve(__dirname, './src/__create/stripe'),
-      '@auth/create/react': '@hono/auth-js/react',
-      '@auth/create': path.resolve(__dirname, './src/__create/@auth/create'),
       '@': path.resolve(__dirname, 'src'),
     },
     dedupe: ['react', 'react-dom'],
   },
   clearScreen: false,
   server: {
-    allowedHosts: true,
-    host: '0.0.0.0',
+    allowedHosts: ['localhost', '127.0.0.1'],
+    host: '127.0.0.1',
     port: 4000,
-    fs: {
-      allow: ['..', '../../shared'],
-    },
+    fs: { strict: true },
     hmr: {
       overlay: false,
     },
