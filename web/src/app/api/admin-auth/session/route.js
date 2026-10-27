@@ -23,16 +23,32 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  let stage = "origin_check";
   try {
     assertSameOrigin(request);
+    stage = "rate_limit";
     await assertRateLimit(request, "admin-login", { limit: 8 });
+    stage = "request_body";
     const body = await readBody(request, { maxBytes: 2 * 1024 });
+    stage = "admin_code";
     const role = authenticateAdminCode(body.code);
+    stage = "session_cookie";
     return ok(
       { authenticated: true, role },
       { headers: { "Set-Cookie": createAdminSessionCookie(role, request) } },
     );
   } catch (error) {
+    const status = error instanceof Error && "status" in error ? error.status : 500;
+    if (status >= 500) {
+      // Log only controlled metadata: never the request, credentials, or raw error.
+      console.error("Admin login failed", {
+        stage,
+        status,
+        reason: error instanceof Error && error.message === "Admin authentication is not configured."
+          ? "admin_configuration_invalid"
+          : "server_error",
+      });
+    }
     return handleAdminAuthError(error);
   }
 }
