@@ -402,7 +402,7 @@ export function authenticateAdminCode(suppliedCode) {
   const entries = Object.entries(configuredCodes);
 
   if (!entries.length) {
-    console.error("Admin configuration error: no configured access code meets the 16-character minimum.");
+    console.error("Admin configuration error: no configured access code meets the 10-character minimum.");
     const error = new Error("Admin authentication is not configured.");
     error.status = 503;
     throw error;
@@ -463,7 +463,7 @@ function readConfiguredRoleCodes() {
 function removeEmptyCodes(codes) {
   return Object.fromEntries(
     Object.entries(codes).filter(
-      ([code, role]) => code.length >= 16 && isKnownRole(role),
+      ([code, role]) => code.length >= 10 && code.length <= 160 && isKnownRole(role),
     ),
   );
 }
