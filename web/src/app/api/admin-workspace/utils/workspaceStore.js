@@ -402,6 +402,7 @@ export function authenticateAdminCode(suppliedCode) {
   const entries = Object.entries(configuredCodes);
 
   if (!entries.length) {
+    console.error("Admin configuration error: no configured access code meets the 16-character minimum.");
     const error = new Error("Admin authentication is not configured.");
     error.status = 503;
     throw error;
@@ -512,6 +513,7 @@ function verifyAdminSession(value) {
 function adminSessionSecret() {
   const secret = String(process.env.ADMIN_SESSION_SECRET || "");
   if (secret.length < 32) {
+    console.error("Admin configuration error: ADMIN_SESSION_SECRET must contain at least 32 characters.");
     const error = new Error("Admin authentication is not configured.");
     error.status = 503;
     throw error;
